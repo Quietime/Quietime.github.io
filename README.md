@@ -42,7 +42,9 @@ content/
 
 ## 网站功能
 
-- 首页一镜到底：月亮随滚动走完一夜的月相，最后落进页脚
+- 首页一镜到底：整页是一条放在看片台上的底片，镜头从片头沿着胶片一直走到片尾，帧计数器随之跳动；手机上胶片竖放
+- 中文、English、日本語三种语言，各自意译而不是逐句对译；第一次访问按浏览器语言自动切换，右上角可以换
+- 月亮只是标志，出现在页眉、图标和分享图上
 - 定制光标：在照片、影片、链接上会变成“查看”“播放”等提示，触屏设备自动关闭
 - 背景音乐：访客第一次点击后淡入，右上角可开关，会记住选择
 - 图库：全部照片齐边排列，可按系列筛选，点开连续浏览
@@ -63,14 +65,13 @@ npm run dev
 |---|---|
 | [GSAP](https://github.com/greensock/GSAP)（ScrollTrigger、SplitText、ScrambleText、Flip） | 滚动动画、标题逐字浮现、边码读码效果、影片卡片展开成播放器 |
 | [Lenis](https://github.com/darkroomengineering/lenis) | 平滑滚动 |
-| [three.js](https://github.com/mrdoob/three.js) | 首页系列列表的 WebGL 悬停波动效果 |
 | [PhotoSwipe](https://github.com/dimsemenov/PhotoSwipe) | 照片查看器，支持双指缩放与滑动 |
 | [Sveltia CMS](https://github.com/sveltia/sveltia-cms) | 管理后台 |
 | [Tone.js](https://github.com/Tonejs/Tone.js) | 网站自带的氛围背景音乐（实时生成） |
 | [justified-layout](https://github.com/flickr/justified-layout) | 图库的齐边排版（Flickr 开源） |
 | [sharp](https://github.com/lovell/sharp) | 图片处理 |
 | [Vite](https://github.com/vitejs/vite) | 构建 |
-| [Fontsource](https://github.com/fontsource/fontsource) | 思源宋体、Questrial、Barlow Condensed，随站托管，国内也能正常显示 |
+| [Fontsource](https://github.com/fontsource/fontsource) | 思源宋体、思源黑体、Noto Serif JP、Newsreader、Questrial、Barlow Condensed，随站托管，国内也能正常显示 |
 
 设计与检查用到的 Skill 放在 `.claude/skills/`，说明见那里的 README。
 
@@ -81,5 +82,7 @@ npm run dev
 - `scripts/images.mjs` 图片处理
 - `scripts/generate.mjs` 生成页面
 - `scripts/admin.mjs` 把后台程序复制到网站里
-- `site/src/` 样式与交互，`site/src/webgl-reveal.js` 是 WebGL 效果
+- `site/src/` 样式与交互，`cursor.js` 光标，`sound.js` 背景音乐
+- `scripts/i18n.mjs` 三种语言的界面文字；要加新语言，在这里加一份并在后台补上对应字段
+- `scripts/bilibili.mjs` 构建时读取 B站 元数据
 - `site/public/admin/config.yml` 后台的字段配置

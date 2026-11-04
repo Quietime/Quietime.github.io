@@ -83,7 +83,7 @@ async function ambientPlayer(volume) {
   };
 }
 
-export default function sound(config) {
+export default function sound(config, ui = {}) {
   const btn = document.querySelector('[data-sound]');
   if (!btn || !config?.on) return;
   let player = null, playing = false, busy = false;
@@ -92,7 +92,7 @@ export default function sound(config) {
   const show = () => {
     btn.setAttribute('aria-pressed', String(playing));
     btn.classList.toggle('is-on', playing);
-    btn.querySelector('.sound-t').textContent = playing ? '声音开' : '声音关';
+    btn.querySelector('.sound-t').textContent = playing ? ui.soundOn || 'Sound on' : ui.soundOff || 'Sound off';
   };
   show();
 

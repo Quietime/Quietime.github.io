@@ -1,48 +1,71 @@
 {
   "title_zh": "潮汐之间",
   "title_en": "Between Tides",
+  "title_ja": "潮のあいだ",
   "order": 10,
+  "draft": false,
   "statement_zh": "海并不总是在涨落。有些下午，它只是把船轻轻放回原处，让风替人说话。这一组画格记下的，是涨潮与退潮之间那一小段迟疑。",
-  "statement_en": "The sea does not always rise or fall. Some afternoons it simply leaves the boat where it was and lets the wind do the talking. These frames keep the short hesitation between two tides.",
+  "statement_en": "Some afternoons the sea forgets to move. The boats stay where they were left and the wind does all the talking. These frames were made in that pause, after one tide and before the next.",
+  "statement_ja": "海にも、満ちることを忘れる午後がある。舟は置かれた場所でじっとして、話しているのは風だけ。満ち潮と引き潮のすきまの、ほんの少しのためらいを写した。",
   "meta": [
     {
-      "k": "介质",
-      "v": "彩色负片扫描"
+      "k_zh": "介质",
+      "k_en": "Medium",
+      "k_ja": "メディア",
+      "v_zh": "彩色负片扫描",
+      "v_en": "Colour negative, scanned",
+      "v_ja": "カラーネガ、スキャン"
     },
     {
-      "k": "来源",
-      "v": "Kodak PhotoCD 示例"
+      "k_zh": "来源",
+      "k_en": "Source",
+      "k_ja": "出典",
+      "v_zh": "Kodak PhotoCD 示例",
+      "v_en": "Kodak PhotoCD sample",
+      "v_ja": "Kodak PhotoCD サンプル"
     }
   ],
   "frames": [
     {
       "image": "01.jpg",
-      "caption": "远处的岛把云托住",
+      "caption_zh": "远处的岛把云托住",
+      "caption_en": "An island holding up the clouds",
+      "caption_ja": "雲をささえる、遠い島",
       "layout": "wide"
     },
     {
       "image": "02.jpg",
-      "caption": "没有人催促的船",
+      "caption_zh": "没有人催促的船",
+      "caption_en": "A boat nobody is waiting for",
+      "caption_ja": "誰にも急かされない舟",
       "layout": "right"
     },
     {
       "image": "03.jpg",
-      "caption": "旧码头还记得重量",
+      "caption_zh": "旧码头还记得重量",
+      "caption_en": "The old pier remembers what it carried",
+      "caption_ja": "古い桟橋は、重さを覚えている",
       "layout": "left"
     },
     {
       "image": "04.jpg",
-      "caption": "浅水里的两个人",
+      "caption_zh": "浅水里的两个人",
+      "caption_en": "Two people, ankle deep",
+      "caption_ja": "浅瀬のふたり",
       "layout": "small"
     },
     {
       "image": "05.jpg",
-      "caption": "帆在远处排队",
+      "caption_zh": "帆在远处排队",
+      "caption_en": "Sails waiting their turn",
+      "caption_ja": "遠くで順番を待つ帆",
       "layout": "pair"
     },
     {
       "image": "06.jpg",
-      "caption": "风终于到了",
+      "caption_zh": "风终于到了",
+      "caption_en": "Then the wind arrived",
+      "caption_ja": "そして、風が来た",
       "layout": "pair"
     }
   ]

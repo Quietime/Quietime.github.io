@@ -1,7 +1,9 @@
-// Reads everything the admin backend (Sveltia CMS) edits:
-//   content/settings.json        site name, statement, contact, socials, about
+// Reads everything the admin backend (Sveltia CMS) edits and resolves it for one language:
+//   content/settings.json        site wording, contact, socials, about, music
 //   content/films.json           Bilibili films
 //   content/series/<slug>/index.json + the photos next to it
+// Text fields carry a language suffix (title_zh, title_en, title_ja). A missing translation
+// falls back to Chinese, so a new language can be filled in gradually.
 import fs from 'node:fs/promises';
 import path from 'node:path';
 
@@ -28,8 +30,11 @@ export function parseBili(raw) {
   return null;
 }
 
-export async function loadContent() {
-  const settings = await read('content/settings.json');
+// pick(obj, 'title', 'en') -> obj.title_en, then obj.title_zh, then obj.title
+export const pick = (o, key, lang) => (o ? o[`${key}_${lang}`] || o[`${key}_zh`] || o[key] || '' : '');
+
+export async function loadContent(lang = 'zh') {
+  const S = await read('content/settings.json');
   let bili = {};
   try { bili = await read('.cache/bili.json'); } catch { /* no metadata yet */ }
   const { films = [] } = await read('content/films.json');
@@ -37,65 +42,66 @@ export async function loadContent() {
   const series = [];
   for (const d of dirs) {
     const dir = `content/series/${d.name}`;
-    let entry;
-    try { entry = await read(`${dir}/index.json`); } catch { continue; }
-    if (entry.draft) continue;
-    const frames = (entry.frames || [])
-      .map((f) => ({ ...f, src: resolveImage(f.image, dir) }))
+    let e;
+    try { e = await read(`${dir}/index.json`); } catch { continue; }
+    if (e.draft) continue;
+    const frames = (e.frames || [])
+      .map((f) => ({ src: resolveImage(f.image, dir), caption: pick(f, 'caption', lang), layout: f.layout || 'right' }))
       .filter((f) => f.src);
     if (!frames.length) continue;
     series.push({
       slug: d.name,
-      zh: entry.title_zh || d.name,
-      en: entry.title_en || '',
-      order: Number(entry.order ?? 100),
-      statement: { zh: entry.statement_zh || '', en: entry.statement_en || '' },
-      meta: (entry.meta || []).filter((m) => m && m.k && m.v).map((m) => [m.k, m.v]),
+      title: pick(e, 'title', lang) || d.name,
+      sub: lang === 'en' ? e.title_zh || '' : e.title_en || '',
+      order: Number(e.order ?? 100),
+      statement: pick(e, 'statement', lang),
+      meta: (e.meta || []).map((m) => [pick(m, 'k', lang), pick(m, 'v', lang)]).filter(([k, v]) => k && v),
       frames,
     });
   }
   series.sort((a, b) => a.order - b.order || a.slug.localeCompare(b.slug));
+  const name = S.name || 'Quietime';
+  const nameZh = S.name_zh || '静夜工作室';
   return {
     site: {
-      name: settings.name || 'Quietime',
-      nameZh: settings.name_zh || '静夜工作室',
-      title: `${settings.name || 'Quietime'} ${settings.name_zh || '静夜工作室'}`,
-      description: settings.description || '',
-      url: settings.url || 'https://quietime.github.io/',
-      statement: { zh: String(settings.statement_zh || '').split('\n').filter(Boolean), en: settings.statement_en || '' },
-      edgeCode: settings.edge_code || 'QUIETIME 400',
-      samples: Boolean(settings.samples),
-      sampleCredit: settings.sample_credit || '',
+      name, nameZh, title: `${name} ${nameZh}`,
+      description: pick(S, 'description', lang),
+      url: S.url || 'https://quietime.github.io/',
+      statement: pick(S, 'statement', lang).split('\n').filter(Boolean),
+      edgeCode: S.edge_code || 'QUIETIME 400',
+      samples: Boolean(S.samples),
+      sampleCredit: pick(S, 'sample_credit', lang),
     },
     contact: {
-      wechat: settings.wechat || '', email: settings.email || '', copyright: settings.copyright || '',
-      lede: settings.contact_lede || '', formEndpoint: settings.form_endpoint || '',
-      qr: resolveImage(settings.wechat_qr, 'content/uploads'),
-      process: (settings.process || []).filter((s) => s && s.title),
-      faq: (settings.faq || []).filter((s) => s && s.q),
+      wechat: S.wechat || '', email: S.email || '', copyright: S.copyright || '',
+      lede: pick(S, 'contact_lede', lang), formEndpoint: S.form_endpoint || '',
+      qr: resolveImage(S.wechat_qr, 'content/uploads'),
+      process: (S.process || []).map((p) => ({ title: pick(p, 'title', lang), text: pick(p, 'text', lang) })).filter((p) => p.title),
+      faq: (S.faq || []).map((q) => ({ q: pick(q, 'q', lang), a: pick(q, 'a', lang) })).filter((q) => q.q),
     },
     music: {
-      on: settings.music_on !== false,
-      file: settings.music_file ? resolveImage(settings.music_file, 'content/uploads') : '',
-      volume: Math.min(100, Math.max(5, Number(settings.music_volume ?? 40))) / 100,
+      on: S.music_on !== false,
+      file: S.music_file ? resolveImage(S.music_file, 'content/uploads') : '',
+      volume: Math.min(100, Math.max(5, Number(S.music_volume ?? 40))) / 100,
     },
-    socials: (settings.socials || []).filter((s) => s && s.label),
-    homeTeaser: settings.home_teaser || '',
+    socials: (S.socials || []).filter((s) => s && s.label),
+    homeTeaser: pick(S, 'home_teaser', lang),
     about: {
-      intro: String(settings.about_intro || '').split(/\n\s*\n/).map((t) => t.trim()).filter(Boolean),
-      services: (settings.services || []).filter((s) => s && s.title).map((s) => [s.title, s.text || '']),
+      intro: pick(S, 'about_intro', lang).split(/\n\s*\n/).map((t) => t.trim()).filter(Boolean),
+      services: (S.services || []).map((s) => [pick(s, 'title', lang), pick(s, 'text', lang)]).filter(([t]) => t),
     },
     films: films.map((f) => {
       const ref = parseBili(f.bvid);
       const meta = ref ? bili[ref.bvid || `av${ref.aid}`] || null : null;
-      const bvid = meta?.bvid || ref?.bvid || '';
       return {
-        ...f,
-        ref, meta, bvid,
+        ref, meta,
+        bvid: meta?.bvid || ref?.bvid || '',
         aid: meta?.aid || ref?.aid || '',
         cid: meta?.cid || '',
         p: ref?.p || 1,
-        title_zh: f.title_zh || meta?.title || '影片',
+        title: pick(f, 'title', lang) || meta?.title || '',
+        sub: lang === 'en' ? f.title_zh || '' : f.title_en || '',
+        kind: pick(f, 'kind', lang),
         src: resolveImage(f.cover, 'content/films') || meta?.cover || null,
       };
     }),

@@ -33,6 +33,18 @@ const store = {
 const DIGITS = '0123456789';
 let CFG = {};
 try { CFG = JSON.parse($('#qt-config')?.textContent || '{}'); } catch { CFG = {}; }
+const U = CFG.ui || {};
+const F = U.f || {};
+
+// type for the other languages loads only on their pages
+if (CFG.lang === 'en') { import('@fontsource/newsreader/400.css'); import('@fontsource/newsreader/500.css'); }
+if (CFG.lang === 'ja') { import('@fontsource/noto-serif-jp/400.css'); import('@fontsource/noto-serif-jp/500.css'); import('@fontsource/noto-sans-jp/400.css'); }
+
+// a chosen language is remembered, so the first-visit language guess never overrides it
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('.lang a[data-lang]');
+  if (a) { try { localStorage.setItem('qt-lang', a.dataset.lang); } catch { /* private mode */ } }
+}, true);
 
 /* ── smooth scroll (Lenis) ─────────────────────────────────── */
 let lenis = null;
@@ -123,30 +135,15 @@ const devIO = new IntersectionObserver((entries) => {
 }, { rootMargin: '0px 0px -8% 0px', threshold: 0.12 });
 $$('img.dev').forEach((img) => devIO.observe(img));
 
-/* ── moon (layered SVG) ────────────────────────────────────── */
-function moon(svg) {
-  const bands = [...Array(9)].map((_, i) => $$(`.mb${i}`, svg));
-  const lit = $('.moon-litc', svg);
-  const hl = $('.moon-hl', svg);
-  const tides = [];
-  function tide(speed = 1) {
-    if (reduce) return;
-    bands.forEach((els, i) => {
-      if (!i) return;
-      const dir = i % 2 ? 1 : -1;
-      tides.push(gsap.fromTo(els, { x: dir > 0 ? -300 : 0 }, { x: dir > 0 ? 0 : -300, duration: (54 + i * 11) / speed, ease: 'none', repeat: -1 }));
-    });
-    new IntersectionObserver(([en]) => tides.forEach((t) => (en.isIntersecting ? t.play() : t.pause()))).observe(svg);
-  }
-  return { svg, bands, lit, hl, tide };
-}
-
 /* ── headings rise character by character (SplitText) ─────── */
 function splitReveal(scope, delay = 0) {
   const targets = $$('[data-split] .line > span', scope);
   if (reduce || !targets.length) return;
-  const split = SplitText.create(targets, { type: 'chars', charsClass: 'ch', tag: 'span', aria: 'none' });
-  gsap.from(split.chars, { yPercent: 115, duration: 1.25, ease: 'expo.out', stagger: 0.035, delay });
+  // characters for Chinese and Japanese, whole words for English; the whole line takes under a second
+  const byWord = CFG.lang === 'en';
+  const split = SplitText.create(targets, { type: byWord ? 'words' : 'chars', wordsClass: 'ch', charsClass: 'ch', tag: 'span', aria: 'none' });
+  const parts = byWord ? split.words : split.chars;
+  gsap.from(parts, { yPercent: 115, duration: 1.2, ease: 'expo.out', stagger: { amount: Math.min(0.9, parts.length * 0.035) }, delay });
 }
 
 /* ── copy buttons ──────────────────────────────────────────── */
@@ -166,37 +163,12 @@ $$('[data-copy]').forEach((b) => {
   const label = b.textContent;
   b.addEventListener('click', async () => {
     const ok = await copyText(b.dataset.copy);
-    b.textContent = ok ? '已复制' : label;
+    b.textContent = ok ? U.copied || 'Copied' : label;
     b.classList.toggle('is-done', ok);
-    if (live) live.textContent = ok ? `已复制 ${b.dataset.copy}` : '复制失败，请手动选择文字';
+    if (live) live.textContent = ok ? `${U.copied || 'Copied'} ${b.dataset.copy}` : U.copyFail || '';
     setTimeout(() => { b.textContent = label; b.classList.remove('is-done'); }, 1600);
   });
 });
-
-/* ── header moon ───────────────────────────────────────────── */
-{
-  const m = moon($('.brand-moon'));
-  const brand = $('.brand');
-  if (!reduce) {
-    brand.addEventListener('mouseenter', () => gsap.to(m.lit, { attr: { cx: 220, cy: 180 }, duration: 0.9, ease: 'power3.out' }));
-    brand.addEventListener('mouseleave', () => gsap.to(m.lit, { attr: { cx: 128, cy: 96 }, duration: 0.9, ease: 'power3.out' }));
-  }
-}
-
-/* ── footer moon waxes as the page ends ────────────────────── */
-{
-  const svg = $('.ftr-svg');
-  // on home the travelling moon lands in this slot instead
-  if (svg && !(page === 'home' && !reduce && $('[data-stage]'))) {
-    const m = moon(svg);
-    m.tide(1.4);
-    if (!reduce) {
-      gsap.timeline({ scrollTrigger: { trigger: '[data-ftr]', start: 'top bottom', end: 'bottom bottom', scrub: 1 } })
-        .fromTo(m.lit, { attr: { cx: -40, cy: -60 } }, { attr: { cx: 128, cy: 96 }, ease: 'none' }, 0)
-        .fromTo(m.hl, { opacity: 0 }, { opacity: 1, ease: 'power2.in' }, 0);
-    }
-  }
-}
 
 /* ── Bilibili player, opened with Flip from the card ───────── */
 function films() {
@@ -216,19 +188,19 @@ function films() {
     opener?.focus({ preventScroll: true });
   }
   $$('.film-btn, .film-row').forEach((b) => b.addEventListener('click', () => {
-    if (!b.dataset.bvid && !b.dataset.aid) { if (live) live.textContent = '这部影片还在整理中。'; return; }
+    if (!b.dataset.bvid && !b.dataset.aid) { if (live) live.textContent = U.notReady || ''; return; }
     opener = b;
     const q = new URLSearchParams({ isOutside: 'true', p: b.dataset.p || '1', autoplay: '1', danmaku: '0', high_quality: '1' });
     if (b.dataset.bvid) q.set('bvid', b.dataset.bvid);
     if (b.dataset.aid) q.set('aid', b.dataset.aid);
     if (b.dataset.cid) q.set('cid', b.dataset.cid);
     link.href = b.dataset.bvid ? `https://www.bilibili.com/video/${encodeURIComponent(b.dataset.bvid)}` : `https://www.bilibili.com/video/av${encodeURIComponent(b.dataset.aid)}`;
-    if (title) title.textContent = (b.getAttribute('aria-label') || '').replace(/^播放：/, '');
+    if (title) title.textContent = (b.getAttribute('aria-label') || '').replace(/^[^：]*：/, '');
     player.hidden = false;
     lenis?.stop();
     document.addEventListener('keydown', esc);
     const load = () => {
-      frame.innerHTML = `<iframe src="https://player.bilibili.com/player.html?${q}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen scrolling="no" referrerpolicy="no-referrer-when-downgrade" title="B站视频播放器"></iframe>`;
+      frame.innerHTML = `<iframe src="https://player.bilibili.com/player.html?${q}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen scrolling="no" referrerpolicy="no-referrer-when-downgrade" title="Bilibili"></iframe>`;
     };
     if (reduce) { load(); } else {
       const state = Flip.getState(box);
@@ -253,204 +225,99 @@ function scrubRise(els, { y = 56, from = 0.12, start = 'top 98%', end = 'top 62%
 }
 
 /*
- * Home is one continuous take. The moon is the subject the camera follows through one night:
- * crescent in the hero, full moon over the series index, waning as the film strip pans,
- * setting in the projection room, a new crescent rising again, and finally landing in the
- * footer as the logo. Every move is tied to the scroll position, so scrolling back plays it in reverse.
+ * Home is one continuous take along a single strip of film lying on a light table.
+ * On wide screens the strip runs sideways and the camera travels from the leader to the tail:
+ * it starts close, eases back, sways a little as a hand would, and pulls away at the end of the roll.
+ * Photographs settle as they pass the centre, and a frame counter keeps count.
+ * On phones the strip stands upright and simply scrolls.
  */
 function home() {
-  const hero = $('[data-hero]');
-  const slot = $('[data-hero-moon]');
-  const heroSvg = $('.hero-svg', slot);
   const pre = $('[data-pre]');
-  const stage = $('[data-stage]');
-  const stageMoon = stage && $('.stage-moon', stage);
-  const inner = stage && $('.stage-inner', stage);
-  const take = Boolean(!reduce && stage && heroSvg);
-  const M = moon(heroSvg);
-  const darkPref = matchMedia('(prefers-color-scheme: dark)').matches;
+  const roll = $('[data-roll]');
+  const cam = $('[data-roll-cam]');
+  const track = $('[data-roll-track]');
+  const cells = $$('[data-cell]', track);
+  const count = $('[data-roll-count]');
+  const rc = $('[data-rc]');
+  const leader = () => splitReveal(roll, 0.1);
 
-  if (take) {
-    inner.append(heroSvg);
-    root.classList.add('one-take', 'js-scrub');
-  }
-
-  // layout used by the camera path, measured on every refresh
-  const L = {};
-  const footSlot = $('.ftr-moon');
-  const ftr = $('[data-ftr]');
-  const vp = $('[data-strip-vp]');
-  function measure() {
-    if (!take) return;
-    L.W = innerWidth; L.H = innerHeight; L.m = Math.min(L.W, L.H);
-    L.gut = Math.max(20, L.W * 0.05);
-    const r = slot.getBoundingClientRect();
-    L.B = r.width || L.m * 0.6;
-    L.hx = r.left; L.hy = r.top + scrollY;
-    stageMoon.style.width = stageMoon.style.height = `${L.B}px`;
-    const fs = footSlot.getBoundingClientRect();
-    const fr = ftr.getBoundingClientRect();
-    L.fx = fs.left; L.fw = fs.width || L.B * 0.5; L.fo = fs.top - fr.top; L.fh = fr.height;
-    L.vpH = vp ? vp.getBoundingClientRect().height : 0;
-  }
-  const wide = () => L.W > 860;
-  const S = {
-    hero: () => ({ x: L.hx, y: L.hy, s: 1 }),
-    sky: () => { const s = (L.m * (wide() ? 0.2 : 0.26)) / L.B; return { x: L.W - L.gut - s * L.B, y: L.H * 0.12, s }; },
-    strip: () => { const s = S.sky().s; return { x: L.gut, y: wide() ? Math.max(64, (L.H - L.vpH) / 2 - s * L.B - 18) : L.H * 0.1, s }; },
-    set: () => { const s = (L.m * (wide() ? 0.42 : 0.34)) / L.B; return { x: -s * L.B * 0.35, y: L.H * (wide() ? 0.78 : 0.88), s }; },
-    rise: () => { const s = (L.m * 0.24) / L.B; return { x: L.W - L.gut - s * L.B, y: L.H * 0.08, s }; },
-    land: () => ({ x: L.fx, y: L.H - L.fh + L.fo, s: L.fw / L.B }),
-  };
-  const PH = {
-    cres: { cx: 128, cy: 96 }, full: { cx: 300, cy: 300 }, wane: { cx: 470, cy: 500 },
-    dark: { cx: 600, cy: 650 }, wax: { cx: -60, cy: -80 },
-  };
-  const pos = (k) => ({ x: () => S[k]().x, y: () => S[k]().y, scale: () => S[k]().s });
-  function leg(from, to, st, ph, hl) {
-    const tl = gsap.timeline({ scrollTrigger: { ...st, scrub: 1, invalidateOnRefresh: true } });
-    tl.fromTo(stageMoon, pos(from), { ...pos(to), ease: 'power1.inOut', immediateRender: false }, 0);
-    if (ph) tl.fromTo(M.lit, { attr: PH[ph[0]] }, { attr: PH[ph[1]], ease: 'none', immediateRender: false }, 0);
-    if (hl) tl.fromTo(M.hl, { opacity: hl[0] }, { opacity: hl[1], ease: 'none', immediateRender: false }, 0);
-    return tl;
-  }
-
-  // opening: the moon assembled in the preloader flies into the hero instead of leaving
-  const intro = () => {
-    splitReveal(hero, 0.05);
-    if (!reduce) gsap.fromTo('.hero-en', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 1.2, ease: 'expo.out', delay: 0.9 });
-    M.tide(1);
-  };
+  // opening: the camera's frame counter runs S, 0, 1, then the shutter curtain lifts
   if (pre && !root.classList.contains('pre-seen') && !reduce) {
-    const p = moon($('.pre-svg', pre));
-    const words = $$('.pre-word span', pre);
-    gsap.set(p.bands.flat(), { y: 640 });
-    gsap.set(p.lit, { attr: { cx: -470, cy: -260 } });
-    gsap.set(p.hl, { opacity: 0, scale: 0.3, svgOrigin: '186 120' });
-    gsap.set(words, { yPercent: 120 });
-    const tl = gsap.timeline({ onComplete: () => { pre.remove(); stage?.classList.remove('is-flying'); store.set('qt-pre', '1'); } });
-    p.bands.forEach((els, i) => tl.to(els, { y: 0, duration: 1.5, ease: 'expo.out' }, 0.1 + i * 0.08));
-    tl.to(p.lit, { attr: { cx: 128, cy: 96 }, duration: 1.3, ease: 'power3.inOut' }, 0.75)
-      .to(p.hl, { opacity: 1, scale: 1, duration: 0.8, ease: 'back.out(2)' }, 1.75)
-      .to(words, { yPercent: 0, duration: 1, ease: 'expo.out', stagger: 0.08 }, 1.3);
-    if (take) {
-      tl.add(() => {
-        const a = $('.pre-moon', pre).getBoundingClientRect();
-        const b = stageMoon.getBoundingClientRect();
-        stage.classList.add('is-flying');
-        gsap.set(inner, { x: a.left - b.left, y: a.top - b.top, scale: a.width / b.width });
-        gsap.set($('.pre-moon', pre), { opacity: 0 });
-      }, 2.7)
-        .to(inner, { x: 0, y: 0, scale: 1, duration: 1.7, ease: 'expo.inOut' }, 2.72)
-        .to(words, { yPercent: -120, duration: 0.6, ease: 'power2.in' }, 2.6)
-        .to(pre, { backgroundColor: 'rgba(27,22,18,0)', duration: 1.2, ease: 'power2.inOut' }, 2.9)
-        .add(intro, 3.3);
-    } else {
-      tl.to(pre, { yPercent: -100, duration: 1.1, ease: 'expo.inOut' }, 2.7).add(intro, 3.05);
-    }
-    pre.addEventListener('click', () => tl.progress(0.97));
+    const n = $('[data-pre-n]', pre);
+    const bits = $$('.pre-win, .pre-word', pre);
+    const tl = gsap.timeline({ onComplete: () => { pre.remove(); store.set('qt-pre', '1'); } });
+    tl.fromTo(bits, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.8, ease: 'expo.out', stagger: 0.1 }, 0.1);
+    ['0', '1'].forEach((v) => {
+      tl.to(n, { yPercent: -110, opacity: 0, duration: 0.2, ease: 'power2.in' }, '+=0.32')
+        .call(() => { n.textContent = v; })
+        .fromTo(n, { yPercent: 110, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.34, ease: 'power3.out' });
+    });
+    tl.to(pre, { clipPath: 'inset(0% 0% 100% 0%)', duration: 1, ease: 'expo.inOut' }, '+=0.3')
+      .add(leader, '-=0.55');
+    pre.addEventListener('click', () => tl.progress(0.92));
   } else {
     pre?.remove();
-    intro();
-    if (take) gsap.fromTo(inner, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 1.6, ease: 'expo.out' });
-  }
-
-  // series index: WebGL cover follows the pointer (three.js), plain image as fallback
-  const list = $('[data-series-list]');
-  const rv = $('[data-reveal]');
-  if (list && fine && !reduce) {
-    import('./webgl-reveal.js')
-      .then(({ default: webglReveal }) => { if (!webglReveal(list)) domReveal(list, rv); })
-      .catch(() => domReveal(list, rv));
+    leader();
   }
 
   films();
-  if (reduce) return;
+  if (reduce || !track) return;
 
-  if (take) {
-    ScrollTrigger.addEventListener('refreshInit', measure);
-    measure();
-    gsap.set(stageMoon, { x: S.hero().x, y: S.hero().y, scale: 1 });
-  }
-
-  // ── 1. hero: the light falls over the moon, which rises into the sky
-  gsap.to('.hero-text', { yPercent: -30, opacity: 0, ease: 'none', scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: true } });
-  if (take) leg('hero', 'sky', { trigger: hero, start: 'top top', end: 'bottom top' }, ['cres', 'full'], [1, 0]);
-
-  // ── 2. series index rises with the scroll
-  scrubRise($$('.index .sec-head, .series-list li'));
-  scrubRise($$('.strip-sec .sec-head'));
-
-  // ── 3. film strip: a horizontal pan; the moon crosses the sky with it, frames have depth
-  const strip = $('[data-strip]');
-  const track = $('[data-strip-track]');
   const mm = gsap.matchMedia();
   mm.add('(min-width: 861px)', () => {
-    const dist = () => Math.max(0, track.scrollWidth - innerWidth);
-    root.classList.add('strip-pan');
-    const pan = gsap.to(track, {
-      x: () => -dist(), ease: 'none',
-      scrollTrigger: { trigger: vp, start: 'center center', end: () => `+=${dist()}`, pin: true, scrub: 1, invalidateOnRefresh: true, anticipatePin: 1 },
+    root.classList.add('roll-h');
+    const first = cells[0];
+    const last = cells[cells.length - 1];
+    const startX = () => (innerWidth - first.offsetWidth) / 2 - first.offsetLeft;
+    const endX = () => (innerWidth - last.offsetWidth) / 2 - last.offsetLeft;
+    const dist = () => Math.max(1, startX() - endX());
+    const st = { trigger: roll, start: 'top top', end: () => `+=${dist()}`, scrub: 1, invalidateOnRefresh: true };
+
+    let current = 0;
+    const pan = gsap.fromTo(track, { x: () => startX() }, {
+      x: () => endX(), ease: 'none',
+      scrollTrigger: {
+        ...st, pin: true, anticipatePin: 1,
+        onToggle: (self) => count?.classList.toggle('off', !self.isActive),
+        onUpdate: () => {
+          const x = gsap.getProperty(track, 'x');
+          const mid = innerWidth / 2;
+          let best = 0, gap = Infinity;
+          cells.forEach((c, i) => {
+            const d = Math.abs(c.offsetLeft + c.offsetWidth / 2 + x - mid);
+            if (d < gap) { gap = d; best = i; }
+          });
+          if (best !== current && rc) {
+            current = best;
+            gsap.to(rc, { duration: 0.4, scrambleText: { text: String(best + 1), chars: DIGITS, speed: 0.6 }, overwrite: true });
+          }
+        },
+      },
     });
-    $$('.sf .ph img', track).forEach((img) => {
-      gsap.set(img, { scale: 1.16 });
-      gsap.fromTo(img, { xPercent: -6 }, { xPercent: 6, ease: 'none', scrollTrigger: { trigger: img.closest('.sf'), containerAnimation: pan, start: 'left right', end: 'right left', scrub: true } });
+
+    // the camera: close on the leader, a slow sway along the strip, a pull back at the end of the roll
+    gsap.timeline({ defaults: { ease: 'none' }, scrollTrigger: st })
+      .fromTo(cam, { scale: 1.12, rotate: -1.2, y: 10 }, { scale: 1, rotate: 0, y: 0, duration: 0.07, ease: 'power1.out' }, 0)
+      .to(cam, { rotate: 0.5, y: -6, duration: 0.42, ease: 'sine.inOut' }, 0.07)
+      .to(cam, { rotate: -0.4, y: 6, duration: 0.42, ease: 'sine.inOut' }, 0.49)
+      .to(cam, { scale: 0.88, rotate: 0, y: 0, duration: 0.09, ease: 'power1.in' }, 0.91);
+
+    // photographs settle as they cross the centre, and the words on title frames drift in
+    $$('.cell-photo', track).forEach((c) => {
+      gsap.fromTo($('img', c), { scale: 1.12 }, { scale: 1, ease: 'none', scrollTrigger: { trigger: c, containerAnimation: pan, start: 'left right', end: 'center center', scrub: true } });
     });
-    if (take) leg('sky', 'strip', { trigger: vp, start: 'center center', end: () => `+=${dist()}` }, ['full', 'wane']);
-    return () => root.classList.remove('strip-pan');
+    $$('.cell-slate, .cell-films, .cell-about, .cell-tail', track).forEach((c) => {
+      const kids = [...c.children].filter((k) => !k.classList.contains('cell-edge'));
+      gsap.fromTo(kids, { x: 70, opacity: 0.2 }, { x: 0, opacity: 1, ease: 'none', stagger: 0.04, scrollTrigger: { trigger: c, containerAnimation: pan, start: 'left 95%', end: 'left 45%', scrub: true } });
+    });
+    return () => root.classList.remove('roll-h');
   });
   mm.add('(max-width: 860px)', () => {
-    if (take) leg('sky', 'strip', { trigger: strip, start: 'top bottom', end: 'bottom top' }, ['full', 'wane']);
+    $$('.cell-photo img', track).forEach((img) => gsap.fromTo(img, { scale: 1.1 }, {
+      scale: 1, ease: 'none', scrollTrigger: { trigger: img.closest('.cell'), start: 'top bottom', end: 'center 55%', scrub: true },
+    }));
+    scrubRise($$('.cell-slate, .cell-films, .cell-about, .cell-tail', track), { y: 40, from: 0.3 });
   });
-
-  // ── 4. the paper darkens into the projection room, the screen dollies in, the moon sets
-  if (!darkPref) {
-    const paper = { '--bg': '#EFE6D8', '--fg': '#33281F', '--fg-2': '#6B5A49', '--accent': '#8F4E17', '--link': '#2F5C61', '--surface': '#E5D9C7' };
-    const room = { '--bg': '#1B1612', '--fg': '#EFE6D8', '--fg-2': '#A8977F', '--accent': '#D99A5B', '--link': '#7FA9A8', '--surface': '#2A221C' };
-    gsap.timeline({ scrollTrigger: { trigger: '[data-room]', start: 'top 85%', end: 'top 25%', scrub: true } })
-      .fromTo(root, paper, { ...room, ease: 'none', immediateRender: false }, 0)
-      .fromTo('.grain', { opacity: 0.05 }, { opacity: 0.07, ease: 'none', immediateRender: false }, 0);
-    gsap.timeline({ scrollTrigger: { trigger: '.about-teaser', start: 'top 95%', end: 'top 45%', scrub: true } })
-      .fromTo(root, room, { ...paper, ease: 'none', immediateRender: false }, 0)
-      .fromTo('.grain', { opacity: 0.07 }, { opacity: 0.05, ease: 'none', immediateRender: false }, 0);
-  }
-  scrubRise($$('.room-sec .sec-head'));
-  const screenBtn = $('.screen .film-btn');
-  if (screenBtn) {
-    gsap.fromTo(screenBtn, { scale: 0.86, clipPath: 'inset(7% 9% 7% 9%)' }, {
-      scale: 1, clipPath: 'inset(0% 0% 0% 0%)', ease: 'none',
-      scrollTrigger: { trigger: '.screen', start: 'top bottom', end: 'center 55%', scrub: true },
-    });
-  }
-  scrubRise($$('.screen-cap, .film-rows li, .room-sec .more-wrap'), { start: 'top 100%', end: 'top 70%' });
-  if (take) leg('strip', 'set', { trigger: '[data-room]', start: 'top bottom', end: 'center center' }, ['wane', 'dark']);
-
-  // ── 5. back on paper a new crescent rises, then lands in the footer as the logo
-  scrubRise($$('.big-quote, .about-teaser .more-wrap'));
-  if (take && !darkPref) {
-    gsap.timeline({ scrollTrigger: { trigger: ftr, start: 'top 98%', end: 'top 55%', scrub: true } })
-      .fromTo(root, { '--bg': '#EFE6D8' }, { '--bg': '#1B1612', ease: 'none', immediateRender: false }, 0)
-      .fromTo('.grain', { opacity: 0.05 }, { opacity: 0.07, ease: 'none', immediateRender: false }, 0);
-  }
-  if (take) {
-    leg('set', 'rise', { trigger: '.about-teaser', start: 'top bottom', end: 'center center' }, ['dark', 'wax']);
-    leg('rise', 'land', { trigger: ftr, start: 'top bottom', end: 'bottom bottom' }, ['wax', 'cres'], [0, 1]);
-  }
-  ScrollTrigger.sort();
-}
-
-function domReveal(list, rv) {
-  if (!rv) return;
-  const img = $('img', rv);
-  const xTo = gsap.quickTo(rv, 'x', { duration: 0.7, ease: 'power3.out' });
-  const yTo = gsap.quickTo(rv, 'y', { duration: 0.7, ease: 'power3.out' });
-  list.addEventListener('pointermove', (e) => { xTo(e.clientX + 28); yTo(e.clientY - rv.offsetHeight / 2); });
-  $$('a', list).forEach((a) => a.addEventListener('pointerenter', () => {
-    if (img.getAttribute('src') !== a.dataset.cover) img.src = a.dataset.cover;
-    rv.style.setProperty('--ar', a.dataset.ar);
-    gsap.to(rv, { opacity: 1, scale: 1, duration: 0.5, ease: 'power3.out' });
-  }));
-  list.addEventListener('pointerleave', () => gsap.to(rv, { opacity: 0, scale: 0.92, duration: 0.4, ease: 'power2.out' }));
 }
 
 function series() {
@@ -493,6 +360,9 @@ function series() {
 
   photoLightbox('[data-gallery]', 'a.fr-open');
 
+  const rail = $('.rail');
+  if (rail && !reduce) ScrollTrigger.create({ start: 0, end: 'max', onUpdate: (self) => rail.style.setProperty('--rail', `${-self.scroll() * 0.6}px`) });
+
   if (location.hash) {
     const el = document.getElementById(location.hash.slice(1));
     if (el) setTimeout(() => scrollToEl(el), 500);
@@ -513,11 +383,11 @@ function photoLightbox(gallery, children) {
     initialZoomLevel: (z) => Math.min(z.panAreaSize.x / z.elementSize.x, z.panAreaSize.y / z.elementSize.y),
     secondaryZoomLevel: 1.6,
     maxZoomLevel: 3,
-    arrowPrevSVG: '<span class="pswp-t">上一格</span>',
-    arrowNextSVG: '<span class="pswp-t">下一格</span>',
-    closeSVG: '<span class="pswp-t">关闭</span>',
-    closeTitle: '关闭', arrowPrevTitle: '上一格', arrowNextTitle: '下一格',
-    errorMsg: '这张照片暂时无法加载。',
+    arrowPrevSVG: `<span class="pswp-t">${U.pswp?.prev || 'Previous'}</span>`,
+    arrowNextSVG: `<span class="pswp-t">${U.pswp?.next || 'Next'}</span>`,
+    closeSVG: `<span class="pswp-t">${U.pswp?.close || 'Close'}</span>`,
+    closeTitle: U.pswp?.close, arrowPrevTitle: U.pswp?.prev, arrowNextTitle: U.pswp?.next,
+    errorMsg: U.pswp?.error,
     indexIndicatorSep: ' / ',
   });
   lightbox.on('uiRegister', () => {
@@ -539,7 +409,7 @@ function photoLightbox(gallery, children) {
   lightbox.on('beforeOpen', () => { lenis?.stop(); root.classList.add('pswp-open'); });
   lightbox.on('afterInit', () => {
     const el = lightbox.pswp?.element;
-    if (el) { el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', '照片查看'); }
+    if (el) { el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', U.pswp?.label || 'Photo viewer'); }
   });
   lightbox.on('destroy', () => { lenis?.start(); root.classList.remove('pswp-open'); });
   lightbox.init();
@@ -594,15 +464,7 @@ function works() {
 
 function about() {
   splitReveal(document, 0.05);
-  const svg = $('.ab-svg');
-  if (!svg) return;
-  const m = moon(svg);
-  m.tide(0.9);
-  if (!reduce) {
-    gsap.timeline({ scrollTrigger: { trigger: '[data-about-moon]', start: 'top 85%', end: 'center 40%', scrub: 1 } })
-      .fromTo(m.lit, { attr: { cx: -300, cy: -200 } }, { attr: { cx: 128, cy: 96 }, ease: 'none' }, 0)
-      .fromTo(m.hl, { opacity: 0 }, { opacity: 1, ease: 'power2.in' }, 0);
-  }
+  if (!reduce) scrubRise($$('.ab-text p, .ab-services dl > div'), { y: 40 });
 }
 
 function filmsPage() {
@@ -677,8 +539,8 @@ function contact() {
     const reachOk = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || /^[a-zA-Z][-_a-zA-Z0-9]{5,19}$/.test(v) || /^1\d{10}$/.test(v);
     const check = (el) => {
       const v = el.value.trim();
-      if (el.required && !v) { msg(el, '这一项需要填写。'); return false; }
-      if (el.name === 'reach' && v && !reachOk(v)) { msg(el, '请填写有效的邮箱、微信号或手机号。'); return false; }
+      if (el.required && !v) { msg(el, F.required); return false; }
+      if (el.name === 'reach' && v && !reachOk(v)) { msg(el, F.badReach); return false; }
       msg(el, '');
       return true;
     };
@@ -692,22 +554,26 @@ function contact() {
       const ok = fields.map(check).every(Boolean);
       if (!ok) { fields.find((f) => f.getAttribute('aria-invalid') === 'true')?.focus(); return; }
       const d = Object.fromEntries(new FormData(form));
-      const body = `称呼：${d.name}\n联系方式：${d.reach}\n想拍什么：${d.kind || ''}\n大概日期：${d.date || '未定'}\n预算：${d.budget || '还没想好'}\n\n${d.message}`;
-      btn.classList.add('is-busy'); btn.disabled = true; note.textContent = '正在发送……';
+      const B = F.body || {};
+      const sep = CFG.lang === 'en' ? ': ' : '：';
+      const body = [[B.name, d.name], [B.reach, d.reach], [B.kind, d.kind], [B.date, d.date || B.none], [B.budget, d.budget || B.none]]
+        .map(([k, v]) => `${k}${sep}${v || ''}`).join('\n') + `\n\n${d.message}`;
+      const subject = `${F.subject}${sep}${d.kind || ''}`;
+      btn.classList.add('is-busy'); btn.disabled = true; note.textContent = F.sending;
       try {
         if (CFG.formEndpoint) {
-          const r = await fetch(CFG.formEndpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ ...d, subject: `预约咨询：${d.kind || ''}`, message: body }) });
+          const r = await fetch(CFG.formEndpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ ...d, subject, message: body }) });
           if (!r.ok) throw new Error(String(r.status));
-          note.textContent = '已发送。我们会在两天内回复你。';
+          note.textContent = F.sent;
           form.reset();
         } else {
           await copyText(body);
-          location.href = `mailto:${CFG.email || ''}?subject=${encodeURIComponent(`预约咨询：${d.kind || ''}`)}&body=${encodeURIComponent(body)}`;
-          note.textContent = '已打开你的邮件程序，点发送即可。内容也已复制，可以直接粘贴到微信。';
+          location.href = `mailto:${CFG.email || ''}?subject=${encodeURIComponent(subject)}&body=${encodeURIComponent(body)}`;
+          note.textContent = F.mailed;
         }
         btn.classList.add('is-done');
       } catch {
-        note.textContent = '没有发送成功，请直接发邮件或加微信联系我们。';
+        note.textContent = F.failed;
       } finally {
         btn.classList.remove('is-busy'); btn.disabled = false;
         setTimeout(() => btn.classList.remove('is-done'), 2400);
@@ -759,18 +625,12 @@ function menu() {
 }
 
 function notFound() {
-  const svg = $('.nf-svg');
-  if (!svg) return;
-  const m = moon(svg);
-  gsap.set(m.lit, { attr: { cx: -470, cy: -260 } });
-  gsap.set(m.hl, { opacity: 0 });
-  if (!reduce) gsap.to(m.lit, { attr: { cx: -150, cy: -120 }, duration: 4, ease: 'power2.inOut', delay: 0.4 });
-  m.tide(1);
+  splitReveal(document, 0.05);
 }
 
 menu();
 if (fine) cursor();
-sound(CFG.music);
+sound(CFG.music, U);
 ({ home, series, works, films: filmsPage, about, gallery, contact, nf: notFound }[page] || (() => {}))();
 leakOut();
 addEventListener('load', () => ScrollTrigger.refresh());
