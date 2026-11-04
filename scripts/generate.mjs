@@ -1,29 +1,27 @@
-// Writes the static HTML pages into site/ from content/site.mjs and content/photos.json.
+// Writes the static HTML pages into site/ from the content edited in the admin backend.
 import fs from 'node:fs/promises';
 import path from 'node:path';
-import { site, contact, socials, series, films, about } from '../content/site.mjs';
 import { moonSVG } from './moon.mjs';
+import { ROOT, loadContent } from './content.mjs';
 
-const ROOT = path.resolve(path.dirname(new URL(import.meta.url).pathname), '..');
-const photos = JSON.parse(await fs.readFile(path.join(ROOT, 'content/photos.json'), 'utf8'));
+const { site, contact, socials, series, films, about } = await loadContent();
+const photos = JSON.parse(await fs.readFile(path.join(ROOT, '.cache/photos.json'), 'utf8'));
 
 const esc = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
 const seriesHref = (s) => `series-${s.slug}.html`;
+const P = (src) => photos[src] || null;
+const largest = (p, ext = 'webp') => `${p.dir}/${p.base}-${p.widths[p.widths.length - 1]}.${ext}`;
+const smallest = (p, ext = 'webp') => `${p.dir}/${p.base}-${p.widths[0]}.${ext}`;
 
-function photo(slug, n) {
-  const p = (photos[slug] || [])[n - 1];
-  if (!p) throw new Error(`missing photo ${slug}/${n}`);
-  return p;
+function picture(src, { sizes = '100vw', alt = '', cls = '', eager = false } = {}) {
+  const p = P(src);
+  if (!p) return `<span class="ph ph-missing ${cls}"></span>`;
+  const set = (ext) => p.widths.map((w) => `${p.dir}/${p.base}-${w}.${ext} ${w}w`).join(', ');
+  return `<picture class="ph ${cls}" style="--ar:${p.w}/${p.h};--pc:${p.color}"><source type="image/webp" srcset="${set('webp')}" sizes="${sizes}"><img class="dev" src="${largest(p, 'jpg')}" srcset="${set('jpg')}" sizes="${sizes}" width="${p.w}" height="${p.h}" alt="${esc(alt)}" loading="${eager ? 'eager' : 'lazy'}" decoding="async"></picture>`;
 }
 
-function picture(slug, n, { sizes = '100vw', alt = '', cls = '', eager = false } = {}) {
-  const p = photo(slug, n);
-  const set = (ext) => p.widths.map((w) => `photos/${slug}/${p.base}-${w}.${ext} ${w}w`).join(', ');
-  const fallback = `photos/${slug}/${p.base}-${p.widths[p.widths.length - 1]}.jpg`;
-  return `<picture class="ph ${cls}" style="--ar:${p.w}/${p.h};--pc:${p.color}"><source type="image/webp" srcset="${set('webp')}" sizes="${sizes}"><img class="dev" src="${fallback}" srcset="${set('jpg')}" sizes="${sizes}" width="${p.w}" height="${p.h}" alt="${esc(alt)}" loading="${eager ? 'eager' : 'lazy'}" decoding="async"></picture>`;
-}
-
-const edge = (n) => `<span class="edge">${site.edgeCode}<i>▸ ${n}</i><i>${n}A</i></span>`;
+const edge = (n) => `<span class="edge" data-edge>${esc(site.edgeCode)}<i>▸ ${n}</i><i>${n}A</i></span>`;
+const exifText = (e) => (e ? Object.values(e).filter(Boolean).join('　') : '');
 
 function head({ page, title, desc = site.description, theme = 'paper' }) {
   const full = title ? `${title} | ${site.title}` : `${site.title} | 摄影作品与影像`;
@@ -38,6 +36,7 @@ function head({ page, title, desc = site.description, theme = 'paper' }) {
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta property="og:type" content="website">
+<meta property="og:site_name" content="${esc(site.title)}">
 <meta property="og:title" content="${esc(full)}">
 <meta property="og:description" content="${esc(desc)}">
 <meta property="og:image" content="${site.url}og.jpg">
@@ -56,9 +55,17 @@ function header(page) {
   const link = (href, label, key) =>
     `<a href="${href}"${page === key ? ' aria-current="page"' : ''}><span class="roll" data-t="${label}"><span>${label}</span></span></a>`;
   return `<header class="hdr" data-hdr>
-<a class="brand" href="index.html" aria-label="${site.title} 首页">${moonSVG({ id: 'hm', cls: 'brand-moon' })}<span class="brand-en">${site.name}</span><span class="brand-zh">${site.nameZh}</span></a>
+<a class="brand" href="index.html" aria-label="${esc(site.title)} 首页">${moonSVG({ id: 'hm', cls: 'brand-moon' })}<span class="brand-en">${esc(site.name)}</span><span class="brand-zh">${esc(site.nameZh)}</span></a>
 <nav class="nav" aria-label="主导航">${link('works.html', '作品', 'works')}${link('films.html', '影像', 'films')}${link('about.html', '关于', 'about')}</nav>
 </header>`;
+}
+
+function contactLines(big = false) {
+  const c = big ? 'copy big' : 'copy';
+  return [
+    contact.wechat && `<p><span class="k">微信</span><button type="button" class="${c}" data-copy="${esc(contact.wechat)}">${esc(contact.wechat)}</button></p>`,
+    contact.email && `<p><span class="k">邮箱</span><button type="button" class="${c}" data-copy="${esc(contact.email)}">${esc(contact.email)}</button></p>`,
+  ].filter(Boolean).join('\n');
 }
 
 function footer() {
@@ -67,14 +74,13 @@ function footer() {
 <div class="ftr-inner">
 <div class="ftr-moon">${moonSVG({ id: 'fm', cls: 'ftr-svg' })}</div>
 <div class="ftr-main">
-<p class="ftr-word"><span class="fw-en">${site.name}</span><span class="fw-zh">${site.nameZh}</span></p>
+<p class="ftr-word"><span class="fw-en">${esc(site.name)}</span><span class="fw-zh">${esc(site.nameZh)}</span></p>
 <div class="ftr-contact">
-<p><span class="k">微信</span><button type="button" class="copy" data-copy="${esc(contact.wechat)}">${esc(contact.wechat)}</button></p>
-<p><span class="k">邮箱</span><button type="button" class="copy" data-copy="${esc(contact.email)}">${esc(contact.email)}</button></p>
+${contactLines()}
 ${soc.length ? `<p class="ftr-soc">${soc.map((s) => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.label)}</a>`).join('')}</p>` : ''}
 </div>
 <p class="ftr-copy">${esc(contact.copyright)}</p>
-${site.samples ? `<p class="ftr-credit">${esc(site.sampleCredit)}</p>` : ''}
+${site.samples && site.sampleCredit ? `<p class="ftr-credit">${esc(site.sampleCredit)}</p>` : ''}
 </div>
 </div>
 <p class="sr-only" aria-live="polite" data-live></p>
@@ -83,34 +89,53 @@ ${site.samples ? `<p class="ftr-credit">${esc(site.sampleCredit)}</p>` : ''}
 </html>`;
 }
 
+function playerMarkup() {
+  return `<div class="player" data-player hidden role="dialog" aria-modal="true" aria-label="视频播放">
+<div class="player-box" data-player-box><div class="player-frame" data-player-frame></div>
+<div class="player-bar"><a data-player-link href="#" target="_blank" rel="noopener">在 B站 打开</a><button type="button" data-player-close>关闭</button></div></div>
+</div>`;
+}
+
+function filmGrid() {
+  if (!films.length) return '<p class="empty">影片整理中。</p>';
+  return `<div class="film-grid">${films
+    .map((f) => {
+      const ready = Boolean(String(f.bvid || '').trim());
+      return `<article class="film">
+<button type="button" class="film-btn" ${ready ? `data-bvid="${esc(f.bvid.trim())}"` : 'aria-disabled="true"'} aria-label="${ready ? '播放' : '整理中'}：${esc(f.title_zh)}">${picture(f.src, { sizes: '(max-width: 860px) 92vw, 30vw' })}<span class="film-state">${ready ? '播放' : '整理中'}</span></button>
+<h3>${esc(f.title_zh)}</h3><p>${esc(f.title_en || '')}<span>${esc(f.kind || '')}</span></p>
+</article>`;
+    })
+    .join('')}</div>`;
+}
+
 // ── Home ────────────────────────────────────────────────────
 function home() {
-  const totalFrames = series.reduce((a, s) => a + photos[s.slug].length, 0);
+  const totalFrames = series.reduce((a, s) => a + s.frames.length, 0);
   const list = series
     .map((s) => {
-      const p = photo(s.slug, 1);
-      const cover = `photos/${s.slug}/${p.base}-${p.widths[0]}.webp`;
-      return `<li><a href="${seriesHref(s)}" data-cover="${cover}" data-ar="${p.w}/${p.h}"><span class="sl-zh">${esc(s.zh)}</span><span class="sl-en">${esc(s.en)}</span><span class="sl-n">${photos[s.slug].length} 格</span></a></li>`;
+      const p = P(s.frames[0].src);
+      return `<li><a href="${seriesHref(s)}" data-cover="${p ? smallest(p) : ''}" data-ar="${p ? `${p.w}/${p.h}` : '3/2'}"><span class="sl-zh">${esc(s.zh)}</span><span class="sl-en">${esc(s.en)}</span><span class="sl-n">${s.frames.length} 格</span></a></li>`;
     })
     .join('');
   let k = 0;
-  const picks = series.flatMap((s) => photos[s.slug].slice(0, 4).map((p) => [s, p.n]));
-  const strip = picks
-    .map(([s, n]) => {
+  const strip = series
+    .flatMap((s) => s.frames.slice(0, 4).map((f, i) => [s, f, i + 1]))
+    .map(([s, f, n]) => {
       k += 1;
-      return `<figure class="sf"><a href="${seriesHref(s)}#f${n}" aria-label="${esc(s.zh)} 第 ${n} 格">${picture(s.slug, n, { sizes: '(max-width: 760px) 70vw, 34vw', alt: s.frames[n - 1]?.caption || '' })}</a><figcaption>${edge(k)}</figcaption></figure>`;
+      return `<figure class="sf"><a href="${seriesHref(s)}#f${n}" aria-label="${esc(s.zh)} 第 ${n} 格">${picture(f.src, { sizes: '(max-width: 860px) 70vw, 34vw', alt: f.caption || '' })}</a><figcaption>${edge(k)}</figcaption></figure>`;
     })
     .join('');
   return `${head({ page: 'home', title: '' })}
 <div class="pre" data-pre aria-hidden="true">
 <div class="pre-moon">${moonSVG({ id: 'pm', cls: 'pre-svg' })}</div>
-<p class="pre-word"><span>${site.name}</span><span>${site.nameZh}</span></p>
+<p class="pre-word"><span>${esc(site.name)}</span><span>${esc(site.nameZh)}</span></p>
 </div>
 <main id="main">
 <section class="hero" data-hero>
-<div class="hero-moon" data-hero-moon>${moonSVG({ id: 'hero', cls: 'hero-svg', label: 'Quietime 月亮标志' })}</div>
+<div class="hero-moon" data-hero-moon>${moonSVG({ id: 'hero', cls: 'hero-svg', label: `${site.name} 月亮标志` })}</div>
 <div class="hero-text">
-<h1 class="hero-title"><span class="sr-only">${site.title}：</span>${site.statement.zh.map((l) => `<span class="line"><span>${esc(l)}</span></span>`).join('')}</h1>
+<h1 class="hero-title" data-split><span class="sr-only">${esc(site.title)}：</span>${site.statement.zh.map((l) => `<span class="line"><span>${esc(l)}</span></span>`).join('')}</h1>
 <p class="hero-en">${esc(site.statement.en)}</p>
 </div>
 <p class="hero-cue" aria-hidden="true"><span class="cue-dot"></span>向下</p>
@@ -136,61 +161,38 @@ ${playerMarkup()}
 
 <section class="about-teaser" aria-labelledby="h-about">
 <h2 id="h-about" class="sr-only">关于</h2>
-<p class="big-quote">${esc(about.intro[0])}</p>
+<p class="big-quote">${esc(about.intro[0] || '')}</p>
 <p class="more-wrap"><a class="more" href="about.html">关于工作室</a></p>
 </section>
 </main>
 ${footer()}`;
 }
 
-function playerMarkup() {
-  return `<div class="player" data-player hidden role="dialog" aria-modal="true" aria-label="视频播放">
-<div class="player-box"><div class="player-frame" data-player-frame></div>
-<div class="player-bar"><a data-player-link href="#" target="_blank" rel="noopener">在 B站 打开</a><button type="button" data-player-close>关闭</button></div></div>
-</div>`;
-}
-
-function filmGrid() {
-  return `<div class="film-grid">${films
-    .map((f) => {
-      const [slug, n] = f.still.split('/');
-      const ready = Boolean(f.bvid);
-      return `<article class="film">
-<button type="button" class="film-btn" ${ready ? `data-bvid="${esc(f.bvid)}"` : 'aria-disabled="true"'} aria-label="${ready ? '播放' : '整理中'}：${esc(f.zh)}">${picture(slug, +n, { sizes: '(max-width: 760px) 92vw, 30vw', alt: '' })}<span class="film-state">${ready ? '播放' : '整理中'}</span></button>
-<h3>${esc(f.zh)}</h3><p>${esc(f.en)}<span>${esc(f.kind)}</span></p>
-</article>`;
-    })
-    .join('')}</div>`;
-}
-
 // ── Works ───────────────────────────────────────────────────
 function works() {
   const list = series
-    .map((s, i) => {
-      const n = photos[s.slug].length;
-      return `<article class="ws ${i % 2 ? 'ws-r' : ''}">
-<a class="ws-img" href="${seriesHref(s)}" aria-label="进入系列 ${esc(s.zh)}">${picture(s.slug, 1, { sizes: '(max-width: 760px) 92vw, 52vw', alt: s.frames[0]?.caption || '' })}</a>
-<div class="ws-text"><h2><a href="${seriesHref(s)}">${esc(s.zh)}</a></h2><p class="ws-en">${esc(s.en)}</p><p class="ws-st">${esc(s.statement.zh)}</p><p class="ws-n">${n} 格</p></div>
-</article>`;
-    })
+    .map((s, i) => `<article class="ws ${i % 2 ? 'ws-r' : ''}">
+<a class="ws-img" href="${seriesHref(s)}" aria-label="进入系列 ${esc(s.zh)}">${picture(s.frames[0].src, { sizes: '(max-width: 860px) 92vw, 52vw', alt: s.frames[0].caption || '' })}</a>
+<div class="ws-text"><h2><a href="${seriesHref(s)}">${esc(s.zh)}</a></h2><p class="ws-en">${esc(s.en)}</p><p class="ws-st">${esc(s.statement.zh)}</p><p class="ws-n">${s.frames.length} 格</p></div>
+</article>`)
     .join('');
   const sheets = series
     .map((s) => {
-      const cells = photos[s.slug]
-        .map(
-          (p) =>
-            `<a class="sc" href="${seriesHref(s)}#f${p.n}" data-full="photos/${s.slug}/${p.base}-${p.widths[p.widths.length - 1]}.webp" aria-label="${esc(s.zh)} 第 ${p.n} 格">${picture(s.slug, p.n, { sizes: '(max-width: 760px) 45vw, 18vw', alt: s.frames[p.n - 1]?.caption || '' })}<span class="sc-n">${p.n}</span></a>`,
-        )
+      const cells = s.frames
+        .map((f, i) => {
+          const p = P(f.src);
+          return `<a class="sc" href="${seriesHref(s)}#f${i + 1}" data-full="${p ? largest(p) : ''}" aria-label="${esc(s.zh)} 第 ${i + 1} 格">${picture(f.src, { sizes: '(max-width: 860px) 45vw, 18vw', alt: f.caption || '' })}<span class="sc-n">${i + 1}</span></a>`;
+        })
         .join('');
       return `<section class="sheet"><h2>${esc(s.zh)}<span>${esc(s.en)}</span></h2><div class="sheet-grid">${cells}</div></section>`;
     })
     .join('');
-  return `${head({ page: 'works', title: '作品', desc: `Quietime 静夜工作室的摄影系列：${series.map((s) => s.zh).join('、')}。` })}
+  return `${head({ page: 'works', title: '作品', desc: `${site.title}的摄影系列：${series.map((s) => s.zh).join('、')}。` })}
 <main id="main" class="works">
-<header class="page-head"><h1>作品</h1>
+<header class="page-head"><h1 data-split><span class="line"><span>作品</span></span></h1>
 <div class="toggle" role="group" aria-label="查看方式"><button type="button" aria-pressed="true" data-view="list">系列</button><button type="button" aria-pressed="false" data-view="sheet">印样</button></div>
 </header>
-${site.samples ? `<p class="sample-note">当前展示的是示例影像，Quietime 的作品正在整理。</p>` : ''}
+${site.samples ? `<p class="sample-note">当前展示的是示例影像，${esc(site.name)} 的作品正在整理。</p>` : ''}
 <div class="w-list" data-panel="list">${list}</div>
 <div class="w-sheet" data-panel="sheet" hidden>${sheets}<div class="loupe" data-loupe aria-hidden="true"></div></div>
 </main>
@@ -199,50 +201,47 @@ ${footer()}`;
 
 // ── Series ──────────────────────────────────────────────────
 function seriesPage(s, i) {
-  const list = photos[s.slug];
   const next = series[(i + 1) % series.length];
-  const data = list.map((p) => ({
-    src: `photos/${s.slug}/${p.base}-${p.widths[p.widths.length - 1]}.webp`,
-    w: p.w,
-    h: p.h,
-    cap: s.frames[p.n - 1]?.caption || '',
-    exif: p.exif,
-  }));
+  const fig = (f, n, cls) => {
+    const p = P(f.src);
+    const tall = p && p.h > p.w;
+    const attrs = p ? ` href="${largest(p)}" data-pswp-width="${p.w}" data-pswp-height="${p.h}" data-cap="${esc(f.caption || '')}" data-exif="${esc(exifText(p.exif))}" data-n="${n}"` : '';
+    return `<figure class="fr ${cls}${tall ? ' is-tall' : ''}" id="f${n}" data-frame="${n}"${tall ? ` style="--maxw:calc(78vh * ${p.w} / ${p.h})"` : ''}><a class="fr-open"${attrs} aria-label="放大查看第 ${n} 格 ${esc(f.caption || '')}">${picture(f.src, { sizes: cls === 'fr-wide' ? '(max-width: 860px) 100vw, 80vw' : '(max-width: 860px) 100vw, 50vw', alt: f.caption || '', eager: n === 1 })}</a><figcaption>${edge(n)}<span class="cap">${esc(f.caption || '')}</span></figcaption></figure>`;
+  };
   let body = '';
-  for (let k = 0; k < list.length; k++) {
-    const p = list[k];
-    const f = s.frames[k] || { layout: 'right', caption: '' };
-    const fig = (q, fr, cls) =>
-      `<figure class="fr ${cls}${q.h > q.w ? ' is-tall' : ''}" id="f${q.n}" data-frame="${q.n}"${q.h > q.w ? ` style="--maxw:calc(78vh * ${q.w} / ${q.h})"` : ''}><button type="button" class="fr-open" data-lb="${q.n - 1}" aria-label="放大查看第 ${q.n} 格 ${esc(fr.caption)}">${picture(s.slug, q.n, { sizes: cls === 'fr-wide' ? '(max-width: 760px) 100vw, 80vw' : '(max-width: 760px) 100vw, 50vw', alt: fr.caption, eager: k === 0 })}</button><figcaption>${edge(q.n)}<span class="cap">${esc(fr.caption)}</span></figcaption></figure>`;
-    if (f.layout === 'pair' && list[k + 1] && (s.frames[k + 1] || {}).layout === 'pair') {
-      body += `<div class="fr-pair">${fig(p, f, 'fr-p')}${fig(list[k + 1], s.frames[k + 1], 'fr-p')}</div>`;
+  const fr = s.frames;
+  for (let k = 0; k < fr.length; k++) {
+    const f = fr[k];
+    if (f.layout === 'pair' && fr[k + 1] && fr[k + 1].layout === 'pair') {
+      body += `<div class="fr-pair">${fig(f, k + 1, 'fr-p')}${fig(fr[k + 1], k + 2, 'fr-p')}</div>`;
       k += 1;
     } else {
-      body += fig(p, f, `fr-${f.layout === 'pair' ? 'right' : f.layout}`);
+      const lay = ['wide', 'right', 'left', 'small'].includes(f.layout) ? f.layout : 'right';
+      body += fig(f, k + 1, `fr-${lay}`);
     }
   }
-  return `${head({ page: 'series', title: s.zh, desc: s.statement.zh })}
+  const meta = [['画格', String(fr.length)], ...s.meta];
+  return `${head({ page: 'series', title: s.zh, desc: s.statement.zh || site.description })}
 <main id="main" class="series">
 <header class="s-head">
-<h1 class="s-title"><span class="line"><span>${esc(s.zh)}</span></span></h1>
+<h1 class="s-title" data-split><span class="line"><span>${esc(s.zh)}</span></span></h1>
 <p class="s-en">${esc(s.en)}</p>
-<dl class="s-meta">${s.meta.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
+<dl class="s-meta">${meta.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
 </header>
-<div class="s-statement"><p class="zh" data-words>${esc(s.statement.zh)}</p><p class="en">${esc(s.statement.en)}</p></div>
-${site.samples ? `<p class="sample-note">示例影像，Quietime 的作品正在整理。</p>` : ''}
-<div class="frames">${body}</div>
-<nav class="s-next" aria-label="下一个系列"><a href="${seriesHref(next)}"><span class="k">下一卷</span><span class="t">${esc(next.zh)}</span><span class="e">${esc(next.en)}</span>${picture(next.slug, 1, { sizes: '(max-width: 760px) 92vw, 40vw', alt: '' })}</a></nav>
-<p class="counter" aria-hidden="true" data-counter><span data-cur>1</span><span class="of">/ ${list.length}</span></p>
+${s.statement.zh || s.statement.en ? `<div class="s-statement">${s.statement.zh ? `<p class="zh" data-words>${esc(s.statement.zh)}</p>` : ''}${s.statement.en ? `<p class="en">${esc(s.statement.en)}</p>` : ''}</div>` : '<div class="s-gap"></div>'}
+${site.samples ? `<p class="sample-note">示例影像，${esc(site.name)} 的作品正在整理。</p>` : ''}
+<div class="frames" data-gallery>${body}</div>
+${series.length > 1 ? `<nav class="s-next" aria-label="下一个系列"><a href="${seriesHref(next)}"><span class="k">下一卷</span><span class="t">${esc(next.zh)}</span><span class="e">${esc(next.en)}</span>${picture(next.frames[0].src, { sizes: '(max-width: 860px) 92vw, 40vw' })}</a></nav>` : ''}
+<p class="counter" aria-hidden="true" data-counter><span data-cur>1</span><span class="of">/ ${fr.length}</span></p>
 </main>
-<script type="application/json" id="frames-data">${JSON.stringify(data).replace(/</g, '\\u003c')}</script>
 ${footer()}`;
 }
 
 // ── Films ───────────────────────────────────────────────────
 function filmsPage() {
-  return `${head({ page: 'films', title: '影像', desc: 'Quietime 静夜工作室的短片、Vlog 与幕后。', theme: 'room' })}
+  return `${head({ page: 'films', title: '影像', desc: `${site.title}的短片、Vlog 与幕后。`, theme: 'room' })}
 <main id="main" class="films-page">
-<header class="page-head"><h1>影像</h1><p class="lede">短片、Vlog 与幕后，在 B站 更新。点开即可在这里播放。</p></header>
+<header class="page-head"><h1 data-split><span class="line"><span>影像</span></span></h1><p class="lede">短片、Vlog 与幕后，在 B站 更新。点开即可在这里播放。</p></header>
 ${filmGrid()}
 </main>
 ${playerMarkup()}
@@ -251,22 +250,21 @@ ${footer()}`;
 
 // ── About ───────────────────────────────────────────────────
 function aboutPage() {
-  return `${head({ page: 'about', title: '关于', desc: about.intro[0] })}
+  return `${head({ page: 'about', title: '关于', desc: about.intro[0] || site.description })}
 <main id="main" class="about">
-<header class="page-head"><h1>关于</h1></header>
+<header class="page-head"><h1 data-split><span class="line"><span>关于</span></span></h1></header>
 <div class="ab-grid">
 <div class="ab-moon" data-about-moon>${moonSVG({ id: 'am', cls: 'ab-svg' })}</div>
 <div class="ab-text">${about.intro.map((t) => `<p>${esc(t)}</p>`).join('')}</div>
 </div>
-<section class="ab-services" aria-labelledby="h-svc"><h2 id="h-svc">可以一起做的事</h2>
-<dl>${about.services.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl></section>
+${about.services.length ? `<section class="ab-services" aria-labelledby="h-svc"><h2 id="h-svc">可以一起做的事</h2>
+<dl>${about.services.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl></section>` : ''}
 <section class="ab-contact" aria-labelledby="h-ct"><h2 id="h-ct">联系</h2>
-<p class="ab-lede">告诉我们想拍什么、在哪里、大概什么时候，我们会在两天内回复。</p>
+<p class="ab-lede">告诉我们想拍什么、在哪里、大概什么时候，我们会尽快回复。</p>
 <div class="ab-ways">
-<p><span class="k">微信</span><button type="button" class="copy big" data-copy="${esc(contact.wechat)}">${esc(contact.wechat)}</button></p>
-<p><span class="k">邮箱</span><button type="button" class="copy big" data-copy="${esc(contact.email)}">${esc(contact.email)}</button></p>
+${contactLines(true)}
 </div>
-<p class="ab-hint">点击即可复制。也可以直接<a href="mailto:${esc(contact.email)}">写一封邮件</a>。</p>
+${contact.email ? `<p class="ab-hint">点击即可复制。也可以直接<a href="mailto:${esc(contact.email)}">写一封邮件</a>。</p>` : ''}
 </section>
 </main>
 ${footer()}`;

@@ -1,0 +1,137 @@
+# Quietime 静夜工作室 管理后台（Sveltia CMS，兼容 Decap CMS 配置）
+# 登录方式：选择“Sign In Using Access Token / 使用访问令牌登录”，填入 GitHub 个人访问令牌。
+# 每次保存都会提交到 main 分支，GitHub Actions 约两分钟后自动发布。
+backend:
+  name: github
+  repo: Quietime/quietime.github.io
+  branch: main
+  commit_messages:
+    create: '新增 {{collection}}：{{slug}}'
+    update: '更新 {{collection}}：{{slug}}'
+    delete: '删除 {{collection}}：{{slug}}'
+    uploadMedia: '上传 {{path}}'
+    deleteMedia: '删除 {{path}}'
+
+site_url: https://quietime.github.io
+display_url: https://quietime.github.io
+logo:
+  src: /favicon.svg
+
+media_folder: content/uploads
+public_folder: /content/uploads
+
+slug:
+  encoding: ascii
+  clean_accents: true
+  sanitize_replacement: '-'
+
+collections:
+  - name: series
+    label: 作品系列
+    label_singular: 系列
+    description: 每个系列一个文件夹。照片上传后会和系列放在一起，网站会自动生成各种尺寸。建议上传长边 2400 到 3000 像素、5MB 以内的 JPG。
+    folder: content/series
+    path: '{{slug}}/index'
+    format: json
+    extension: json
+    create: true
+    delete: true
+    identifier_field: title_en
+    summary: '{{title_zh}}　{{title_en}}'
+    sortable_fields: [order, title_zh]
+    media_folder: ''
+    public_folder: ''
+    fields:
+      - { name: title_zh, label: 中文标题, widget: string }
+      - { name: title_en, label: 英文标题, widget: string, hint: 也用作网址，例如 Between Tides 会变成 series-between-tides.html }
+      - { name: order, label: 排序, widget: number, value_type: int, default: 100, hint: 数字小的排在前面 }
+      - { name: draft, label: 暂不发布, widget: boolean, default: false, required: false }
+      - { name: statement_zh, label: 系列自述（中文）, widget: text, required: false }
+      - { name: statement_en, label: 系列自述（英文）, widget: text, required: false }
+      - name: meta
+        label: 拍摄信息
+        label_singular: 一项
+        widget: list
+        required: false
+        summary: '{{k}}　{{v}}'
+        hint: 例如 相机 Leica M6，胶片 Portra 400，地点 吉林。画格数量会自动计算。
+        fields:
+          - { name: k, label: 项目, widget: string }
+          - { name: v, label: 内容, widget: string }
+      - name: frames
+        label: 照片
+        label_singular: 一张照片
+        widget: list
+        summary: '{{caption}}'
+        hint: 按观看顺序排列，可以拖动调整。
+        fields:
+          - { name: image, label: 照片, widget: image }
+          - { name: caption, label: 说明, widget: string, required: false }
+          - name: layout
+            label: 排法
+            widget: select
+            default: right
+            options:
+              - { label: 宽幅居中, value: wide }
+              - { label: 偏右单张, value: right }
+              - { label: 偏左单张, value: left }
+              - { label: 小图, value: small }
+              - { label: 与下一张并排, value: pair }
+
+  - name: pages
+    label: 网站设置
+    files:
+      - name: films
+        label: B站影像
+        file: content/films.json
+        format: json
+        media_folder: /content/films
+        public_folder: /content/films
+        fields:
+          - name: films
+            label: 影片
+            label_singular: 一部影片
+            widget: list
+            summary: '{{title_zh}}　{{bvid}}'
+            fields:
+              - { name: bvid, label: BV 号, widget: string, required: false, hint: 例如 BV1xx411c7mD。留空时显示“整理中”。 }
+              - { name: title_zh, label: 中文片名, widget: string }
+              - { name: title_en, label: 英文片名, widget: string, required: false }
+              - { name: kind, label: 类型, widget: string, required: false, hint: 例如 短片、Vlog、幕后 }
+              - { name: cover, label: 封面, widget: image, hint: 建议 16:9，1920×1080 }
+
+      - name: settings
+        label: 基本信息与联系方式
+        file: content/settings.json
+        format: json
+        fields:
+          - { name: name, label: 英文名, widget: string }
+          - { name: name_zh, label: 中文名, widget: string }
+          - { name: description, label: 网站简介（搜索引擎显示）, widget: text }
+          - { name: url, label: 网站地址, widget: string }
+          - { name: statement_zh, label: 首页标语（中文，每行一句）, widget: text }
+          - { name: statement_en, label: 首页标语（英文）, widget: text, required: false }
+          - { name: edge_code, label: 胶片边码文字, widget: string, hint: 印在每张照片下方，例如 QUIETIME 400 }
+          - { name: wechat, label: 微信号, widget: string, required: false }
+          - { name: email, label: 邮箱, widget: string, required: false }
+          - { name: copyright, label: 版权声明, widget: string }
+          - name: socials
+            label: 社交平台
+            label_singular: 一个平台
+            widget: list
+            summary: '{{label}}'
+            hint: 填了链接才会显示在网站上。
+            fields:
+              - { name: label, label: 名称, widget: string }
+              - { name: url, label: 链接, widget: string, required: false }
+          - { name: about_intro, label: 关于页介绍（段落之间空一行）, widget: text }
+          - name: services
+            label: 服务项目
+            label_singular: 一项服务
+            widget: list
+            summary: '{{title}}'
+            fields:
+              - { name: title, label: 名称, widget: string }
+              - { name: text, label: 说明, widget: string, required: false }
+          - { name: samples, label: 目前使用示例照片, widget: boolean, required: false, hint: 换成自己的作品后关掉，示例说明就会消失 }
+          - { name: sample_credit, label: 示例照片来源说明, widget: text, required: false }

@@ -1,6 +1,8 @@
 node_modules/
 dist/
+.cache/
 site/*.html
 site/public/photos/
-content/photos.json
+site/public/admin/sveltia-cms.mjs
+site/public/admin/chunks/
 .DS_Store

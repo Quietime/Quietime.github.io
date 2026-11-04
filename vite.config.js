@@ -15,6 +15,7 @@ export default defineConfig({
     outDir: resolve(here, 'dist'),
     emptyOutDir: true,
     assetsInlineLimit: 0,
+    chunkSizeWarningLimit: 700,
     rollupOptions: { input: Object.fromEntries(pages.map((f) => [f.replace(/\.html$/, ''), resolve(root, f)])) },
   },
   server: { host: true },

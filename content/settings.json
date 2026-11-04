@@ -1,0 +1,55 @@
+{
+  "name": "Quietime",
+  "name_zh": "静夜工作室",
+  "description": "Quietime 静夜工作室，摄影作品、影像与委托拍摄。",
+  "url": "https://quietime.github.io/",
+  "statement_zh": "夜色替我们收起喧哗，\n剩下的光，才肯慢慢落进底片里。",
+  "statement_en": "Photographs made after the noise has gone, when the light finally slows down.",
+  "edge_code": "QUIETIME 400",
+  "samples": true,
+  "sample_credit": "示例影像来自 Kodak Lossless True Color Image Suite（Kodak PhotoCD PCD0992），Eastman Kodak 公开发布，作品整理完成后替换。",
+  "wechat": "JYGZS2006",
+  "email": "quietime@foxmail.qq.com",
+  "copyright": "Copyright © Quietime Photography. All rights reserved.",
+  "socials": [
+    {
+      "label": "B站",
+      "url": ""
+    },
+    {
+      "label": "小红书",
+      "url": ""
+    },
+    {
+      "label": "微博",
+      "url": ""
+    },
+    {
+      "label": "抖音",
+      "url": ""
+    },
+    {
+      "label": "Instagram",
+      "url": ""
+    }
+  ],
+  "about_intro": "Quietime 静夜工作室相信，好的照片多半不是抓住的，而是等来的。我们习惯在人声退去之后才开始工作，给光一点时间，也给被拍的人一点时间。\n\n工作室承接人像、空间与品牌委托，也持续进行自己的长期系列。每一次拍摄，我们都希望留下的不只是好看的画面，还有那一刻真实的温度。",
+  "services": [
+    {
+      "title": "人像与家庭",
+      "text": "在熟悉的地方慢慢拍，不赶时间。"
+    },
+    {
+      "title": "空间与建筑",
+      "text": "记录一个地方在不同光线里的样子。"
+    },
+    {
+      "title": "品牌与商业",
+      "text": "为产品和团队拍摄有呼吸感的画面。"
+    },
+    {
+      "title": "授权与展览",
+      "text": "作品授权、画册与展览合作。"
+    }
+  ]
+}

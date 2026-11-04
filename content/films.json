@@ -1,0 +1,25 @@
+{
+  "films": [
+    {
+      "bvid": "",
+      "title_zh": "一卷胶片的一天",
+      "title_en": "A Day with One Roll",
+      "kind": "短片",
+      "cover": "/content/films/a-day-with-one-roll.jpg"
+    },
+    {
+      "bvid": "",
+      "title_zh": "暗房笔记",
+      "title_en": "Darkroom Notes",
+      "kind": "幕后",
+      "cover": "/content/films/darkroom-notes.jpg"
+    },
+    {
+      "bvid": "",
+      "title_zh": "等灯亮起来",
+      "title_en": "Waiting for the Lamp",
+      "kind": "Vlog",
+      "cover": "/content/films/waiting-for-the-lamp.jpg"
+    }
+  ]
+}

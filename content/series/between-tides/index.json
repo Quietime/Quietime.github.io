@@ -1,0 +1,49 @@
+{
+  "title_zh": "潮汐之间",
+  "title_en": "Between Tides",
+  "order": 10,
+  "statement_zh": "海并不总是在涨落。有些下午，它只是把船轻轻放回原处，让风替人说话。这一组画格记下的，是涨潮与退潮之间那一小段迟疑。",
+  "statement_en": "The sea does not always rise or fall. Some afternoons it simply leaves the boat where it was and lets the wind do the talking. These frames keep the short hesitation between two tides.",
+  "meta": [
+    {
+      "k": "介质",
+      "v": "彩色负片扫描"
+    },
+    {
+      "k": "来源",
+      "v": "Kodak PhotoCD 示例"
+    }
+  ],
+  "frames": [
+    {
+      "image": "01.jpg",
+      "caption": "远处的岛把云托住",
+      "layout": "wide"
+    },
+    {
+      "image": "02.jpg",
+      "caption": "没有人催促的船",
+      "layout": "right"
+    },
+    {
+      "image": "03.jpg",
+      "caption": "旧码头还记得重量",
+      "layout": "left"
+    },
+    {
+      "image": "04.jpg",
+      "caption": "浅水里的两个人",
+      "layout": "small"
+    },
+    {
+      "image": "05.jpg",
+      "caption": "帆在远处排队",
+      "layout": "pair"
+    },
+    {
+      "image": "06.jpg",
+      "caption": "风终于到了",
+      "layout": "pair"
+    }
+  ]
+}

@@ -1,0 +1,54 @@
+{
+  "title_zh": "旧墙记",
+  "title_en": "Notes on Old Walls",
+  "order": 30,
+  "statement_zh": "墙不会说话，但会褪色。红漆一层盖过一层，像一个家族反复写下同一个名字。",
+  "statement_en": "Walls do not speak but they do fade. Red paint over red paint, like a family writing the same name again and again.",
+  "meta": [
+    {
+      "k": "介质",
+      "v": "彩色负片扫描"
+    },
+    {
+      "k": "来源",
+      "v": "Kodak PhotoCD 示例"
+    }
+  ],
+  "frames": [
+    {
+      "image": "01.jpg",
+      "caption": "十二扇红窗",
+      "layout": "wide"
+    },
+    {
+      "image": "02.jpg",
+      "caption": "一朵花替窗户开着",
+      "layout": "right"
+    },
+    {
+      "image": "03.jpg",
+      "caption": "门闩停在中午",
+      "layout": "pair"
+    },
+    {
+      "image": "04.jpg",
+      "caption": "屋檐挨着屋檐",
+      "layout": "pair"
+    },
+    {
+      "image": "05.jpg",
+      "caption": "画在墙上的另一座房子",
+      "layout": "left"
+    },
+    {
+      "image": "06.jpg",
+      "caption": "晾在阳光里的颜色",
+      "layout": "right"
+    },
+    {
+      "image": "07.jpg",
+      "caption": "石像也在等人",
+      "layout": "small"
+    }
+  ]
+}
