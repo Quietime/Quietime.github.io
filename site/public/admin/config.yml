@@ -124,6 +124,7 @@ collections:
             fields:
               - { name: label, label: 名称, widget: string }
               - { name: url, label: 链接, widget: string, required: false }
+          - { name: home_teaser, label: 首页底部的一段话, widget: text, required: false }
           - { name: about_intro, label: 关于页介绍（段落之间空一行）, widget: text }
           - name: services
             label: 服务项目

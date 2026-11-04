@@ -1,5 +1,6 @@
 import '@fontsource/noto-serif-sc/400.css';
 import '@fontsource/noto-serif-sc/500.css';
+import '@fontsource/noto-sans-sc/400.css';
 import '@fontsource/questrial/400.css';
 import '@fontsource/barlow-condensed/500.css';
 import 'photoswipe/style.css';
@@ -62,17 +63,17 @@ function leakOut() {
   if (reduce) { root.classList.remove('leak-in'); return; }
   gsap.set(leak, { opacity: 1 });
   gsap.timeline({ onComplete: () => { root.classList.remove('leak-in'); gsap.set(leak, { clearProps: 'all' }); } })
-    .fromTo(leak, { '--flash': 1 }, { '--flash': 0, duration: 0.7, ease: 'power2.out' }, 0)
-    .fromTo(blobs, { xPercent: 20 }, { xPercent: 120, duration: 1.1, ease: 'power2.inOut', stagger: 0.06 }, 0)
-    .to(leak, { opacity: 0, duration: 0.5, ease: 'power1.out' }, 0.6);
+    .fromTo(leak, { '--flash': 0.9 }, { '--flash': 0, duration: 0.5, ease: 'power2.out' }, 0)
+    .fromTo(blobs, { xPercent: 20 }, { xPercent: 110, duration: 0.7, ease: 'power2.inOut', stagger: 0.04 }, 0)
+    .to(leak, { opacity: 0, duration: 0.35, ease: 'power1.out' }, 0.35);
 }
 function leakTo(href) {
   store.set('qt-leak', '1');
   if (reduce) { location.href = href; return; }
   gsap.timeline({ onComplete: () => { location.href = href; } })
     .set(leak, { opacity: 1, '--flash': 0 })
-    .fromTo(blobs, { xPercent: -60, scale: 0.7 }, { xPercent: 20, scale: 1, duration: 0.55, ease: 'power3.in', stagger: 0.05 }, 0)
-    .to(leak, { '--flash': 1, duration: 0.22, ease: 'power2.in' }, 0.38);
+    .fromTo(blobs, { xPercent: -60, scale: 0.7 }, { xPercent: 20, scale: 1, duration: 0.4, ease: 'power3.in', stagger: 0.04 }, 0)
+    .to(leak, { '--flash': 0.9, duration: 0.18, ease: 'power2.in' }, 0.26);
 }
 document.addEventListener('click', (e) => {
   const a = e.target.closest('a[href]');
@@ -114,17 +115,6 @@ const devIO = new IntersectionObserver((entries) => {
   }
 }, { rootMargin: '0px 0px -8% 0px', threshold: 0.12 });
 $$('img.dev').forEach((img) => devIO.observe(img));
-
-/* ── edge codes: a scanner reads them when a frame is hovered (ScrambleText) ── */
-if (fine && !reduce) {
-  $$('.fr, .sf, .sc').forEach((fig) => {
-    const nums = $$('[data-edge] i', fig);
-    if (!nums.length) return;
-    fig.addEventListener('pointerenter', () => nums.forEach((i, k) => {
-      gsap.to(i, { duration: 0.7, delay: k * 0.08, scrambleText: { text: i.dataset.t || (i.dataset.t = i.textContent), chars: DIGITS, speed: 0.5 }, overwrite: true });
-    }));
-  });
-}
 
 /* ── moon (layered SVG) ────────────────────────────────────── */
 function moon(svg) {
@@ -216,7 +206,7 @@ function films() {
     document.removeEventListener('keydown', esc);
     opener?.focus({ preventScroll: true });
   }
-  $$('.film-btn').forEach((b) => b.addEventListener('click', () => {
+  $$('.film-btn, .film-row').forEach((b) => b.addEventListener('click', () => {
     if (!b.dataset.bvid) { if (live) live.textContent = '这部影片还在整理中。'; return; }
     opener = b;
     const id = encodeURIComponent(b.dataset.bvid);
@@ -229,7 +219,7 @@ function films() {
     };
     if (reduce) { load(); } else {
       const state = Flip.getState(box);
-      Flip.fit(box, $('.ph', b), { scale: true });
+      Flip.fit(box, $('.ph', b) || b, { scale: true });
       gsap.fromTo(player, { backgroundColor: 'rgba(14,11,9,0)' }, { backgroundColor: 'rgba(14,11,9,.95)', duration: 0.6 });
       Flip.to(state, { duration: 0.8, ease: 'expo.inOut', scale: true, onComplete: load });
     }
@@ -301,7 +291,7 @@ function home() {
       const dist = () => Math.max(0, track.scrollWidth - innerWidth);
       gsap.to(track, {
         x: () => -dist(), ease: 'none',
-        scrollTrigger: { trigger: strip, start: 'top top', end: () => `+=${dist()}`, pin: true, scrub: 1, invalidateOnRefresh: true, anticipatePin: 1 },
+        scrollTrigger: { trigger: $('[data-strip-vp]'), start: 'center center', end: () => `+=${dist()}`, pin: true, scrub: 1, invalidateOnRefresh: true, anticipatePin: 1 },
       });
     });
   }
@@ -334,8 +324,10 @@ function series() {
     gsap.fromTo(['.s-en', '.s-meta'], { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 1.2, ease: 'expo.out', delay: 0.5, stagger: 0.1 });
     const st = $('[data-words]');
     if (st) {
-      const split = SplitText.create(st, { type: 'chars', charsClass: 'w-ch' });
-      gsap.fromTo(split.chars, { opacity: 0.18 }, { opacity: 1, stagger: 0.05, ease: 'none', scrollTrigger: { trigger: st, start: 'top 80%', end: 'bottom 45%', scrub: 1 } });
+      SplitText.create(st, {
+        type: 'lines', mask: 'lines', autoSplit: true,
+        onSplit: (self) => gsap.from(self.lines, { yPercent: 100, duration: 1.1, ease: 'expo.out', stagger: 0.09, scrollTrigger: { trigger: st, start: 'top 85%', once: true } }),
+      });
     }
   }
 
@@ -364,7 +356,14 @@ function series() {
     showHideAnimationType: reduce ? 'none' : 'zoom',
     padding: { top: 70, bottom: 120, left: 24, right: 24 },
     wheelToZoom: false,
-    closeTitle: '关闭', zoomTitle: '放大', arrowPrevTitle: '上一格', arrowNextTitle: '下一格',
+    zoom: false,
+    initialZoomLevel: (z) => Math.min(z.panAreaSize.x / z.elementSize.x, z.panAreaSize.y / z.elementSize.y),
+    secondaryZoomLevel: 1.6,
+    maxZoomLevel: 3,
+    arrowPrevSVG: '<span class="pswp-t">上一格</span>',
+    arrowNextSVG: '<span class="pswp-t">下一格</span>',
+    closeSVG: '<span class="pswp-t">关闭</span>',
+    closeTitle: '关闭', arrowPrevTitle: '上一格', arrowNextTitle: '下一格',
     errorMsg: '这张照片暂时无法加载。',
     indexIndicatorSep: ' / ',
   });
@@ -402,7 +401,7 @@ function works() {
     panels.forEach((p) => { p.hidden = p.dataset.panel !== b.dataset.view; });
     const shown = $(`[data-panel="${b.dataset.view}"]`);
     $$('img.dev', shown).forEach((img) => devIO.observe(img));
-    if (!reduce) gsap.fromTo(shown.children, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.8, ease: 'expo.out', stagger: 0.06 });
+    if (!reduce) gsap.fromTo($$('.ws, .sheet', shown), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.8, ease: 'expo.out', stagger: 0.06 });
     ScrollTrigger.refresh();
   }));
 

@@ -4,7 +4,7 @@ import path from 'node:path';
 import { moonSVG } from './moon.mjs';
 import { ROOT, loadContent } from './content.mjs';
 
-const { site, contact, socials, series, films, about } = await loadContent();
+const { site, contact, socials, series, films, about, homeTeaser } = await loadContent();
 const photos = JSON.parse(await fs.readFile(path.join(ROOT, '.cache/photos.json'), 'utf8'));
 
 const esc = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
@@ -21,6 +21,7 @@ function picture(src, { sizes = '100vw', alt = '', cls = '', eager = false } = {
 }
 
 const edge = (n) => `<span class="edge" data-edge>${esc(site.edgeCode)}<i>▸ ${n}</i><i>${n}A</i></span>`;
+const phrases = (l) => esc(l).split(/(?<=[，。、；！？])/).map((t) => `<span class="nw">${t}</span>`).join('');
 const exifText = (e) => (e ? Object.values(e).filter(Boolean).join('　') : '');
 
 function head({ page, title, desc = site.description, theme = 'paper' }) {
@@ -68,8 +69,18 @@ function contactLines(big = false) {
   ].filter(Boolean).join('\n');
 }
 
-function footer() {
+function footer({ compact = false } = {}) {
   const soc = socials.filter((s) => s.url);
+  if (compact) {
+    return `<footer class="ftr ftr-compact" data-ftr>
+<div class="ftr-inner"><p class="ftr-word"><span class="fw-en">${esc(site.name)}</span><span class="fw-zh">${esc(site.nameZh)}</span></p>
+<p class="ftr-copy">${esc(contact.copyright)}</p>
+${site.samples && site.sampleCredit ? `<p class="ftr-credit">${esc(site.sampleCredit)}</p>` : ''}</div>
+<p class="sr-only" aria-live="polite" data-live></p>
+</footer>
+</body>
+</html>`;
+  }
   return `<footer class="ftr" data-ftr>
 <div class="ftr-inner">
 <div class="ftr-moon">${moonSVG({ id: 'fm', cls: 'ftr-svg' })}</div>
@@ -98,15 +109,15 @@ function playerMarkup() {
 
 function filmGrid() {
   if (!films.length) return '<p class="empty">影片整理中。</p>';
-  return `<div class="film-grid">${films
-    .map((f) => {
-      const ready = Boolean(String(f.bvid || '').trim());
-      return `<article class="film">
-<button type="button" class="film-btn" ${ready ? `data-bvid="${esc(f.bvid.trim())}"` : 'aria-disabled="true"'} aria-label="${ready ? '播放' : '整理中'}：${esc(f.title_zh)}">${picture(f.src, { sizes: '(max-width: 860px) 92vw, 30vw' })}<span class="film-state">${ready ? '播放' : '整理中'}</span></button>
-<h3>${esc(f.title_zh)}</h3><p>${esc(f.title_en || '')}<span>${esc(f.kind || '')}</span></p>
-</article>`;
-    })
-    .join('')}</div>`;
+  const ready = (f) => Boolean(String(f.bvid || '').trim());
+  const attrs = (f) => (ready(f) ? `data-bvid="${esc(f.bvid.trim())}"` : 'aria-disabled="true"');
+  const state = (f) => (ready(f) ? '播放' : '整理中');
+  const [lead, ...rest] = films;
+  return `<div class="screen">
+<button type="button" class="film-btn" ${attrs(lead)} aria-label="${state(lead)}：${esc(lead.title_zh)}">${picture(lead.src, { sizes: '(max-width: 860px) 100vw, 84vw' })}<span class="film-state">${state(lead)}</span></button>
+<div class="screen-cap"><h3>${esc(lead.title_zh)}</h3><p>${esc(lead.title_en || '')}<span>${esc(lead.kind || '')}</span></p></div>
+</div>
+${rest.length ? `<ol class="film-rows">${rest.map((f) => `<li><button type="button" class="film-row" ${attrs(f)} aria-label="${state(f)}：${esc(f.title_zh)}"><span class="fr-t">${esc(f.title_zh)}</span><span class="fr-e">${esc(f.title_en || '')}</span><span class="fr-k">${esc(f.kind || '')}</span><span class="fr-s">${state(f)}</span></button></li>`).join('')}</ol>` : ''}`;
 }
 
 // ── Home ────────────────────────────────────────────────────
@@ -120,10 +131,10 @@ function home() {
     .join('');
   let k = 0;
   const strip = series
-    .flatMap((s) => s.frames.slice(0, 4).map((f, i) => [s, f, i + 1]))
+    .flatMap((s) => s.frames.slice(0, 2).map((f, i) => [s, f, i + 1]))
     .map(([s, f, n]) => {
       k += 1;
-      return `<figure class="sf"><a href="${seriesHref(s)}#f${n}" aria-label="${esc(s.zh)} 第 ${n} 格">${picture(f.src, { sizes: '(max-width: 860px) 70vw, 34vw', alt: f.caption || '' })}</a><figcaption>${edge(k)}</figcaption></figure>`;
+      return `<figure class="sf"><a href="${seriesHref(s)}#f${n}" aria-label="${esc(s.zh)} 第 ${n} 格">${picture(f.src, { sizes: '(max-width: 860px) 70vw, 34vw', alt: f.caption || '' })}</a><figcaption>${edge(k)}${n === 1 ? `<span class="sf-name">${esc(s.zh)}</span>` : ''}</figcaption></figure>`;
     })
     .join('');
   return `${head({ page: 'home', title: '' })}
@@ -135,10 +146,9 @@ function home() {
 <section class="hero" data-hero>
 <div class="hero-moon" data-hero-moon>${moonSVG({ id: 'hero', cls: 'hero-svg', label: `${site.name} 月亮标志` })}</div>
 <div class="hero-text">
-<h1 class="hero-title" data-split><span class="sr-only">${esc(site.title)}：</span>${site.statement.zh.map((l) => `<span class="line"><span>${esc(l)}</span></span>`).join('')}</h1>
+<h1 class="hero-title" data-split><span class="sr-only">${esc(site.title)}：</span>${site.statement.zh.map((l) => `<span class="line"><span>${phrases(l)}</span></span>`).join('')}</h1>
 <p class="hero-en">${esc(site.statement.en)}</p>
 </div>
-<p class="hero-cue" aria-hidden="true"><span class="cue-dot"></span>向下</p>
 </section>
 
 <section class="index" id="works" aria-labelledby="h-works">
@@ -161,7 +171,7 @@ ${playerMarkup()}
 
 <section class="about-teaser" aria-labelledby="h-about">
 <h2 id="h-about" class="sr-only">关于</h2>
-<p class="big-quote">${esc(about.intro[0] || '')}</p>
+<p class="big-quote">${esc(homeTeaser || about.intro[0] || '')}</p>
 <p class="more-wrap"><a class="more" href="about.html">关于工作室</a></p>
 </section>
 </main>
@@ -191,8 +201,8 @@ function works() {
 <main id="main" class="works">
 <header class="page-head"><h1 data-split><span class="line"><span>作品</span></span></h1>
 <div class="toggle" role="group" aria-label="查看方式"><button type="button" aria-pressed="true" data-view="list">系列</button><button type="button" aria-pressed="false" data-view="sheet">印样</button></div>
-</header>
 ${site.samples ? `<p class="sample-note">当前展示的是示例影像，${esc(site.name)} 的作品正在整理。</p>` : ''}
+</header>
 <div class="w-list" data-panel="list">${list}</div>
 <div class="w-sheet" data-panel="sheet" hidden>${sheets}<div class="loupe" data-loupe aria-hidden="true"></div></div>
 </main>
@@ -205,7 +215,8 @@ function seriesPage(s, i) {
   const fig = (f, n, cls) => {
     const p = P(f.src);
     const tall = p && p.h > p.w;
-    const attrs = p ? ` href="${largest(p)}" data-pswp-width="${p.w}" data-pswp-height="${p.h}" data-cap="${esc(f.caption || '')}" data-exif="${esc(exifText(p.exif))}" data-n="${n}"` : '';
+    const ew = p ? p.widths[p.widths.length - 1] : 0;
+    const attrs = p ? ` href="${largest(p)}" data-pswp-width="${ew}" data-pswp-height="${Math.round((p.h * ew) / p.w)}" data-cap="${esc(f.caption || '')}" data-exif="${esc(exifText(p.exif))}" data-n="${n}"` : '';
     return `<figure class="fr ${cls}${tall ? ' is-tall' : ''}" id="f${n}" data-frame="${n}"${tall ? ` style="--maxw:calc(78vh * ${p.w} / ${p.h})"` : ''}><a class="fr-open"${attrs} aria-label="放大查看第 ${n} 格 ${esc(f.caption || '')}">${picture(f.src, { sizes: cls === 'fr-wide' ? '(max-width: 860px) 100vw, 80vw' : '(max-width: 860px) 100vw, 50vw', alt: f.caption || '', eager: n === 1 })}</a><figcaption>${edge(n)}<span class="cap">${esc(f.caption || '')}</span></figcaption></figure>`;
   };
   let body = '';
@@ -229,9 +240,8 @@ function seriesPage(s, i) {
 <dl class="s-meta">${meta.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
 </header>
 ${s.statement.zh || s.statement.en ? `<div class="s-statement">${s.statement.zh ? `<p class="zh" data-words>${esc(s.statement.zh)}</p>` : ''}${s.statement.en ? `<p class="en">${esc(s.statement.en)}</p>` : ''}</div>` : '<div class="s-gap"></div>'}
-${site.samples ? `<p class="sample-note">示例影像，${esc(site.name)} 的作品正在整理。</p>` : ''}
 <div class="frames" data-gallery>${body}</div>
-${series.length > 1 ? `<nav class="s-next" aria-label="下一个系列"><a href="${seriesHref(next)}"><span class="k">下一卷</span><span class="t">${esc(next.zh)}</span><span class="e">${esc(next.en)}</span>${picture(next.frames[0].src, { sizes: '(max-width: 860px) 92vw, 40vw' })}</a></nav>` : ''}
+${series.length > 1 ? `<nav class="s-next" aria-label="下一个系列"><a href="${seriesHref(next)}"><span class="k">下一卷</span><span class="s-next-txt"><span class="t">${esc(next.zh)}</span><span class="e">${esc(next.en)}</span></span>${picture(next.frames[0].src, { sizes: '(max-width: 860px) 92vw, 40vw' })}</a></nav>` : ''}
 <p class="counter" aria-hidden="true" data-counter><span data-cur>1</span><span class="of">/ ${fr.length}</span></p>
 </main>
 ${footer()}`;
@@ -267,7 +277,7 @@ ${contactLines(true)}
 ${contact.email ? `<p class="ab-hint">点击即可复制。也可以直接<a href="mailto:${esc(contact.email)}">写一封邮件</a>。</p>` : ''}
 </section>
 </main>
-${footer()}`;
+${footer({ compact: true })}`;
 }
 
 function notFound() {
@@ -278,7 +288,7 @@ function notFound() {
 <p>你要找的页面不在这卷胶片里。</p>
 <p><a class="more" href="index.html">回到首页</a></p>
 </main>
-${footer()}`;
+${footer({ compact: true })}`;
 }
 
 const out = path.join(ROOT, 'site');

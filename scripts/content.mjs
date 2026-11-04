@@ -55,6 +55,7 @@ export async function loadContent() {
     },
     contact: { wechat: settings.wechat || '', email: settings.email || '', copyright: settings.copyright || '' },
     socials: (settings.socials || []).filter((s) => s && s.label),
+    homeTeaser: settings.home_teaser || '',
     about: {
       intro: String(settings.about_intro || '').split(/\n\s*\n/).map((t) => t.trim()).filter(Boolean),
       services: (settings.services || []).filter((s) => s && s.title).map((s) => [s.title, s.text || '']),

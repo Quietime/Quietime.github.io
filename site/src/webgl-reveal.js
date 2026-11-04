@@ -1,6 +1,6 @@
 // WebGL hover reveal for the home series list (three.js).
-// The cover image follows the pointer on a plane that bends and splits its red channel
-// with the pointer's speed, like a print pulled through developer.
+// The cover sits in the empty left columns and follows the pointer vertically on a plane
+// that bends with the pointer's speed, like a print lifted out of the developer tray.
 import {
   WebGLRenderer, Scene, OrthographicCamera, PlaneGeometry, ShaderMaterial, Mesh, TextureLoader, Vector2,
 } from 'three';
@@ -24,7 +24,7 @@ uniform float uAlpha;
 uniform vec2 uOffset;
 varying vec2 vUv;
 void main() {
-  float r = texture2D(uTex, vUv + uOffset * 0.35).r;
+  float r = texture2D(uTex, vUv + uOffset * 0.1).r;
   vec2 gb = texture2D(uTex, vUv).gb;
   gl_FragColor = vec4(r, gb, uAlpha);
 }`;
@@ -70,12 +70,14 @@ export default function webglReveal(list) {
   const target = { x: 0, y: 0 };
   const pos = { x: 0, y: 0 };
   let active = false;
-  let pw = Math.min(W * 0.24, 330);
+  const gut = () => Math.max(20, W * 0.05);
+  const colW = () => Math.min(((W - 2 * gut()) / 12) * 3 - 24, 330);
+  let pw = colW();
 
   list.addEventListener('pointermove', (e) => { target.x = e.clientX; target.y = e.clientY; });
   links.forEach((a, i) => a.addEventListener('pointerenter', (e) => {
     uniforms.uTex.value = tex[i];
-    pw = Math.min(W * 0.24, 330);
+    pw = colW();
     mesh.scale.set(pw, pw / ratio[i], 1);
     if (!active) { pos.x = target.x = e.clientX; pos.y = target.y = e.clientY; }
     active = true;
@@ -90,10 +92,10 @@ export default function webglReveal(list) {
     if (uniforms.uAlpha.value < 0.002 && !active) return;
     pos.x += (target.x - pos.x) * 0.1;
     pos.y += (target.y - pos.y) * 0.1;
-    const vx = Math.max(-1, Math.min(1, (target.x - pos.x) / 220));
+    const vx = Math.max(-1, Math.min(1, (target.x - pos.x) / 400));
     const vy = Math.max(-1, Math.min(1, (target.y - pos.y) / 220));
-    uniforms.uOffset.value.set(-vx * 0.12, vy * 0.12);
-    mesh.position.set(pos.x - W / 2 + pw / 2 + 32, H / 2 - pos.y, 0);
+    uniforms.uOffset.value.set(-vx * 0.05, vy * 0.12);
+    mesh.position.set(-W / 2 + gut() + pw / 2, H / 2 - pos.y, 0);
     renderer.render(scene, camera);
   });
   return true;
