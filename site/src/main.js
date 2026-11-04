@@ -37,7 +37,9 @@ if (!reduce) {
   gsap.ticker.add((t) => lenis.raf(t * 1000));
   gsap.ticker.lagSmoothing(0);
 }
-const scrollToEl = (el, offset = -90) => (lenis ? lenis.scrollTo(el, { offset, duration: 1.4 }) : el.scrollIntoView());
+const scrollToEl = (el, offset = -90) => (lenis
+  ? lenis.scrollTo(el, { offset, duration: 1.4 })
+  : scrollTo({ top: el.getBoundingClientRect().top + scrollY + offset }));
 
 /* ── film grain texture ────────────────────────────────────── */
 (function grain() {
@@ -138,7 +140,7 @@ function moon(svg) {
 function splitReveal(scope, delay = 0) {
   const targets = $$('[data-split] .line > span', scope);
   if (reduce || !targets.length) return;
-  const split = SplitText.create(targets, { type: 'chars', charsClass: 'ch' });
+  const split = SplitText.create(targets, { type: 'chars', charsClass: 'ch', tag: 'span', aria: 'none' });
   gsap.from(split.chars, { yPercent: 115, duration: 1.25, ease: 'expo.out', stagger: 0.035, delay });
 }
 
@@ -179,7 +181,8 @@ $$('[data-copy]').forEach((b) => {
 /* ── footer moon waxes as the page ends ────────────────────── */
 {
   const svg = $('.ftr-svg');
-  if (svg) {
+  // on home the travelling moon lands in this slot instead
+  if (svg && !(page === 'home' && !reduce && $('[data-stage]'))) {
     const m = moon(svg);
     m.tide(1.4);
     if (!reduce) {
@@ -231,20 +234,83 @@ function films() {
 
 /* ═════════════════ pages ═════════════════ */
 
+/* Scroll-linked rise: the element moves with the scroll position, forwards and backwards. */
+function scrubRise(els, { y = 56, from = 0.12, start = 'top 98%', end = 'top 62%' } = {}) {
+  if (reduce) return;
+  els.forEach((el) => gsap.fromTo(el, { y, opacity: from }, {
+    y: 0, opacity: 1, ease: 'none', scrollTrigger: { trigger: el, start, end, scrub: true },
+  }));
+}
+
+/*
+ * Home is one continuous take. The moon is the subject the camera follows through one night:
+ * crescent in the hero, full moon over the series index, waning as the film strip pans,
+ * setting in the projection room, a new crescent rising again, and finally landing in the
+ * footer as the logo. Every move is tied to the scroll position, so scrolling back plays it in reverse.
+ */
 function home() {
   const hero = $('[data-hero]');
-  const heroMoon = moon($('.hero-svg'));
+  const slot = $('[data-hero-moon]');
+  const heroSvg = $('.hero-svg', slot);
   const pre = $('[data-pre]');
+  const stage = $('[data-stage]');
+  const stageMoon = stage && $('.stage-moon', stage);
+  const inner = stage && $('.stage-inner', stage);
+  const take = Boolean(!reduce && stage && heroSvg);
+  const M = moon(heroSvg);
+  const darkPref = matchMedia('(prefers-color-scheme: dark)').matches;
 
+  if (take) {
+    inner.append(heroSvg);
+    root.classList.add('one-take', 'js-scrub');
+  }
+
+  // layout used by the camera path, measured on every refresh
+  const L = {};
+  const footSlot = $('.ftr-moon');
+  const ftr = $('[data-ftr]');
+  const vp = $('[data-strip-vp]');
+  function measure() {
+    if (!take) return;
+    L.W = innerWidth; L.H = innerHeight; L.m = Math.min(L.W, L.H);
+    L.gut = Math.max(20, L.W * 0.05);
+    const r = slot.getBoundingClientRect();
+    L.B = r.width || L.m * 0.6;
+    L.hx = r.left; L.hy = r.top + scrollY;
+    stageMoon.style.width = stageMoon.style.height = `${L.B}px`;
+    const fs = footSlot.getBoundingClientRect();
+    const fr = ftr.getBoundingClientRect();
+    L.fx = fs.left; L.fw = fs.width || L.B * 0.5; L.fo = fs.top - fr.top; L.fh = fr.height;
+    L.vpH = vp ? vp.getBoundingClientRect().height : 0;
+  }
+  const wide = () => L.W > 860;
+  const S = {
+    hero: () => ({ x: L.hx, y: L.hy, s: 1 }),
+    sky: () => { const s = (L.m * (wide() ? 0.2 : 0.26)) / L.B; return { x: L.W - L.gut - s * L.B, y: L.H * 0.12, s }; },
+    strip: () => { const s = S.sky().s; return { x: L.gut, y: wide() ? Math.max(64, (L.H - L.vpH) / 2 - s * L.B - 18) : L.H * 0.1, s }; },
+    set: () => { const s = (L.m * (wide() ? 0.42 : 0.34)) / L.B; return { x: -s * L.B * 0.35, y: L.H * (wide() ? 0.78 : 0.88), s }; },
+    rise: () => { const s = (L.m * 0.24) / L.B; return { x: L.W - L.gut - s * L.B, y: L.H * 0.08, s }; },
+    land: () => ({ x: L.fx, y: L.H - L.fh + L.fo, s: L.fw / L.B }),
+  };
+  const PH = {
+    cres: { cx: 128, cy: 96 }, full: { cx: 300, cy: 300 }, wane: { cx: 470, cy: 500 },
+    dark: { cx: 600, cy: 650 }, wax: { cx: -60, cy: -80 },
+  };
+  const pos = (k) => ({ x: () => S[k]().x, y: () => S[k]().y, scale: () => S[k]().s });
+  function leg(from, to, st, ph, hl) {
+    const tl = gsap.timeline({ scrollTrigger: { ...st, scrub: 1, invalidateOnRefresh: true } });
+    tl.fromTo(stageMoon, pos(from), { ...pos(to), ease: 'power1.inOut', immediateRender: false }, 0);
+    if (ph) tl.fromTo(M.lit, { attr: PH[ph[0]] }, { attr: PH[ph[1]], ease: 'none', immediateRender: false }, 0);
+    if (hl) tl.fromTo(M.hl, { opacity: hl[0] }, { opacity: hl[1], ease: 'none', immediateRender: false }, 0);
+    return tl;
+  }
+
+  // opening: the moon assembled in the preloader flies into the hero instead of leaving
   const intro = () => {
     splitReveal(hero, 0.05);
-    if (!reduce) {
-      gsap.fromTo('.hero-en', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 1.2, ease: 'expo.out', delay: 0.9 });
-      gsap.fromTo('[data-hero-moon]', { opacity: 0, scale: 0.94 }, { opacity: 1, scale: 1, duration: 1.8, ease: 'expo.out' });
-    }
-    heroMoon.tide(1);
+    if (!reduce) gsap.fromTo('.hero-en', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 1.2, ease: 'expo.out', delay: 0.9 });
+    M.tide(1);
   };
-
   if (pre && !root.classList.contains('pre-seen') && !reduce) {
     const p = moon($('.pre-svg', pre));
     const words = $$('.pre-word span', pre);
@@ -252,26 +318,31 @@ function home() {
     gsap.set(p.lit, { attr: { cx: -470, cy: -260 } });
     gsap.set(p.hl, { opacity: 0, scale: 0.3, svgOrigin: '186 120' });
     gsap.set(words, { yPercent: 120 });
-    const tl = gsap.timeline({ onComplete: () => { pre.remove(); store.set('qt-pre', '1'); } });
+    const tl = gsap.timeline({ onComplete: () => { pre.remove(); stage?.classList.remove('is-flying'); store.set('qt-pre', '1'); } });
     p.bands.forEach((els, i) => tl.to(els, { y: 0, duration: 1.5, ease: 'expo.out' }, 0.1 + i * 0.08));
     tl.to(p.lit, { attr: { cx: 128, cy: 96 }, duration: 1.3, ease: 'power3.inOut' }, 0.75)
       .to(p.hl, { opacity: 1, scale: 1, duration: 0.8, ease: 'back.out(2)' }, 1.75)
-      .to(words, { yPercent: 0, duration: 1, ease: 'expo.out', stagger: 0.08 }, 1.3)
-      .to(pre, { yPercent: -100, duration: 1.1, ease: 'expo.inOut' }, 2.7)
-      .add(intro, 3.05);
-    pre.addEventListener('click', () => tl.progress(0.93));
+      .to(words, { yPercent: 0, duration: 1, ease: 'expo.out', stagger: 0.08 }, 1.3);
+    if (take) {
+      tl.add(() => {
+        const a = $('.pre-moon', pre).getBoundingClientRect();
+        const b = stageMoon.getBoundingClientRect();
+        stage.classList.add('is-flying');
+        gsap.set(inner, { x: a.left - b.left, y: a.top - b.top, scale: a.width / b.width });
+        gsap.set($('.pre-moon', pre), { opacity: 0 });
+      }, 2.7)
+        .to(inner, { x: 0, y: 0, scale: 1, duration: 1.7, ease: 'expo.inOut' }, 2.72)
+        .to(words, { yPercent: -120, duration: 0.6, ease: 'power2.in' }, 2.6)
+        .to(pre, { backgroundColor: 'rgba(27,22,18,0)', duration: 1.2, ease: 'power2.inOut' }, 2.9)
+        .add(intro, 3.3);
+    } else {
+      tl.to(pre, { yPercent: -100, duration: 1.1, ease: 'expo.inOut' }, 2.7).add(intro, 3.05);
+    }
+    pre.addEventListener('click', () => tl.progress(0.97));
   } else {
     pre?.remove();
     intro();
-  }
-
-  // scrolling lets the light fall over the whole moon
-  if (!reduce) {
-    gsap.timeline({ scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: 1 } })
-      .to(heroMoon.lit, { attr: { cx: 300, cy: 300 }, ease: 'none' }, 0)
-      .to(heroMoon.hl, { opacity: 0, ease: 'none' }, 0)
-      .to('[data-hero-moon]', { yPercent: -14, rotate: 8, ease: 'none' }, 0)
-      .to('.hero-text', { yPercent: -30, opacity: 0, ease: 'none' }, 0);
+    if (take) gsap.fromTo(inner, { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 1.6, ease: 'expo.out' });
   }
 
   // series index: WebGL cover follows the pointer (three.js), plain image as fallback
@@ -283,25 +354,79 @@ function home() {
       .catch(() => domReveal(list, rv));
   }
 
-  // film strip: vertical scroll drives the strip sideways
-  const strip = $('[data-strip]');
-  const track = $('[data-strip-track]');
-  if (strip && track && !reduce) {
-    gsap.matchMedia().add('(min-width: 861px)', () => {
-      const dist = () => Math.max(0, track.scrollWidth - innerWidth);
-      gsap.to(track, {
-        x: () => -dist(), ease: 'none',
-        scrollTrigger: { trigger: $('[data-strip-vp]'), start: 'center center', end: () => `+=${dist()}`, pin: true, scrub: 1, invalidateOnRefresh: true, anticipatePin: 1 },
-      });
-    });
+  films();
+  if (reduce) return;
+
+  if (take) {
+    ScrollTrigger.addEventListener('refreshInit', measure);
+    measure();
+    gsap.set(stageMoon, { x: S.hero().x, y: S.hero().y, scale: 1 });
   }
 
-  // print paper turns into the projection room
-  ScrollTrigger.create({
-    trigger: '[data-room]', start: 'top 55%', end: 'bottom 45%',
-    onToggle: (self) => root.classList.toggle('in-room', self.isActive),
+  // ── 1. hero: the light falls over the moon, which rises into the sky
+  gsap.to('.hero-text', { yPercent: -30, opacity: 0, ease: 'none', scrollTrigger: { trigger: hero, start: 'top top', end: 'bottom top', scrub: true } });
+  if (take) leg('hero', 'sky', { trigger: hero, start: 'top top', end: 'bottom top' }, ['cres', 'full'], [1, 0]);
+
+  // ── 2. series index rises with the scroll
+  scrubRise($$('.index .sec-head, .series-list li'));
+  scrubRise($$('.strip-sec .sec-head'));
+
+  // ── 3. film strip: a horizontal pan; the moon crosses the sky with it, frames have depth
+  const strip = $('[data-strip]');
+  const track = $('[data-strip-track]');
+  const mm = gsap.matchMedia();
+  mm.add('(min-width: 861px)', () => {
+    const dist = () => Math.max(0, track.scrollWidth - innerWidth);
+    root.classList.add('strip-pan');
+    const pan = gsap.to(track, {
+      x: () => -dist(), ease: 'none',
+      scrollTrigger: { trigger: vp, start: 'center center', end: () => `+=${dist()}`, pin: true, scrub: 1, invalidateOnRefresh: true, anticipatePin: 1 },
+    });
+    $$('.sf .ph img', track).forEach((img) => {
+      gsap.set(img, { scale: 1.16 });
+      gsap.fromTo(img, { xPercent: -6 }, { xPercent: 6, ease: 'none', scrollTrigger: { trigger: img.closest('.sf'), containerAnimation: pan, start: 'left right', end: 'right left', scrub: true } });
+    });
+    if (take) leg('sky', 'strip', { trigger: vp, start: 'center center', end: () => `+=${dist()}` }, ['full', 'wane']);
+    return () => root.classList.remove('strip-pan');
   });
-  films();
+  mm.add('(max-width: 860px)', () => {
+    if (take) leg('sky', 'strip', { trigger: strip, start: 'top bottom', end: 'bottom top' }, ['full', 'wane']);
+  });
+
+  // ── 4. the paper darkens into the projection room, the screen dollies in, the moon sets
+  if (!darkPref) {
+    const paper = { '--bg': '#EFE6D8', '--fg': '#33281F', '--fg-2': '#6B5A49', '--accent': '#8F4E17', '--link': '#2F5C61', '--surface': '#E5D9C7' };
+    const room = { '--bg': '#1B1612', '--fg': '#EFE6D8', '--fg-2': '#A8977F', '--accent': '#D99A5B', '--link': '#7FA9A8', '--surface': '#2A221C' };
+    gsap.timeline({ scrollTrigger: { trigger: '[data-room]', start: 'top 85%', end: 'top 25%', scrub: true } })
+      .fromTo(root, paper, { ...room, ease: 'none', immediateRender: false }, 0)
+      .fromTo('.grain', { opacity: 0.05 }, { opacity: 0.07, ease: 'none', immediateRender: false }, 0);
+    gsap.timeline({ scrollTrigger: { trigger: '.about-teaser', start: 'top 95%', end: 'top 45%', scrub: true } })
+      .fromTo(root, room, { ...paper, ease: 'none', immediateRender: false }, 0)
+      .fromTo('.grain', { opacity: 0.07 }, { opacity: 0.05, ease: 'none', immediateRender: false }, 0);
+  }
+  scrubRise($$('.room-sec .sec-head'));
+  const screenBtn = $('.screen .film-btn');
+  if (screenBtn) {
+    gsap.fromTo(screenBtn, { scale: 0.86, clipPath: 'inset(7% 9% 7% 9%)' }, {
+      scale: 1, clipPath: 'inset(0% 0% 0% 0%)', ease: 'none',
+      scrollTrigger: { trigger: '.screen', start: 'top bottom', end: 'center 55%', scrub: true },
+    });
+  }
+  scrubRise($$('.screen-cap, .film-rows li, .room-sec .more-wrap'), { start: 'top 100%', end: 'top 70%' });
+  if (take) leg('strip', 'set', { trigger: '[data-room]', start: 'top bottom', end: 'center center' }, ['wane', 'dark']);
+
+  // ── 5. back on paper a new crescent rises, then lands in the footer as the logo
+  scrubRise($$('.big-quote, .about-teaser .more-wrap'));
+  if (take && !darkPref) {
+    gsap.timeline({ scrollTrigger: { trigger: ftr, start: 'top 98%', end: 'top 55%', scrub: true } })
+      .fromTo(root, { '--bg': '#EFE6D8' }, { '--bg': '#1B1612', ease: 'none', immediateRender: false }, 0)
+      .fromTo('.grain', { opacity: 0.05 }, { opacity: 0.07, ease: 'none', immediateRender: false }, 0);
+  }
+  if (take) {
+    leg('set', 'rise', { trigger: '.about-teaser', start: 'top bottom', end: 'center center' }, ['dark', 'wax']);
+    leg('rise', 'land', { trigger: ftr, start: 'top bottom', end: 'bottom bottom' }, ['wax', 'cres'], [0, 1]);
+  }
+  ScrollTrigger.sort();
 }
 
 function domReveal(list, rv) {
@@ -325,10 +450,20 @@ function series() {
     const st = $('[data-words]');
     if (st) {
       SplitText.create(st, {
-        type: 'lines', mask: 'lines', autoSplit: true,
+        type: 'lines', mask: 'lines', autoSplit: true, tag: 'span', aria: 'none', linesClass: 'sline',
         onSplit: (self) => gsap.from(self.lines, { yPercent: 100, duration: 1.1, ease: 'expo.out', stagger: 0.09, scrollTrigger: { trigger: st, start: 'top 85%', once: true } }),
       });
     }
+  }
+
+  // continuous camera: the title drifts up, each photograph settles as it reaches the centre
+  if (!reduce) {
+    gsap.to('.s-title', { yPercent: -28, ease: 'none', scrollTrigger: { trigger: '.s-head', start: 'top 15%', end: 'bottom top', scrub: true } });
+    $$('.fr').forEach((fr) => {
+      gsap.fromTo($('.ph img', fr), { scale: 1.14 }, { scale: 1, ease: 'none', scrollTrigger: { trigger: fr, start: 'top bottom', end: 'center 55%', scrub: true } });
+      gsap.fromTo($('figcaption', fr), { y: 36 }, { y: 0, ease: 'none', scrollTrigger: { trigger: fr, start: 'top bottom', end: 'center 55%', scrub: true } });
+    });
+    scrubRise($$('.s-next'), { y: 80 });
   }
 
   // frame counter, digits re-read with ScrambleText
@@ -383,6 +518,10 @@ function series() {
     });
   });
   lightbox.on('beforeOpen', () => { lenis?.stop(); root.classList.add('pswp-open'); });
+  lightbox.on('afterInit', () => {
+    const el = lightbox.pswp?.element;
+    if (el) { el.setAttribute('aria-modal', 'true'); el.setAttribute('aria-label', '照片查看'); }
+  });
   lightbox.on('destroy', () => { lenis?.start(); root.classList.remove('pswp-open'); });
   lightbox.init();
 
@@ -394,6 +533,12 @@ function series() {
 
 function works() {
   splitReveal(document, 0.05);
+  if (!reduce) {
+    $$('.ws').forEach((ws) => {
+      gsap.fromTo($('.ws-img img', ws), { scale: 1.14 }, { scale: 1, ease: 'none', scrollTrigger: { trigger: ws, start: 'top bottom', end: 'center 55%', scrub: true } });
+      gsap.fromTo($('.ws-text', ws), { y: 90 }, { y: 0, ease: 'none', scrollTrigger: { trigger: ws, start: 'top bottom', end: 'center 50%', scrub: true } });
+    });
+  }
   const btns = $$('[data-view]');
   const panels = $$('[data-panel]');
   btns.forEach((b) => b.addEventListener('click', () => {

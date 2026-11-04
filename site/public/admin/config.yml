@@ -43,7 +43,7 @@ collections:
     public_folder: ''
     fields:
       - { name: title_zh, label: 中文标题, widget: string }
-      - { name: title_en, label: 英文标题, widget: string, hint: 也用作网址，例如 Between Tides 会变成 series-between-tides.html }
+      - { name: title_en, label: 英文标题, widget: string, hint: 第一次保存时会用它生成网址，例如 Between Tides 变成 series-between-tides.html，之后改标题不会改变网址 }
       - { name: order, label: 排序, widget: number, value_type: int, default: 100, hint: 数字小的排在前面 }
       - { name: draft, label: 暂不发布, widget: boolean, default: false, required: false }
       - { name: statement_zh, label: 系列自述（中文）, widget: text, required: false }

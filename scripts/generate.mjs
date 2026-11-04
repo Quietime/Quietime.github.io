@@ -107,7 +107,7 @@ function playerMarkup() {
 </div>`;
 }
 
-function filmGrid() {
+function filmGrid(h = 'h3') {
   if (!films.length) return '<p class="empty">影片整理中。</p>';
   const ready = (f) => Boolean(String(f.bvid || '').trim());
   const attrs = (f) => (ready(f) ? `data-bvid="${esc(f.bvid.trim())}"` : 'aria-disabled="true"');
@@ -115,7 +115,7 @@ function filmGrid() {
   const [lead, ...rest] = films;
   return `<div class="screen">
 <button type="button" class="film-btn" ${attrs(lead)} aria-label="${state(lead)}：${esc(lead.title_zh)}">${picture(lead.src, { sizes: '(max-width: 860px) 100vw, 84vw' })}<span class="film-state">${state(lead)}</span></button>
-<div class="screen-cap"><h3>${esc(lead.title_zh)}</h3><p>${esc(lead.title_en || '')}<span>${esc(lead.kind || '')}</span></p></div>
+<div class="screen-cap"><${h}>${esc(lead.title_zh)}</${h}><p>${esc(lead.title_en || '')}<span>${esc(lead.kind || '')}</span></p></div>
 </div>
 ${rest.length ? `<ol class="film-rows">${rest.map((f) => `<li><button type="button" class="film-row" ${attrs(f)} aria-label="${state(f)}：${esc(f.title_zh)}"><span class="fr-t">${esc(f.title_zh)}</span><span class="fr-e">${esc(f.title_en || '')}</span><span class="fr-k">${esc(f.kind || '')}</span><span class="fr-s">${state(f)}</span></button></li>`).join('')}</ol>` : ''}`;
 }
@@ -138,6 +138,7 @@ function home() {
     })
     .join('');
   return `${head({ page: 'home', title: '' })}
+<div class="stage" data-stage aria-hidden="true"><div class="stage-moon"><div class="stage-inner"></div></div></div>
 <div class="pre" data-pre aria-hidden="true">
 <div class="pre-moon">${moonSVG({ id: 'pm', cls: 'pre-svg' })}</div>
 <p class="pre-word"><span>${esc(site.name)}</span><span>${esc(site.nameZh)}</span></p>
@@ -167,7 +168,6 @@ function home() {
 ${filmGrid()}
 <p class="more-wrap"><a class="more" href="films.html">全部影像</a></p>
 </section>
-${playerMarkup()}
 
 <section class="about-teaser" aria-labelledby="h-about">
 <h2 id="h-about" class="sr-only">关于</h2>
@@ -175,6 +175,7 @@ ${playerMarkup()}
 <p class="more-wrap"><a class="more" href="about.html">关于工作室</a></p>
 </section>
 </main>
+${playerMarkup()}
 ${footer()}`;
 }
 
@@ -252,7 +253,7 @@ function filmsPage() {
   return `${head({ page: 'films', title: '影像', desc: `${site.title}的短片、Vlog 与幕后。`, theme: 'room' })}
 <main id="main" class="films-page">
 <header class="page-head"><h1 data-split><span class="line"><span>影像</span></span></h1><p class="lede">短片、Vlog 与幕后，在 B站 更新。点开即可在这里播放。</p></header>
-${filmGrid()}
+${filmGrid('h2')}
 </main>
 ${playerMarkup()}
 ${footer()}`;

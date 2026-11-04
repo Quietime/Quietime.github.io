@@ -76,6 +76,19 @@ p { text-wrap: pretty; }
 
 main, .ftr { position: relative; z-index: 1; }
 
+/* ── one continuous take on home: the travelling moon ── */
+.stage { display: none; }
+.one-take .stage { display: block; position: fixed; inset: 0; z-index: 0; pointer-events: none; overflow: hidden; }
+.one-take .stage.is-flying { z-index: 125; }
+.stage-moon { position: absolute; left: 0; top: 0; transform-origin: 0 0; will-change: transform; }
+.stage-inner { width: 100%; height: 100%; transform-origin: 0 0; }
+.stage .hero-svg { width: 100%; height: 100%; }
+.one-take .ftr-moon .ftr-svg { visibility: hidden; }
+.one-take .ftr { background: transparent; }
+.sline, .sline-mask { display: block; }
+.ch { display: inline-block; }
+:root.js-scrub { transition: none; }
+
 /* ── film grain: sits under the content, so it never covers a photograph ── */
 .grain {
   position: fixed; inset: -100%; z-index: 0; pointer-events: none;
@@ -193,7 +206,8 @@ html.leak-in .leak { opacity: 1; --flash: 1; animation: failsafe 0s 2.6s forward
 .reveal img { width: 100%; height: auto; aspect-ratio: var(--ar, 3/2); object-fit: cover; }
 
 /* ── home: film strip ── */
-.strip-vp { overflow: hidden; }
+.strip-vp { overflow-x: auto; overscroll-behavior-x: contain; }
+.strip-pan .strip-vp { overflow: hidden; }
 .strip { display: flex; width: max-content; position: relative; background: var(--film); padding: 38px 10px 30px; }
 .strip::before, .strip::after {
   content: ""; position: absolute; left: 0; right: 0; height: 11px;
@@ -268,7 +282,6 @@ html[data-theme-base="room"] .ftr { background: transparent; }
 .ws { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 28px 24px; align-items: end; }
 .ws-img { grid-column: 1 / span 7; display: block; overflow: hidden; }
 .ws-img img { transition: transform 1.4s var(--e-out); }
-.ws-img:hover img { transform: scale(1.04); }
 .ws-text { grid-column: 9 / span 4; min-width: 0; }
 .ws-r .ws-img { grid-column: 6 / span 7; order: 2; }
 .ws-r .ws-text { grid-column: 1 / span 4; order: 1; }
@@ -400,7 +413,7 @@ html[data-theme-base="room"] .ftr { background: transparent; }
   .sl-n { grid-column: 2; grid-row: 1; }
   .strip-vp { overflow-x: auto; scroll-snap-type: x mandatory; -webkit-overflow-scrolling: touch; }
   .sf { scroll-snap-align: start; }
-  .sf .ph { height: auto; width: 78vw; }
+  .sf .ph { height: 46vw; width: auto; }
   .screen .film-btn, .screen-cap { grid-column: 1 / -1; }
   .film-row { grid-template-columns: minmax(0, 1fr) auto; }
   .fr-t { grid-column: 1; } .fr-e { grid-column: 1; grid-row: 2; } .fr-k { display: none; } .fr-s { grid-column: 2; grid-row: 1; }
