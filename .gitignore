@@ -1,0 +1,6 @@
+node_modules/
+dist/
+site/*.html
+site/public/photos/
+content/photos.json
+.DS_Store
