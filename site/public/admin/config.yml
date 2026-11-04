@@ -94,11 +94,11 @@ collections:
             widget: list
             summary: '{{title_zh}}　{{bvid}}'
             fields:
-              - { name: bvid, label: BV 号, widget: string, required: false, hint: 例如 BV1xx411c7mD。留空时显示“整理中”。 }
-              - { name: title_zh, label: 中文片名, widget: string }
+              - { name: bvid, label: B站视频, widget: text, required: false, hint: 粘贴 BV 号、视频链接，或 B站“分享 → 嵌入代码”都可以。网站构建时会自动读取标题、封面、时长和播放量。留空时显示“整理中”。 }
+              - { name: title_zh, label: 中文片名, widget: string, required: false, hint: 留空就用 B站 上的标题 }
               - { name: title_en, label: 英文片名, widget: string, required: false }
               - { name: kind, label: 类型, widget: string, required: false, hint: 例如 短片、Vlog、幕后 }
-              - { name: cover, label: 封面, widget: image, hint: 建议 16:9，1920×1080 }
+              - { name: cover, label: 封面, widget: image, required: false, hint: 留空就用 B站 封面。建议 16:9，1920×1080 }
 
       - name: settings
         label: 基本信息与联系方式
@@ -115,6 +115,30 @@ collections:
           - { name: wechat, label: 微信号, widget: string, required: false }
           - { name: email, label: 邮箱, widget: string, required: false }
           - { name: copyright, label: 版权声明, widget: string }
+          - { name: wechat_qr, label: 微信二维码, widget: image, required: false, media_folder: /content/uploads, public_folder: /content/uploads }
+          - { name: contact_lede, label: 联系页开头的一段话, widget: text, required: false }
+          - { name: form_endpoint, label: 表单提交地址, widget: string, required: false, hint: 可选。填 Formspree 或 Web3Forms 的地址后，访客可以直接在网页里提交；留空则会生成一封邮件。 }
+          - name: process
+            label: 合作流程
+            label_singular: 一步
+            widget: list
+            required: false
+            summary: '{{title}}'
+            fields:
+              - { name: title, label: 名称, widget: string }
+              - { name: text, label: 说明, widget: text }
+          - name: faq
+            label: 常见问题
+            label_singular: 一个问题
+            widget: list
+            required: false
+            summary: '{{q}}'
+            fields:
+              - { name: q, label: 问题, widget: string }
+              - { name: a, label: 回答, widget: text }
+          - { name: music_on, label: 播放背景音乐, widget: boolean, required: false, hint: 访客第一次点击页面后淡入，右上角可以关闭 }
+          - { name: music_file, label: 背景音乐文件, widget: file, required: false, media_folder: /content/uploads, public_folder: /content/uploads, hint: 可选，建议 MP3、5MB 以内、可以循环的曲子。留空则播放网站自带的氛围音乐。 }
+          - { name: music_volume, label: 音量, widget: number, value_type: int, min: 5, max: 100, default: 40, required: false }
           - name: socials
             label: 社交平台
             label_singular: 一个平台

@@ -13,6 +13,9 @@ import { ScrambleTextPlugin } from 'gsap/ScrambleTextPlugin';
 import { Flip } from 'gsap/Flip';
 import Lenis from 'lenis';
 import PhotoSwipeLightbox from 'photoswipe/lightbox';
+import justifiedLayout from 'justified-layout';
+import cursor from './cursor.js';
+import sound from './sound.js';
 
 gsap.registerPlugin(ScrollTrigger, SplitText, ScrambleTextPlugin, Flip);
 
@@ -28,6 +31,8 @@ const store = {
   del: (k) => { try { sessionStorage.removeItem(k); } catch { /* private mode */ } },
 };
 const DIGITS = '0123456789';
+let CFG = {};
+try { CFG = JSON.parse($('#qt-config')?.textContent || '{}'); } catch { CFG = {}; }
 
 /* ── smooth scroll (Lenis) ─────────────────────────────────── */
 let lenis = null;
@@ -200,6 +205,7 @@ function films() {
   const box = $('[data-player-box]', player);
   const frame = $('[data-player-frame]', player);
   const link = $('[data-player-link]', player);
+  const title = $('[data-player-title]', player);
   let opener = null;
   const esc = (e) => { if (e.key === 'Escape') close(); };
   function close() {
@@ -210,15 +216,19 @@ function films() {
     opener?.focus({ preventScroll: true });
   }
   $$('.film-btn, .film-row').forEach((b) => b.addEventListener('click', () => {
-    if (!b.dataset.bvid) { if (live) live.textContent = '这部影片还在整理中。'; return; }
+    if (!b.dataset.bvid && !b.dataset.aid) { if (live) live.textContent = '这部影片还在整理中。'; return; }
     opener = b;
-    const id = encodeURIComponent(b.dataset.bvid);
-    link.href = `https://www.bilibili.com/video/${id}`;
+    const q = new URLSearchParams({ isOutside: 'true', p: b.dataset.p || '1', autoplay: '1', danmaku: '0', high_quality: '1' });
+    if (b.dataset.bvid) q.set('bvid', b.dataset.bvid);
+    if (b.dataset.aid) q.set('aid', b.dataset.aid);
+    if (b.dataset.cid) q.set('cid', b.dataset.cid);
+    link.href = b.dataset.bvid ? `https://www.bilibili.com/video/${encodeURIComponent(b.dataset.bvid)}` : `https://www.bilibili.com/video/av${encodeURIComponent(b.dataset.aid)}`;
+    if (title) title.textContent = (b.getAttribute('aria-label') || '').replace(/^播放：/, '');
     player.hidden = false;
     lenis?.stop();
     document.addEventListener('keydown', esc);
     const load = () => {
-      frame.innerHTML = `<iframe src="https://player.bilibili.com/player.html?bvid=${id}&page=1&autoplay=1&danmaku=0&high_quality=1" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen title="B站视频播放器"></iframe>`;
+      frame.innerHTML = `<iframe src="https://player.bilibili.com/player.html?${q}" allow="autoplay; fullscreen; picture-in-picture" allowfullscreen scrolling="no" referrerpolicy="no-referrer-when-downgrade" title="B站视频播放器"></iframe>`;
     };
     if (reduce) { load(); } else {
       const state = Flip.getState(box);
@@ -481,11 +491,19 @@ function series() {
     });
   });
 
-  // lightbox (PhotoSwipe)
-  const edgeCode = ($('[data-edge]')?.firstChild?.textContent || '').trim();
+  photoLightbox('[data-gallery]', 'a.fr-open');
+
+  if (location.hash) {
+    const el = document.getElementById(location.hash.slice(1));
+    if (el) setTimeout(() => scrollToEl(el), 500);
+  }
+}
+
+function photoLightbox(gallery, children) {
+  const edgeCode = ($('[data-edge]')?.firstChild?.textContent || 'QUIETIME 400').trim();
   const lightbox = new PhotoSwipeLightbox({
-    gallery: '[data-gallery]',
-    children: 'a.fr-open',
+    gallery,
+    children,
     pswpModule: () => import('photoswipe'),
     bgOpacity: 0.97,
     showHideAnimationType: reduce ? 'none' : 'zoom',
@@ -510,7 +528,8 @@ function series() {
           const a = pswp.currSlide?.data?.element;
           if (!a) return;
           const n = a.dataset.n || pswp.currIndex + 1;
-          el.innerHTML = `<span class="edge">${edgeCode}<i>▸ ${n}</i><i>${n}A</i></span><span class="pc-cap">${a.dataset.cap || ''}</span><span class="pc-exif">${a.dataset.exif || ''}</span>`;
+          const series = a.dataset.sname ? `<span class="pc-s">${a.dataset.sname}</span>` : '';
+          el.innerHTML = `<span class="edge">${edgeCode}<i>▸ ${n}</i><i>${n}A</i></span>${series}<span class="pc-cap">${a.dataset.cap || ''}</span><span class="pc-exif">${a.dataset.exif || ''}</span>`;
         };
         pswp.on('change', render);
         render();
@@ -524,11 +543,7 @@ function series() {
   });
   lightbox.on('destroy', () => { lenis?.start(); root.classList.remove('pswp-open'); });
   lightbox.init();
-
-  if (location.hash) {
-    const el = document.getElementById(location.hash.slice(1));
-    if (el) setTimeout(() => scrollToEl(el), 500);
-  }
+  return lightbox;
 }
 
 function works() {
@@ -595,6 +610,154 @@ function filmsPage() {
   films();
 }
 
+/* ── gallery: justified rows (flickr/justified-layout), filters animated with Flip ── */
+function gallery() {
+  splitReveal(document, 0.05);
+  const grid = $('[data-gallery-grid]');
+  if (!grid) return;
+  const tiles = $$('.gl-tile', grid);
+  let shown = tiles;
+  function layout() {
+    const w = grid.clientWidth;
+    const narrow = w < 700;
+    const geo = justifiedLayout(shown.map((t) => Number(t.dataset.ar) || 1.5), {
+      containerWidth: w,
+      containerPadding: 0,
+      boxSpacing: narrow ? 6 : 14,
+      targetRowHeight: narrow ? 150 : Math.max(240, Math.min(360, w / 4.2)),
+      targetRowHeightTolerance: 0.25,
+    });
+    shown.forEach((t, i) => {
+      const b = geo.boxes[i];
+      Object.assign(t.style, { left: `${b.left}px`, top: `${b.top}px`, width: `${b.width}px`, height: `${b.height}px` });
+    });
+    grid.style.height = `${geo.containerHeight}px`;
+  }
+  layout();
+  let rt = 0;
+  addEventListener('resize', () => { clearTimeout(rt); rt = setTimeout(() => { layout(); ScrollTrigger.refresh(); }, 120); });
+
+  const btns = $$('[data-filter]');
+  btns.forEach((b) => b.addEventListener('click', () => {
+    btns.forEach((x) => x.setAttribute('aria-pressed', String(x === b)));
+    const f = b.dataset.filter;
+    const state = Flip.getState(tiles);
+    shown = tiles.filter((t) => f === 'all' || t.dataset.series === f);
+    tiles.forEach((t) => t.classList.toggle('is-out', !shown.includes(t)));
+    layout();
+    shown.forEach((t) => devIO.observe($('img', t)));
+    if (!reduce) {
+      Flip.from(state, {
+        duration: 0.8, ease: 'expo.inOut', absolute: true, stagger: 0.012,
+        onEnter: (els) => gsap.fromTo(els, { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.6, ease: 'expo.out' }),
+        onLeave: (els) => gsap.to(els, { opacity: 0, scale: 0.9, duration: 0.4 }),
+      });
+    }
+    ScrollTrigger.refresh();
+  }));
+
+  if (!reduce) {
+    tiles.forEach((t) => gsap.fromTo($('img', t), { scale: 1.12 }, { scale: 1, ease: 'none', scrollTrigger: { trigger: t, start: 'top bottom', end: 'center 60%', scrub: true } }));
+  }
+  photoLightbox('[data-gallery-grid]', 'a.gl-tile:not(.is-out)');
+}
+
+/* ── contact: floating labels, inline checks, a sending state ── */
+function contact() {
+  splitReveal(document, 0.05);
+  const form = $('[data-form]');
+  if (form) {
+    const btn = $('[data-send]', form);
+    const note = $('[data-note]', form);
+    const msg = (el, text) => {
+      const m = el.closest('.fld')?.querySelector('[data-msg]');
+      if (m) m.textContent = text;
+      el.setAttribute('aria-invalid', String(Boolean(text)));
+    };
+    const reachOk = (v) => /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(v) || /^[a-zA-Z][-_a-zA-Z0-9]{5,19}$/.test(v) || /^1\d{10}$/.test(v);
+    const check = (el) => {
+      const v = el.value.trim();
+      if (el.required && !v) { msg(el, '这一项需要填写。'); return false; }
+      if (el.name === 'reach' && v && !reachOk(v)) { msg(el, '请填写有效的邮箱、微信号或手机号。'); return false; }
+      msg(el, '');
+      return true;
+    };
+    $$('input[required], textarea[required]', form).forEach((el) => {
+      el.addEventListener('blur', () => check(el));
+      el.addEventListener('input', () => { if (el.getAttribute('aria-invalid') === 'true') check(el); });
+    });
+    form.addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const fields = $$('input[required], textarea[required]', form);
+      const ok = fields.map(check).every(Boolean);
+      if (!ok) { fields.find((f) => f.getAttribute('aria-invalid') === 'true')?.focus(); return; }
+      const d = Object.fromEntries(new FormData(form));
+      const body = `称呼：${d.name}\n联系方式：${d.reach}\n想拍什么：${d.kind || ''}\n大概日期：${d.date || '未定'}\n预算：${d.budget || '还没想好'}\n\n${d.message}`;
+      btn.classList.add('is-busy'); btn.disabled = true; note.textContent = '正在发送……';
+      try {
+        if (CFG.formEndpoint) {
+          const r = await fetch(CFG.formEndpoint, { method: 'POST', headers: { 'Content-Type': 'application/json', Accept: 'application/json' }, body: JSON.stringify({ ...d, subject: `预约咨询：${d.kind || ''}`, message: body }) });
+          if (!r.ok) throw new Error(String(r.status));
+          note.textContent = '已发送。我们会在两天内回复你。';
+          form.reset();
+        } else {
+          await copyText(body);
+          location.href = `mailto:${CFG.email || ''}?subject=${encodeURIComponent(`预约咨询：${d.kind || ''}`)}&body=${encodeURIComponent(body)}`;
+          note.textContent = '已打开你的邮件程序，点发送即可。内容也已复制，可以直接粘贴到微信。';
+        }
+        btn.classList.add('is-done');
+      } catch {
+        note.textContent = '没有发送成功，请直接发邮件或加微信联系我们。';
+      } finally {
+        btn.classList.remove('is-busy'); btn.disabled = false;
+        setTimeout(() => btn.classList.remove('is-done'), 2400);
+      }
+    });
+  }
+  // FAQ opens and closes smoothly
+  $$('.ct-faq details').forEach((d) => {
+    const sum = $('summary', d), body = $('.faq-a', d);
+    sum.addEventListener('click', (e) => {
+      if (reduce) return;
+      e.preventDefault();
+      if (d.open) {
+        gsap.to(body, { height: 0, opacity: 0, duration: 0.45, ease: 'power3.inOut', onComplete: () => { d.open = false; gsap.set(body, { clearProps: 'all' }); } });
+      } else {
+        d.open = true;
+        gsap.fromTo(body, { height: 0, opacity: 0 }, { height: 'auto', opacity: 1, duration: 0.55, ease: 'power3.out' });
+      }
+    });
+  });
+  if (!reduce) scrubRise($$('.ct-process li, .ct-faq details'), { y: 40 });
+}
+
+/* ── phone menu ── */
+function menu() {
+  const btn = $('[data-menu-btn]');
+  const panel = $('[data-menu]');
+  if (!btn || !panel) return;
+  const links = $$('a', panel);
+  const set = (open) => {
+    btn.setAttribute('aria-expanded', String(open));
+    root.classList.toggle('menu-open', open);
+    if (open) {
+      panel.hidden = false;
+      lenis?.stop();
+      if (!reduce) {
+        gsap.fromTo(panel, { clipPath: 'inset(0% 0% 100% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: 0.7, ease: 'expo.inOut' });
+        gsap.fromTo(links, { yPercent: 60, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.8, ease: 'expo.out', stagger: 0.05, delay: 0.25 });
+      }
+      links[0]?.focus({ preventScroll: true });
+    } else {
+      lenis?.start();
+      const end = () => { panel.hidden = true; };
+      if (reduce) end(); else gsap.to(panel, { clipPath: 'inset(0% 0% 100% 0%)', duration: 0.5, ease: 'expo.inOut', onComplete: end });
+    }
+  };
+  btn.addEventListener('click', () => set(btn.getAttribute('aria-expanded') !== 'true'));
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && root.classList.contains('menu-open')) { set(false); btn.focus(); } });
+}
+
 function notFound() {
   const svg = $('.nf-svg');
   if (!svg) return;
@@ -605,7 +768,10 @@ function notFound() {
   m.tide(1);
 }
 
-({ home, series, works, films: filmsPage, about, nf: notFound }[page] || (() => {}))();
+menu();
+if (fine) cursor();
+sound(CFG.music);
+({ home, series, works, films: filmsPage, about, gallery, contact, nf: notFound }[page] || (() => {}))();
 leakOut();
 addEventListener('load', () => ScrollTrigger.refresh());
 document.fonts?.ready.then(() => ScrollTrigger.refresh());

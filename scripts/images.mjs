@@ -69,8 +69,19 @@ for (const s of content.series) {
   console.log(`photos: ${s.slug} ${s.frames.length}`);
 }
 for (const f of content.films) if (f.src) manifest[f.src] ??= await processImage(f.src, 'films');
+if (content.contact.qr) manifest[content.contact.qr] ??= await processImage(content.contact.qr, 'brand');
 await fs.mkdir(path.join(ROOT, '.cache'), { recursive: true });
 await fs.writeFile(path.join(ROOT, '.cache/photos.json'), JSON.stringify(manifest, null, 1));
+
+// background music uploaded in the admin
+const media = {};
+if (content.music.file && (await exists(path.join(ROOT, content.music.file)))) {
+  const name = `music${path.extname(content.music.file).toLowerCase() || '.mp3'}`;
+  await fs.mkdir(path.join(ROOT, 'site/public/media'), { recursive: true });
+  await fs.copyFile(path.join(ROOT, content.music.file), path.join(ROOT, 'site/public/media', name));
+  media.music = `media/${name}`;
+}
+await fs.writeFile(path.join(ROOT, '.cache/media.json'), JSON.stringify(media));
 
 // Brand assets: favicon, touch icon, social card.
 const fixed = {
@@ -93,5 +104,13 @@ if (!(await exists(path.join(ROOT, 'site/public/og.jpg')))) {
   await sharp({ create: { width: 1200, height: 630, channels: 3, background: '#1B1612' } })
     .composite([{ input: await moonPng(470, 300), top: 80, left: 640 }]).jpeg({ quality: 86 })
     .toFile(path.join(ROOT, 'site/public/og.jpg'));
+}
+// installable app icons (plain and maskable)
+for (const [file, size, pad] of [['icon-192.png', 192, 0.14], ['icon-512.png', 512, 0.14], ['icon-maskable-512.png', 512, 0.24]]) {
+  if (await exists(path.join(ROOT, 'site/public', file))) continue;
+  const inner = Math.round(size * (1 - pad * 2));
+  await sharp({ create: { width: size, height: size, channels: 3, background: '#1B1612' } })
+    .composite([{ input: await moonPng(inner, 300), top: Math.round(size * pad), left: Math.round(size * pad) }]).png()
+    .toFile(path.join(ROOT, 'site/public', file));
 }
 console.log('brand assets ok');

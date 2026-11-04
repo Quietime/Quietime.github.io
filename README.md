@@ -17,7 +17,8 @@
 **能做什么**
 
 - **作品系列**：新建系列、上传照片、拖动排序、写说明、选排法（宽幅、偏右、偏左、小图、并排）、填写相机和胶片信息、暂不发布。
-- **网站设置 → B站影像**：填 BV 号，卡片就能在网站里直接播放。
+- **网站设置 → B站影像**：粘贴 BV 号、视频链接，或 B站“分享 → 嵌入代码”都可以。构建时会自动读取 B站 的标题、封面、时长、播放量和发布日期，在网站里点开即可播放。
+- **网站设置 → 基本信息与联系方式**里还有：背景音乐开关与上传、联系页的合作流程与常见问题、微信二维码、表单提交地址（可选，填 Formspree 或 Web3Forms 后访客可以直接在网页提交）。
 - **网站设置 → 基本信息与联系方式**：首页标语、微信、邮箱、社交平台链接、关于页介绍、服务项目、版权声明。
 
 每次保存都会提交到 `main` 分支，GitHub Actions 大约两分钟后自动发布。照片建议上传长边 2400 到 3000 像素、5MB 以内的 JPG；网站会自动生成多种尺寸的 WebP 和 JPEG，读取相机、镜头、光圈、快门和 ISO，不会带上 GPS 位置。
@@ -39,6 +40,16 @@ content/
 
 现在的照片来自 Kodak 公开测试图集，只用来展示版式。换成自己的作品后，在后台“基本信息与联系方式”里关掉“目前使用示例照片”，示例说明就会消失。
 
+## 网站功能
+
+- 首页一镜到底：月亮随滚动走完一夜的月相，最后落进页脚
+- 定制光标：在照片、影片、链接上会变成“查看”“播放”等提示，触屏设备自动关闭
+- 背景音乐：访客第一次点击后淡入，右上角可开关，会记住选择
+- 图库：全部照片齐边排列，可按系列筛选，点开连续浏览
+- 联系：预约表单（含校验与发送状态）、合作流程、常见问题、微信与邮箱一键复制
+- B站影像：自动读取元数据，站内直接播放
+- 可以添加到手机主屏幕，像 App 一样全屏打开
+
 ## 本地预览
 
 ```bash
@@ -55,6 +66,8 @@ npm run dev
 | [three.js](https://github.com/mrdoob/three.js) | 首页系列列表的 WebGL 悬停波动效果 |
 | [PhotoSwipe](https://github.com/dimsemenov/PhotoSwipe) | 照片查看器，支持双指缩放与滑动 |
 | [Sveltia CMS](https://github.com/sveltia/sveltia-cms) | 管理后台 |
+| [Tone.js](https://github.com/Tonejs/Tone.js) | 网站自带的氛围背景音乐（实时生成） |
+| [justified-layout](https://github.com/flickr/justified-layout) | 图库的齐边排版（Flickr 开源） |
 | [sharp](https://github.com/lovell/sharp) | 图片处理 |
 | [Vite](https://github.com/vitejs/vite) | 构建 |
 | [Fontsource](https://github.com/fontsource/fontsource) | 思源宋体、Questrial、Barlow Condensed，随站托管，国内也能正常显示 |
