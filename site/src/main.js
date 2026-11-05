@@ -15,9 +15,17 @@ import Lenis from 'lenis';
 import PhotoSwipeLightbox from 'photoswipe/lightbox';
 import justifiedLayout from 'justified-layout';
 import cursor from './cursor.js';
+import { springEase } from './physics/spring.js';
+import { Fluid } from './physics/fluid.js';
+import { Ribbon } from './physics/ribbon.js';
 import sound from './sound.js';
 
 gsap.registerPlugin(ScrollTrigger, SplitText, ScrambleTextPlugin, Flip);
+// every eased motion is the step response of a damped spring (see physics/spring.js);
+// exits use power2.in, the x = ½at² of a constant force
+gsap.registerEase('spring', springEase(0.62));
+gsap.registerEase('springFirm', springEase(0.85));
+gsap.registerEase('springCrit', springEase(1));
 
 const root = document.documentElement;
 const page = root.dataset.page;
@@ -82,16 +90,16 @@ function leakOut() {
   if (reduce) { root.classList.remove('leak-in'); return; }
   gsap.set(leak, { opacity: 1 });
   gsap.timeline({ onComplete: () => { root.classList.remove('leak-in'); gsap.set(leak, { clearProps: 'all' }); } })
-    .fromTo(leak, { '--flash': 0.9 }, { '--flash': 0, duration: 0.5, ease: 'power2.out' }, 0)
-    .fromTo(blobs, { xPercent: 20 }, { xPercent: 110, duration: 0.7, ease: 'power2.inOut', stagger: 0.04 }, 0)
-    .to(leak, { opacity: 0, duration: 0.35, ease: 'power1.out' }, 0.35);
+    .fromTo(leak, { '--flash': 0.9 }, { '--flash': 0, duration: 0.5, ease: 'springCrit' }, 0)
+    .fromTo(blobs, { xPercent: 20 }, { xPercent: 110, duration: 0.7, ease: 'springCrit', stagger: 0.04 }, 0)
+    .to(leak, { opacity: 0, duration: 0.35, ease: 'springCrit' }, 0.35);
 }
 function leakTo(href) {
   store.set('qt-leak', '1');
   if (reduce) { location.href = href; return; }
   gsap.timeline({ onComplete: () => { location.href = href; } })
     .set(leak, { opacity: 1, '--flash': 0 })
-    .fromTo(blobs, { xPercent: -60, scale: 0.7 }, { xPercent: 20, scale: 1, duration: 0.4, ease: 'power3.in', stagger: 0.04 }, 0)
+    .fromTo(blobs, { xPercent: -60, scale: 0.7 }, { xPercent: 20, scale: 1, duration: 0.4, ease: 'power2.in', stagger: 0.04 }, 0)
     .to(leak, { '--flash': 0.9, duration: 0.18, ease: 'power2.in' }, 0.26);
 }
 document.addEventListener('click', (e) => {
@@ -143,7 +151,7 @@ function splitReveal(scope, delay = 0) {
   const byWord = CFG.lang === 'en';
   const split = SplitText.create(targets, { type: byWord ? 'words' : 'chars', wordsClass: 'ch', charsClass: 'ch', tag: 'span', aria: 'none' });
   const parts = byWord ? split.words : split.chars;
-  gsap.from(parts, { yPercent: 115, duration: 1.2, ease: 'expo.out', stagger: { amount: Math.min(0.9, parts.length * 0.035) }, delay });
+  gsap.from(parts, { yPercent: 115, duration: 1.2, ease: 'springFirm', stagger: { amount: Math.min(0.9, parts.length * 0.035) }, delay });
 }
 
 /* ── copy buttons ──────────────────────────────────────────── */
@@ -206,7 +214,7 @@ function films() {
       const state = Flip.getState(box);
       Flip.fit(box, $('.ph', b) || b, { scale: true });
       gsap.fromTo(player, { backgroundColor: 'rgba(14,11,9,0)' }, { backgroundColor: 'rgba(14,11,9,.95)', duration: 0.6 });
-      Flip.to(state, { duration: 0.8, ease: 'expo.inOut', scale: true, onComplete: load });
+      Flip.to(state, { duration: 0.8, ease: 'springCrit', scale: true, onComplete: load });
     }
     $('[data-player-close]', player).focus();
   }));
@@ -225,16 +233,17 @@ function scrubRise(els, { y = 56, from = 0.12, start = 'top 98%', end = 'top 62%
 }
 
 /*
- * Home is one continuous take along a single strip of film lying on a light table.
- * On wide screens the strip runs sideways and the camera travels from the leader to the tail:
- * it starts close, eases back, sways a little as a hand would, and pulls away at the end of the roll.
- * Photographs settle as they pass the centre, and a frame counter keeps count.
- * On phones the strip stands upright and simply scrolls.
+ * Home: one strip of film floating in developer, simulated rather than animated.
+ * Wide screens: the strip is a chain of frames in 3D (physics/ribbon.js). Scrolling pulls it through
+ * the gate at the centre of the view; the parts outside the gate sway, trail, sag and twist under
+ * springs, drag, gravity and the flow of the liquid. The liquid (physics/fluid.js) is stirred by the
+ * moving film and by the pointer, and pushes back on the film: a two-way coupling.
+ * Phones: the strip stands upright and scrolls; each frame tilts under inertia when the scroll speeds
+ * up or slows down, and swings with the flow, as a chain of coupled damped oscillators.
  */
 function home() {
   const pre = $('[data-pre]');
   const roll = $('[data-roll]');
-  const cam = $('[data-roll-cam]');
   const track = $('[data-roll-track]');
   const cells = $$('[data-cell]', track);
   const count = $('[data-roll-count]');
@@ -246,14 +255,14 @@ function home() {
     const n = $('[data-pre-n]', pre);
     const bits = $$('.pre-win, .pre-word', pre);
     const tl = gsap.timeline({ onComplete: () => { pre.remove(); store.set('qt-pre', '1'); } });
-    tl.fromTo(bits, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.8, ease: 'expo.out', stagger: 0.1 }, 0.1);
+    tl.fromTo(bits, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.8, ease: 'springFirm', stagger: 0.1 }, 0.1);
     ['0', '1'].forEach((v) => {
       tl.to(n, { yPercent: -110, opacity: 0, duration: 0.2, ease: 'power2.in' }, '+=0.32')
         .call(() => { n.textContent = v; })
-        .fromTo(n, { yPercent: 110, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.34, ease: 'power3.out' });
+        .fromTo(n, { yPercent: 110, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.45, ease: 'spring' });
     });
-    tl.to(pre, { clipPath: 'inset(0% 0% 100% 0%)', duration: 1, ease: 'expo.inOut' }, '+=0.3')
-      .add(leader, '-=0.55');
+    tl.to(pre, { clipPath: 'inset(0% 0% 100% 0%)', duration: 0.9, ease: 'springCrit' }, '+=0.3')
+      .add(leader, '-=0.5');
     pre.addEventListener('click', () => tl.progress(0.92));
   } else {
     pre?.remove();
@@ -263,72 +272,195 @@ function home() {
   films();
   if (reduce || !track) return;
 
+  // the developer: a fluid painted as faint ink under the strip
+  const canvas = $('[data-fluid]');
+  const ink = matchMedia('(prefers-color-scheme: dark)').matches ? [217, 154, 91] : [51, 40, 31];
+  let fluid = null, fctx = null, fimg = null;
+  const makeFluid = (nx, ny) => {
+    fluid = new Fluid(nx, ny);
+    canvas.width = nx; canvas.height = ny;
+    fctx = canvas.getContext('2d');
+    fimg = fctx.createImageData(nx, ny);
+  };
+  let px = -1, py = -1, pt = 0;
+  addEventListener('pointermove', (e) => {
+    if (!fluid) return;
+    const now = performance.now();
+    if (px >= 0 && now - pt < 100) {
+      const dt = Math.max(4, now - pt) / 1000;
+      const s = fluid.nx / innerWidth;
+      // the pointer hands the liquid half its velocity: Δu = ½ v
+      fluid.splat(e.clientX / innerWidth, e.clientY / innerHeight, 0.5 * ((e.clientX - px) / dt) * s, 0.5 * ((e.clientY - py) / dt) * s, 0.022, 0.07, 1);
+    }
+    px = e.clientX; py = e.clientY; pt = now;
+  }, { passive: true });
+
   const mm = gsap.matchMedia();
+
   mm.add('(min-width: 861px)', () => {
-    root.classList.add('roll-h');
-    const first = cells[0];
-    const last = cells[cells.length - 1];
-    const startX = () => (innerWidth - first.offsetWidth) / 2 - first.offsetLeft;
-    const endX = () => (innerWidth - last.offsetWidth) / 2 - last.offsetLeft;
-    const dist = () => Math.max(1, startX() - endX());
-    const st = { trigger: roll, start: 'top top', end: () => `+=${dist()}`, scrub: 1, invalidateOnRefresh: true };
+    root.classList.add('roll-3d');
+    makeFluid(96, 54);
+    const TILT_X = (9 * Math.PI) / 180, TILT_Z = (-2.2 * Math.PI) / 180, PERSP = 1500;
+    let W = innerWidth, Hh = innerHeight, sh = 0, ww = [], C = [], ribbon = null, read = 0;
 
-    let current = 0;
-    const pan = gsap.fromTo(track, { x: () => startX() }, {
-      x: () => endX(), ease: 'none',
-      scrollTrigger: {
-        ...st, pin: true, anticipatePin: 1,
-        onToggle: (self) => count?.classList.toggle('off', !self.isActive),
-        onUpdate: () => {
-          const x = gsap.getProperty(track, 'x');
-          const mid = innerWidth / 2;
-          let best = 0, gap = Infinity;
-          cells.forEach((c, i) => {
-            const d = Math.abs(c.offsetLeft + c.offsetWidth / 2 + x - mid);
-            if (d < gap) { gap = d; best = i; }
-          });
-          if (best !== current && rc) {
-            current = best;
-            gsap.to(rc, { duration: 0.4, scrambleText: { text: String(best + 1), chars: DIGITS, speed: 0.6 }, overwrite: true });
-          }
-        },
-      },
-    });
+    function build() {
+      W = innerWidth; Hh = innerHeight;
+      sh = Math.round(Math.min(Hh * 0.64, 620));
+      track.style.setProperty('--sh', `${sh}px`);
+      $$('.cell-photo', track).forEach((c) => {
+        const [a, b] = (c.style.getPropertyValue('--ar') || '3/2').split('/').map(Number);
+        c.style.width = `${Math.round((sh - 102) * (a / b) + 14)}px`;
+      });
+      ww = cells.map((c) => c.offsetWidth);
+      // neighbouring frames overlap by 6 px so the film reads as one continuous strip at every bend
+      ribbon = new Ribbon(ww.map((w) => w - 6));
+      ribbon.setView(W, Hh);
+      C = cells.map((_, i) => ribbon.s[i] + ribbon.L[i] / 2);
+      ribbon.flow = (x, y, z) => {
+        const [X, Y] = project(x, y, z);
+        const [u, v] = fluid.sample(X / W, Y / Hh);
+        const k = W / fluid.nx; // cells/s → px/s
+        return [u * k, v * k];
+      };
+    }
+    // the same transforms as the CSS: rotateZ, then rotateX, then perspective from 50% 42%
+    function project(x, y, z) {
+      const x1 = x * Math.cos(TILT_Z) - y * Math.sin(TILT_Z);
+      const y1 = x * Math.sin(TILT_Z) + y * Math.cos(TILT_Z);
+      const y2 = y1 * Math.cos(TILT_X) - z * Math.sin(TILT_X);
+      const z2 = y1 * Math.sin(TILT_X) + z * Math.cos(TILT_X);
+      const k = PERSP / (PERSP - z2);
+      return [W * 0.5 + x1 * k, Hh * 0.42 + (Hh * 0.1 + y2) * k];
+    }
+    build();
+    const span = () => C[C.length - 1] - C[0];
+    read = C[0];
 
-    // the camera: close on the leader, a slow sway along the strip, a pull back at the end of the roll
-    gsap.timeline({ defaults: { ease: 'none' }, scrollTrigger: st })
-      .fromTo(cam, { scale: 1.12, rotate: -1.2, y: 10 }, { scale: 1, rotate: 0, y: 0, duration: 0.07, ease: 'power1.out' }, 0)
-      .to(cam, { rotate: 0.5, y: -6, duration: 0.42, ease: 'sine.inOut' }, 0.07)
-      .to(cam, { rotate: -0.4, y: 6, duration: 0.42, ease: 'sine.inOut' }, 0.49)
-      .to(cam, { scale: 0.88, rotate: 0, y: 0, duration: 0.09, ease: 'power1.in' }, 0.91);
+    const st = ScrollTrigger.create({
+      trigger: roll, start: 'top top', end: () => `+=${Math.round(span())}`,
+      pin: true, anticipatePin: 1, invalidateOnRefresh: true,
+      onUpdate: (self) => { read = C[0] + self.progress * span(); },
+      onRefresh: (self) => { read = C[0] + self.progress * span(); },
+      onToggle: (self) => count?.classList.toggle('off', !self.isActive),
+    });
+    const onRefreshInit = () => build();
+    ScrollTrigger.addEventListener('refreshInit', onRefreshInit);
 
-    // photographs settle as they cross the centre, and the words on title frames drift in
-    $$('.cell-photo', track).forEach((c) => {
-      gsap.fromTo($('img', c), { scale: 1.12 }, { scale: 1, ease: 'none', scrollTrigger: { trigger: c, containerAnimation: pan, start: 'left right', end: 'center center', scrub: true } });
-    });
-    $$('.cell-slate, .cell-films, .cell-about, .cell-tail', track).forEach((c) => {
-      const kids = [...c.children].filter((k) => !k.classList.contains('cell-edge'));
-      gsap.fromTo(kids, { x: 70, opacity: 0.2 }, { x: 0, opacity: 1, ease: 'none', stagger: 0.04, scrollTrigger: { trigger: c, containerAnimation: pan, start: 'left 95%', end: 'left 45%', scrub: true } });
-    });
-    return () => root.classList.remove('roll-h');
+    // tabbing into a frame brings it to the gate
+    const onFocus = (e) => {
+      const i = cells.indexOf(e.target.closest('[data-cell]'));
+      if (i < 0) return;
+      const y = st.start + ((C[i] - C[0]) / span()) * (st.end - st.start);
+      if (lenis) lenis.scrollTo(y, { duration: 1.2 }); else scrollTo(0, y);
+    };
+    track.addEventListener('focusin', onFocus);
+
+    let current = -1;
+    const tick = (time, deltaMs) => {
+      const dt = Math.min(deltaMs / 1000, 1 / 20);
+      if (!dt) return;
+      ribbon.step(dt, read);
+
+      // the moving film pushes the liquid: momentum in proportion to the relative velocity, plus a trace of dye
+      const s = fluid.nx / W;
+      for (let i = 0; i < ribbon.n; i++) {
+        const o = 3 * i;
+        const [X, Y] = project(ribbon.x[o], ribbon.x[o + 1], ribbon.x[o + 2]);
+        if (X < -40 || X > W + 40 || Y < -40 || Y > Hh + 40) continue;
+        const [fu, fv] = fluid.sample(X / W, Y / Hh);
+        const rx = ribbon.v[o] * s - fu, ry = ribbon.v[o + 1] * s - fv;
+        const speed = Math.hypot(rx, ry);
+        if (speed < 0.4) continue;
+        fluid.splat(X / W, Y / Hh, rx * 0.35, ry * 0.35, 0.03, Math.min(0.12, speed * 0.003), 1);
+      }
+      fluid.step(dt);
+      fluid.draw(fctx, fimg, ink, 230);
+
+      // place every frame from the simulation
+      for (let i = 0; i < cells.length; i++) {
+        const c = cells[i];
+        if (Math.abs(C[i] - read) > 2.6 * W) { if (c.style.visibility !== 'hidden') c.style.visibility = 'hidden'; continue; }
+        if (c.style.visibility) c.style.visibility = '';
+        const q = ribbon.pose(i);
+        c.style.transform = `translate3d(${(q.cx - ww[i] / 2).toFixed(2)}px, ${(q.cy - sh / 2).toFixed(2)}px, ${q.cz.toFixed(2)}px) rotateY(${q.yaw.toFixed(4)}rad) rotateZ(${q.pitch.toFixed(4)}rad) rotateX(${q.roll.toFixed(4)}rad)`;
+      }
+
+      // the frame counter reads the frame nearest the gate
+      let best = 0, gap = Infinity;
+      for (let i = 0; i < C.length; i++) { const d = Math.abs(C[i] - read); if (d < gap) { gap = d; best = i; } }
+      if (best !== current && rc) {
+        current = best;
+        gsap.to(rc, { duration: 0.4, scrambleText: { text: String(best + 1), chars: DIGITS, speed: 0.6 }, overwrite: true });
+      }
+    };
+    gsap.ticker.add(tick);
+    return () => {
+      gsap.ticker.remove(tick);
+      ScrollTrigger.removeEventListener('refreshInit', onRefreshInit);
+      track.removeEventListener('focusin', onFocus);
+      root.classList.remove('roll-3d');
+      cells.forEach((c) => { c.style.transform = ''; c.style.visibility = ''; c.style.width = ''; });
+      fluid = null;
+    };
   });
+
   mm.add('(max-width: 860px)', () => {
-    $$('.cell-photo img', track).forEach((img) => gsap.fromTo(img, { scale: 1.1 }, {
-      scale: 1, ease: 'none', scrollTrigger: { trigger: img.closest('.cell'), start: 'top bottom', end: 'center 55%', scrub: true },
-    }));
-    scrubRise($$('.cell-slate, .cell-films, .cell-about, .cell-tail', track), { y: 40, from: 0.3 });
+    makeFluid(42, 76);
+    const n = cells.length;
+    const tilt = new Float64Array(n), tiltV = new Float64Array(n);
+    const swing = new Float64Array(n), swingV = new Float64Array(n);
+    // each frame: θ'' = -ω²θ - 2ζωθ' + k(θ₋ + θ₊ - 2θ) + forcing; coupling lets a disturbance travel along the strip
+    const w = 2 * Math.PI * 1.2, z = 0.32, kc = 40;
+    let lastY = scrollY, lastV = 0;
+    const tick = (time, deltaMs) => {
+      const dt = Math.min(deltaMs / 1000, 1 / 20);
+      if (!dt) return;
+      const vel = (scrollY - lastY) / dt;
+      const acc = (vel - lastV) / dt;
+      lastY = scrollY; lastV = vel;
+      const s = fluid.nx / innerWidth;
+      // the strip moving up through the liquid drags it along both edges
+      if (Math.abs(vel) > 30) {
+        for (const ex of [0.06, 0.94]) fluid.splat(ex, 0.3 + Math.random() * 0.5, 0, -vel * s * 0.12, 0.08, Math.min(0.05, Math.abs(vel) * 0.00003), 1);
+      }
+      fluid.step(dt);
+      fluid.draw(fctx, fimg, ink, 230);
+      const H = 1 / 240, steps = Math.max(1, Math.round(dt / H)), h = dt / steps;
+      const top = [];
+      for (let i = 0; i < n; i++) top.push(cells[i].getBoundingClientRect());
+      for (let k = 0; k < steps; k++) {
+        for (let i = 0; i < n; i++) {
+          const r = top[i];
+          const seen = r.bottom > -100 && r.top < innerHeight + 100;
+          const flowX = seen ? fluid.sample(0.5, Math.min(0.98, Math.max(0.02, (r.top + r.height / 2) / innerHeight)))[0] : 0;
+          const lap = (i > 0 ? tilt[i - 1] : tilt[i]) + (i < n - 1 ? tilt[i + 1] : tilt[i]) - 2 * tilt[i];
+          const a = -w * w * tilt[i] - 2 * z * w * tiltV[i] + kc * lap - acc * 0.000045;
+          tiltV[i] += a * h; tilt[i] += tiltV[i] * h;
+          const b = -w * w * swing[i] - 2 * z * w * swingV[i] + flowX * 0.06;
+          swingV[i] += b * h; swing[i] += swingV[i] * h;
+        }
+      }
+      for (let i = 0; i < n; i++) {
+        const r = top[i];
+        if (r.bottom < -100 || r.top > innerHeight + 100) continue;
+        const tx = Math.max(-0.35, Math.min(0.35, tilt[i])), sy = Math.max(-0.2, Math.min(0.2, swing[i]));
+        cells[i].style.transform = `perspective(900px) rotateX(${tx.toFixed(4)}rad) rotateY(${sy.toFixed(4)}rad)`;
+      }
+    };
+    gsap.ticker.add(tick);
+    return () => { gsap.ticker.remove(tick); cells.forEach((c) => { c.style.transform = ''; }); fluid = null; };
   });
 }
 
 function series() {
   splitReveal($('.s-head'), 0.1);
   if (!reduce) {
-    gsap.fromTo(['.s-en', '.s-meta'], { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 1.2, ease: 'expo.out', delay: 0.5, stagger: 0.1 });
+    gsap.fromTo(['.s-en', '.s-meta'], { opacity: 0, y: 16 }, { opacity: 1, y: 0, duration: 1.2, ease: 'springFirm', delay: 0.5, stagger: 0.1 });
     const st = $('[data-words]');
     if (st) {
       SplitText.create(st, {
         type: 'lines', mask: 'lines', autoSplit: true, tag: 'span', aria: 'none', linesClass: 'sline',
-        onSplit: (self) => gsap.from(self.lines, { yPercent: 100, duration: 1.1, ease: 'expo.out', stagger: 0.09, scrollTrigger: { trigger: st, start: 'top 85%', once: true } }),
+        onSplit: (self) => gsap.from(self.lines, { yPercent: 100, duration: 1.1, ease: 'springFirm', stagger: 0.09, scrollTrigger: { trigger: st, start: 'top 85%', once: true } }),
       });
     }
   }
@@ -431,7 +563,7 @@ function works() {
     panels.forEach((p) => { p.hidden = p.dataset.panel !== b.dataset.view; });
     const shown = $(`[data-panel="${b.dataset.view}"]`);
     $$('img.dev', shown).forEach((img) => devIO.observe(img));
-    if (!reduce) gsap.fromTo($$('.ws, .sheet', shown), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.8, ease: 'expo.out', stagger: 0.06 });
+    if (!reduce) gsap.fromTo($$('.ws, .sheet', shown), { opacity: 0, y: 24 }, { opacity: 1, y: 0, duration: 0.8, ease: 'springFirm', stagger: 0.06 });
     ScrollTrigger.refresh();
   }));
 
@@ -510,8 +642,8 @@ function gallery() {
     shown.forEach((t) => devIO.observe($('img', t)));
     if (!reduce) {
       Flip.from(state, {
-        duration: 0.8, ease: 'expo.inOut', absolute: true, stagger: 0.012,
-        onEnter: (els) => gsap.fromTo(els, { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.6, ease: 'expo.out' }),
+        duration: 0.8, ease: 'springCrit', absolute: true, stagger: 0.012,
+        onEnter: (els) => gsap.fromTo(els, { opacity: 0, scale: 0.9 }, { opacity: 1, scale: 1, duration: 0.6, ease: 'springFirm' }),
         onLeave: (els) => gsap.to(els, { opacity: 0, scale: 0.9, duration: 0.4 }),
       });
     }
@@ -587,10 +719,10 @@ function contact() {
       if (reduce) return;
       e.preventDefault();
       if (d.open) {
-        gsap.to(body, { height: 0, opacity: 0, duration: 0.45, ease: 'power3.inOut', onComplete: () => { d.open = false; gsap.set(body, { clearProps: 'all' }); } });
+        gsap.to(body, { height: 0, opacity: 0, duration: 0.45, ease: 'springCrit', onComplete: () => { d.open = false; gsap.set(body, { clearProps: 'all' }); } });
       } else {
         d.open = true;
-        gsap.fromTo(body, { height: 0, opacity: 0 }, { height: 'auto', opacity: 1, duration: 0.55, ease: 'power3.out' });
+        gsap.fromTo(body, { height: 0, opacity: 0 }, { height: 'auto', opacity: 1, duration: 0.55, ease: 'springFirm' });
       }
     });
   });
@@ -610,14 +742,14 @@ function menu() {
       panel.hidden = false;
       lenis?.stop();
       if (!reduce) {
-        gsap.fromTo(panel, { clipPath: 'inset(0% 0% 100% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: 0.7, ease: 'expo.inOut' });
-        gsap.fromTo(links, { yPercent: 60, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.8, ease: 'expo.out', stagger: 0.05, delay: 0.25 });
+        gsap.fromTo(panel, { clipPath: 'inset(0% 0% 100% 0%)' }, { clipPath: 'inset(0% 0% 0% 0%)', duration: 0.7, ease: 'springCrit' });
+        gsap.fromTo(links, { yPercent: 60, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.8, ease: 'springFirm', stagger: 0.05, delay: 0.25 });
       }
       links[0]?.focus({ preventScroll: true });
     } else {
       lenis?.start();
       const end = () => { panel.hidden = true; };
-      if (reduce) end(); else gsap.to(panel, { clipPath: 'inset(0% 0% 100% 0%)', duration: 0.5, ease: 'expo.inOut', onComplete: end });
+      if (reduce) end(); else gsap.to(panel, { clipPath: 'inset(0% 0% 100% 0%)', duration: 0.5, ease: 'springCrit', onComplete: end });
     }
   };
   btn.addEventListener('click', () => set(btn.getAttribute('aria-expanded') !== 'true'));

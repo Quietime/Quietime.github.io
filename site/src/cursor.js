@@ -1,6 +1,9 @@
-// Custom cursor: a dot that follows exactly and a ring that trails behind it.
+// Custom cursor driven by two springs (physics/spring.js):
+//   the dot is critically damped and stiff (f = 14 Hz, ζ = 1), so it follows exactly without overshoot;
+//   the ring is under-damped and softer (f = 3.2 Hz, ζ = 0.62), so it trails and overshoots by about 8 %.
 // Elements can ask for a label with data-cursor="查看"; data-cursor="hide" hides it (the loupe takes over).
 import gsap from 'gsap';
+import { Spring } from './physics/spring.js';
 
 export default function cursor() {
   const root = document.documentElement;
@@ -14,10 +17,9 @@ export default function cursor() {
   const dot = wrap.querySelector('.cur-dot');
   const label = wrap.querySelector('.cur-label');
 
-  const dx = gsap.quickTo(dot, 'x', { duration: 0.08, ease: 'power3.out' });
-  const dy = gsap.quickTo(dot, 'y', { duration: 0.08, ease: 'power3.out' });
-  const rx = gsap.quickTo(ring, 'x', { duration: 0.45, ease: 'power3.out' });
-  const ry = gsap.quickTo(ring, 'y', { duration: 0.45, ease: 'power3.out' });
+  const dx = new Spring({ freq: 14, zeta: 1 }), dy = new Spring({ freq: 14, zeta: 1 });
+  const rx = new Spring({ freq: 3.2, zeta: 0.62 }), ry = new Spring({ freq: 3.2, zeta: 0.62 });
+  let started = false;
 
   let mode = '';
   function setMode(next, text = '') {
@@ -29,8 +31,10 @@ export default function cursor() {
 
   addEventListener('pointermove', (e) => {
     if (e.pointerType !== 'mouse') return;
+    if (!started) { for (const s of [dx, rx]) s.x = e.clientX; for (const s of [dy, ry]) s.y = e.clientY; started = true; }
+    dx.target = rx.target = e.clientX;
+    dy.target = ry.target = e.clientY;
     wrap.classList.add('on');
-    dx(e.clientX); dy(e.clientY); rx(e.clientX); ry(e.clientY);
     const t = e.target instanceof Element ? e.target : null;
     const tagged = t?.closest('[data-cursor]');
     if (tagged) {
@@ -43,6 +47,14 @@ export default function cursor() {
     else if (t?.closest('a, button, summary, label, [role="button"]')) setMode('link');
     else setMode('');
   }, { passive: true });
+
+  gsap.ticker.add((time, deltaMs) => {
+    if (!started) return;
+    const dt = Math.min(deltaMs / 1000, 1 / 20);
+    dot.style.transform = `translate3d(${dx.step(dt)}px, ${dy.step(dt)}px, 0)`;
+    ring.style.transform = `translate3d(${rx.step(dt)}px, ${ry.step(dt)}px, 0)`;
+  });
+
   addEventListener('pointerdown', () => wrap.classList.add('down'));
   addEventListener('pointerup', () => wrap.classList.remove('down'));
   document.addEventListener('pointerleave', () => wrap.classList.remove('on'));

@@ -164,41 +164,42 @@ ${rest.length ? `<ol class="film-rows">${rest.map((f) => `<li><button type="butt
     let n = 0;
     const cellEdge = () => { n += 1; return `<span class="cell-edge">${edge(n)}</span>`; };
     const cells = [];
-    cells.push(`<div class="cell cell-leader" data-cell>
+    cells.push(`<div class="cell cell-leader" data-cell><div class="frame">
 <div class="leader-in">
 <p class="leader-brand"><span>${esc(site.name)}</span><span>${esc(site.nameZh)}</span></p>
 <p class="leader-statement" data-split>${site.statement.map((l) => `<span class="line"><span>${phrases(l)}</span></span>`).join('')}</p>
 <p class="leader-hint">${esc(t.leaderHint)}</p>
-</div>${cellEdge()}</div>`);
+</div></div>${cellEdge()}</div>`);
     series.forEach((s, i) => {
-      cells.push(`<div class="cell cell-slate" data-cell>
+      cells.push(`<div class="cell cell-slate" data-cell><div class="frame">
 <p class="slate-roll">${esc(t.roll(i + 1))}</p>
 <h2 class="slate-title"><a href="${seriesHref(s)}" data-cursor="${esc(t.cursor.open)}">${esc(s.title)}</a></h2>
 <p class="slate-sub">${esc(s.sub)}</p>
 <p class="slate-n">${esc(t.frames(s.frames.length))}</p>
-<a class="more" href="${seriesHref(s)}">${esc(t.openRoll)}</a>${cellEdge()}</div>`);
+<a class="more" href="${seriesHref(s)}">${esc(t.openRoll)}</a></div>${cellEdge()}</div>`);
       s.frames.slice(0, 3).forEach((f, k) => {
         const p = P(f.src);
-        cells.push(`<a class="cell cell-photo" data-cell href="${seriesHref(s)}#f${k + 1}" data-cursor="${esc(t.cursor.open)}" aria-label="${esc(s.title)} ${esc(t.frameN(k + 1))}" style="--ar:${p?.w || 3}/${p?.h || 2}">${picture(f.src, { sizes: '(max-width: 860px) 90vw, 60vw', alt: f.caption, eager: i === 0 && k === 0 })}<span class="cell-cap">${esc(f.caption)}</span>${cellEdge()}</a>`);
+        cells.push(`<a class="cell cell-photo" data-cell href="${seriesHref(s)}#f${k + 1}" data-cursor="${esc(t.cursor.open)}" aria-label="${esc(s.title)} ${esc(t.frameN(k + 1))}" style="--ar:${p?.w || 3}/${p?.h || 2}"><span class="frame">${picture(f.src, { sizes: '(max-width: 860px) 90vw, 60vw', alt: f.caption, eager: i === 0 && k === 0 })}</span><span class="cell-cap">${esc(f.caption)}</span>${cellEdge()}</a>`);
       });
     });
-    cells.push(`<div class="cell cell-films" data-cell>
+    cells.push(`<div class="cell cell-films" data-cell><div class="frame">
 <div class="films-head"><h2>${esc(t.nav.films)}</h2><p>${esc(t.filmsSub)}</p></div>
 ${filmGrid()}
-<p class="more-wrap"><a class="more" href="${href('films')}">${esc(t.allFilms)}</a></p>${cellEdge()}</div>`);
-    cells.push(`<div class="cell cell-about" data-cell>
+<p class="more-wrap"><a class="more" href="${href('films')}">${esc(t.allFilms)}</a></p></div>${cellEdge()}</div>`);
+    cells.push(`<div class="cell cell-about" data-cell><div class="frame">
 <p class="about-q">${esc(homeTeaser || about.intro[0] || '')}</p>
-<a class="more" href="${href('about')}">${esc(t.aboutLink)}</a>${cellEdge()}</div>`);
-    cells.push(`<div class="cell cell-tail" data-cell>
+<a class="more" href="${href('about')}">${esc(t.aboutLink)}</a></div>${cellEdge()}</div>`);
+    cells.push(`<div class="cell cell-tail" data-cell><div class="frame">
 <p class="tail-end">${esc(t.endRoll)}</p>
 <div class="tail-contact">${contactLines(true)}</div>
-<a class="more" href="${href('contact')}">${esc(t.book)}</a>
+<a class="more" href="${href('contact')}">${esc(t.book)}</a></div>
 <span class="cell-edge"><span class="edge">${esc(site.edgeCode)}<i>▸ END</i></span></span></div>`);
     return `${head({ key: 'index', title: '' })}
 <div class="pre" data-pre aria-hidden="true">
 <div class="pre-win"><span class="pre-n" data-pre-n>S</span></div>
 <p class="pre-word"><span>${esc(site.edgeCode)}</span><span>36 EXP</span></p>
 </div>
+<canvas class="fluid" data-fluid aria-hidden="true"></canvas>
 <main id="main" class="home">
 <h1 class="sr-only">${esc(site.title)}</h1>
 <section class="roll" data-roll aria-label="${esc(site.title)}">
