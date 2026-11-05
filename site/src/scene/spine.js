@@ -159,7 +159,7 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
   const tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
   const visW = clamp(camera.aspect * 2.9, 2.3, 4.8), d0 = visW / 2 / (tan * camera.aspect);
   const reach = stops.map((stp) => Math.max(0, (stp.n * PITCH) / 2 - visW * 0.42));
-  const hold = reach.map((r) => 0.55 + ((2 * r) / visW) * 0.85);
+  const hold = reach.map((r) => 0.55 + ((2 * r) / visW) * 0.5);   // half a screen of scrolling per view width of film
   const segs = [];
   let tot = 0;
   stops.forEach((_, k) => {

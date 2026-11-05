@@ -194,7 +194,8 @@ ${rest.length ? `<ol class="film-rows">${rest.map((f) => `<li><button type="butt
     let from = 0;
     const spine = series.map((s, i) => {
       const fr = framesOf(s);
-      const o = { n: fr.length, from, cap: [`ROLL ${i + 1}`, s.title, `${s.sub} · ${t.frames(fr.length)}`], images: fr.map(({ p }) => texUrl(p)) };
+      // a frame of the film atlas is about 485 px wide, so the 480 px size is enough
+      const o = { n: fr.length, from, cap: [`ROLL ${i + 1}`, s.title, `${s.sub} · ${t.frames(fr.length)}`], images: fr.map(({ p }) => texUrl(p, 480)) };
       from += fr.length;
       return o;
     });

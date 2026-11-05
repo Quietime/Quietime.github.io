@@ -41,7 +41,7 @@ function ropeTexture(renderer) {
 /**
  * data: { slates: { head: [4 lines], end: [4 lines] }, caps: { head: [k, t, s], end: [...] },
  *         series: [{ slate: [4 lines], cap: [k, t, s], frames: [{ w, h }] }] }
- * imgs: the pictures in the same order as the frames, series after series.
+ * imgs: the picture URLs in the same order as the frames, series after series (loaded as the camera nears them).
  * onPick(seriesIndex, frameIndex) is called when a print is clicked.
  */
 export function darkroomScene({ renderer, scene, camera, data, imgs, fog, onPick, host }) {
@@ -140,15 +140,43 @@ export function darkroomScene({ renderer, scene, camera, data, imgs, fog, onPick
     hang(t, 1.2, 0.7, 0, 0, row, 'pins', null);
     caps.push({ z: row.z, cap });
   };
+  // pictures are loaded only for the prints a few rows ahead of the camera, and let go once it has passed them,
+  // so a roll of a hundred prints never holds more than a dozen textures (a phone keeps its memory)
+  const blank = new THREE.DataTexture(new Uint8Array([60, 52, 44, 255]), 1, 1, THREE.RGBAFormat); blank.needsUpdate = true;
+  disposables.push(blank);
   let order = 0, img = 0;
   const print = (si, fi, slot, row) => {
-    const fr = data.series[si].frames[fi], im = imgs[img++];
-    if (!im) return;
-    const tex = imageTexture(im, renderer); disposables.push(tex);
+    const fr = data.series[si].frames[fi], url = imgs[img++];
+    if (!url) return;
     const [w, h] = printSize(fr.w, fr.h, slot === 0 ? 1.2 : 1.25);
     let style = STYLES[(order++ * 3 + Math.floor(rand() * 5)) % STYLES.length];
     if (h > w && style === 'thread') style = 'peg';       // a tall print on a thread would reach the floor
-    hang(tex, w, h, 0.06, slot * SIDE + 0.08 * (rand() - 0.5), row, style, { si, fi });
+    hang(blank, w, h, 0.06, slot * SIDE + 0.08 * (rand() - 0.5), row, style, { si, fi });
+    const it = items[items.length - 1];
+    it.url = url; it.tex = null; it.loading = false;
+  };
+  const AHEAD = 5 * ROW;
+  const stream = (zc) => {
+    for (const it of items) {
+      if (!it.url) continue;
+      const d = zc - it.z;                     // distance ahead of the camera
+      const want = d > 0.6 && d < AHEAD;
+      if (want && !it.tex && !it.loading) {
+        it.loading = true;
+        const im = new Image(); im.decoding = 'async';
+        im.onload = () => {
+          it.loading = false;
+          if (it.gone) return;
+          it.tex = imageTexture(im, renderer);
+          it.mats.forEach((m) => { m.uniforms.map.value = it.tex; });
+        };
+        im.onerror = () => { it.loading = false; };
+        im.src = it.url;
+      } else if (!want && it.tex && (d < 0.2 || d > AHEAD + ROW)) {
+        it.mats.forEach((m) => { m.uniforms.map.value = blank; });
+        it.tex.dispose(); it.tex = null;
+      }
+    }
   };
 
   const z0 = z;
@@ -198,12 +226,13 @@ export function darkroomScene({ renderer, scene, camera, data, imgs, fog, onPick
   addEventListener('pointermove', onMove, { passive: true });
 
   // rough page length: the walk takes about one screen of scrolling per row
-  const pages = Math.max(3, (zStart - zEnd) / ROW) * 0.62 + 1;
+  const pages = Math.max(3, (zStart - zEnd) / ROW) * (narrow ? 0.4 : 0.62) + 1;
   return {
     pages,
     update(dt, pr) {
       clock += dt;
       const zc = cam.step(zStart + pr * (zEnd - zStart), dt);
+      stream(zc);
       const vc = (zc - lastZ) / Math.max(dt, 1e-3); lastZ = zc;
       const V = -vc, acc = clamp((V - lastV) / Math.max(dt, 1e-3), -60, 60); lastV = V;
       // a row breaks into grain as it reaches you: fully there 2.3 units ahead, gone at 0.9
@@ -246,6 +275,7 @@ export function darkroomScene({ renderer, scene, camera, data, imgs, fog, onPick
       removeEventListener('click', onClick);
       removeEventListener('pointermove', onMove);
       host?.classList.remove('is-hot');
+      for (const it of items) { it.gone = true; it.tex?.dispose(); }
       scene.remove(group); scene.fog = null; disposables.forEach((d) => d.dispose());
     },
   };

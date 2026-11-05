@@ -15,7 +15,8 @@ export async function mountStage({ kind, data, run, cap, onPick }) {
   const renderer = makeRenderer(canvas);
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(30, 1, 0.05, 200);
-  const imgs = await loadImages(data.images);
+  // the spine draws every picture into one atlas, so it loads them all; the darkroom streams them itself
+  const imgs = kind === 'darkroom' ? data.images : await loadImages(data.images);
   const capK = cap?.querySelector('[data-cap-k]'), capT = cap?.querySelector('[data-cap-t]'), capS = cap?.querySelector('[data-cap-s]');
 
   let cur = null, lastW = 0, lastNarrow = null;

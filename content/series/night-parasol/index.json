@@ -1,0 +1,163 @@
+{
+  "title_zh": "一柄夜光",
+  "title_en": "A Parasol of Night Light",
+  "title_ja": "夜をともす傘",
+  "order": 30,
+  "draft": false,
+  "statement_zh": "天黑以后，纸伞成了唯一的灯。光从伞骨间漏下来，照见她，也照见夜色里那一点不肯散去的暖。",
+  "statement_en": "After dark the paper parasol is the only lamp. Light falls through its ribs onto her, and onto the small warmth the night will not let go of.",
+  "statement_ja": "日が暮れると、紙の傘がひとつだけの灯りになる。骨のあいだからこぼれた光が彼女を照らし、夜にほどけきらないぬくもりを照らす。",
+  "meta": [
+    {
+      "k_zh": "类型",
+      "k_en": "Kind",
+      "k_ja": "種類",
+      "v_zh": "旗袍人像",
+      "v_en": "Portraits in qipao",
+      "v_ja": "旗袍のポートレート"
+    },
+    {
+      "k_zh": "摄影",
+      "k_en": "Photographs",
+      "k_ja": "撮影",
+      "v_zh": "Quietime 静夜",
+      "v_en": "Quietime",
+      "v_ja": "Quietime"
+    }
+  ],
+  "frames": [
+    {
+      "image": "01.jpg",
+      "caption_zh": "",
+      "caption_en": "",
+      "caption_ja": "",
+      "layout": "right"
+    },
+    {
+      "image": "02.jpg",
+      "caption_zh": "",
+      "caption_en": "",
+      "caption_ja": "",
+      "layout": "left"
+    },
+    {
+      "image": "03.jpg",
+      "caption_zh": "",
+      "caption_en": "",
+      "caption_ja": "",
+      "layout": "right"
+    },
+    {
+      "image": "04.jpg",
+      "caption_zh": "",
+      "caption_en": "",
+      "caption_ja": "",
+      "layout": "left"
+    },
+    {
+      "image": "05.jpg",
+      "caption_zh": "",
+      "caption_en": "",
+      "caption_ja": "",
+      "layout": "right"
+    },
+    {
+      "image": "06.jpg",
+      "caption_zh": "",
+      "caption_en": "",
+      "caption_ja": "",
+      "layout": "left"
+    },
+    {
+      "image": "07.jpg",
+      "caption_zh": "",
+      "caption_en": "",
+      "caption_ja": "",
+      "layout": "wide"
+    },
+    {
+      "image": "08.jpg",
+      "caption_zh": "",
+      "caption_en": "",
+      "caption_ja": "",
+      "layout": "right"
+    },
+    {
+      "image": "09.jpg",
+      "caption_zh": "",
+      "caption_en": "",
+      "caption_ja": "",
+      "layout": "left"
+    },
+    {
+      "image": "10.jpg",
+      "caption_zh": "",
+      "caption_en": "",
+      "caption_ja": "",
+      "layout": "right"
+    },
+    {
+      "image": "11.jpg",
+      "caption_zh": "",
+      "caption_en": "",
+      "caption_ja": "",
+      "layout": "left"
+    },
+    {
+      "image": "12.jpg",
+      "caption_zh": "",
+      "caption_en": "",
+      "caption_ja": "",
+      "layout": "right"
+    },
+    {
+      "image": "13.jpg",
+      "caption_zh": "",
+      "caption_en": "",
+      "caption_ja": "",
+      "layout": "wide"
+    },
+    {
+      "image": "14.jpg",
+      "caption_zh": "",
+      "caption_en": "",
+      "caption_ja": "",
+      "layout": "left"
+    },
+    {
+      "image": "15.jpg",
+      "caption_zh": "",
+      "caption_en": "",
+      "caption_ja": "",
+      "layout": "right"
+    },
+    {
+      "image": "16.jpg",
+      "caption_zh": "",
+      "caption_en": "",
+      "caption_ja": "",
+      "layout": "left"
+    },
+    {
+      "image": "17.jpg",
+      "caption_zh": "",
+      "caption_en": "",
+      "caption_ja": "",
+      "layout": "right"
+    },
+    {
+      "image": "18.jpg",
+      "caption_zh": "",
+      "caption_en": "",
+      "caption_ja": "",
+      "layout": "left"
+    },
+    {
+      "image": "19.jpg",
+      "caption_zh": "",
+      "caption_en": "",
+      "caption_ja": "",
+      "layout": "wide"
+    }
+  ]
+}
