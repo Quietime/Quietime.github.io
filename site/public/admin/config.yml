@@ -65,12 +65,19 @@ collections:
           - { name: v_en, label: Value (English), widget: string, required: false }
           - { name: k_ja, label: 項目（日本語）, widget: string, required: false }
           - { name: v_ja, label: 内容（日本語）, widget: string, required: false }
+      - name: bulk
+        label: 批量添加照片
+        widget: image
+        multiple: true
+        required: false
+        hint: 一次选好多张，或直接把照片拖进来，按选择的顺序排在下面"照片"之后。首页这一卷的长度、作品页和系列页都会按张数自动生成。要给某张写说明，就把它加到下面"照片"里。
       - name: frames
         label: 照片
         label_singular: 一张照片
         widget: list
+        required: false
         summary: '{{caption_zh}}'
-        hint: 按观看顺序排列，可以拖动调整。
+        hint: 一张一张添加，可以写说明、选排法，按观看顺序排列，可以拖动调整。
         fields:
           - { name: image, label: 照片, widget: image }
           - { name: caption_zh, label: 说明（中文）, widget: string, required: false }

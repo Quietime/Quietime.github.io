@@ -45,7 +45,9 @@ export async function loadContent(lang = 'zh') {
     let e;
     try { e = await read(`${dir}/index.json`); } catch { continue; }
     if (e.draft) continue;
-    const frames = (e.frames || [])
+    // pictures added one by one (with captions) come first, then any dropped in together in the bulk field
+    const bulk = [].concat(e.bulk || []).filter(Boolean).map((image, k) => ({ image, layout: ['wide', 'right', 'left'][k % 3] }));
+    const frames = [...(e.frames || []), ...bulk]
       .map((f) => ({ src: resolveImage(f.image, dir), caption: pick(f, 'caption', lang), layout: f.layout || 'right' }))
       .filter((f) => f.src);
     if (!frames.length) continue;

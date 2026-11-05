@@ -3,6 +3,9 @@ import '@fontsource/noto-serif-sc/500.css';
 import '@fontsource/noto-sans-sc/400.css';
 import '@fontsource/questrial/400.css';
 import '@fontsource/barlow-condensed/500.css';
+import '@fontsource/anton/400.css';
+import '@fontsource/instrument-serif/400-italic.css';
+import '@chinese-fonts/dyh/dist/SmileySans-Oblique/result.css';
 import 'photoswipe/style.css';
 import './styles.css';
 
@@ -15,9 +18,8 @@ import Lenis from 'lenis';
 import PhotoSwipeLightbox from 'photoswipe/lightbox';
 import justifiedLayout from 'justified-layout';
 import cursor from './cursor.js';
+import heroCard from './hero.js';
 import { springEase } from './physics/spring.js';
-import { Fluid } from './physics/fluid.js';
-import { Ribbon } from './physics/ribbon.js';
 import sound from './sound.js';
 
 gsap.registerPlugin(ScrollTrigger, SplitText, ScrambleTextPlugin, Flip);
@@ -39,8 +41,6 @@ const store = {
   del: (k) => { try { sessionStorage.removeItem(k); } catch { /* private mode */ } },
 };
 const DIGITS = '0123456789';
-// critically damped spring step response, used for the film-advance detent on the home strip
-const DETENT = springEase(1);
 let CFG = {};
 try { CFG = JSON.parse($('#qt-config')?.textContent || '{}'); } catch { CFG = {}; }
 const U = CFG.ui || {};
@@ -235,310 +235,36 @@ function scrubRise(els, { y = 56, from = 0.12, start = 'top 98%', end = 'top 62%
 }
 
 /*
- * Home: one strip of film floating in developer, simulated rather than animated.
- * Wide screens: the strip is a chain of frames in 3D (physics/ribbon.js). Scrolling pulls it through
- * the gate at the centre of the view; the parts outside the gate sway, trail, sag and twist under
- * springs, drag, gravity and the flow of the liquid. The liquid (physics/fluid.js) is stirred by the
- * moving film and by the pointer, and pushes back on the film: a two-way coupling.
- * Phones: the strip stands upright and scrolls; each frame tilts under inertia when the scroll speeds
- * up or slows down, and swings with the flow, as a chain of coupled damped oscillators.
+ * The WebGL scenes. A scene is mounted only when the page carries its data, motion is allowed and WebGL works;
+ * otherwise the plain HTML under the run stays visible (html.no-gl).
+ */
+const sceneData = () => { try { return JSON.parse($('#qt-scene')?.textContent || 'null'); } catch { return null; } };
+async function mountScene(kind, data, onPick) {
+  const run = $('[data-run]');
+  if (!data || !run || reduce) { root.classList.add('no-gl'); return; }
+  const kit = await import('./scene/kit.js');
+  if (!kit.webglOK()) { root.classList.add('no-gl'); return; }
+  const { mountStage } = await import('./scene/stage.js');
+  await mountStage({ kind, data, run, cap: $('[data-cap]'), onPick });
+  run.dataset.hot = U.view || '';
+  ScrollTrigger.refresh();
+}
+
+/*
+ * Home: a title card, then one strip of film as the spine of the page (scene/spine.js).
+ * The letters of the title fall in under gravity and bounce (hero.js); the scroll then carries the camera along
+ * the film, stop by stop, one series to a stop.
  */
 function home() {
-  const pre = $('[data-pre]');
-  const roll = $('[data-roll]');
-  const track = $('[data-roll-track]');
-  const cells = $$('[data-cell]', track);
-  const count = $('[data-roll-count]');
-  const rc = $('[data-rc]');
-  const leader = () => splitReveal(roll, 0.1);
-
-  // phones: the statement stands one phrase to a line, so the type is sized to fit the widest phrase
-  const statement = $('.leader-statement', roll);
-  const fitPhrases = () => {
-    if (!statement) return;
-    statement.style.fontSize = '';
-    statement.classList.remove('nw-wrap');
-    const nws = $$('.nw', statement);
-    if (!nws.length || !matchMedia('(max-width: 600px)').matches) return;
-    const room = statement.clientWidth;
-    const widest = Math.max(...nws.map((n) => n.scrollWidth));
-    if (widest <= room) return;
-    const fs = (parseFloat(getComputedStyle(statement).fontSize) * room) / widest;
-    if (fs >= 17) statement.style.fontSize = `${Math.floor(fs * 10) / 10}px`;
-    else statement.classList.add('nw-wrap');
-  };
-  fitPhrases();
-  document.fonts?.ready.then(fitPhrases);
-  addEventListener('resize', fitPhrases);
-
-  // opening: the camera's frame counter runs S, 0, 1, then the shutter curtain lifts
-  if (pre && !root.classList.contains('pre-seen') && !reduce) {
-    const n = $('[data-pre-n]', pre);
-    const bits = $$('.pre-win, .pre-word', pre);
-    const tl = gsap.timeline({ onComplete: () => { pre.remove(); store.set('qt-pre', '1'); } });
-    tl.fromTo(bits, { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 0.8, ease: 'springFirm', stagger: 0.1 }, 0.1);
-    ['0', '1'].forEach((v) => {
-      tl.to(n, { yPercent: -110, opacity: 0, duration: 0.2, ease: 'power2.in' }, '+=0.32')
-        .call(() => { n.textContent = v; })
-        .fromTo(n, { yPercent: 110, opacity: 0 }, { yPercent: 0, opacity: 1, duration: 0.45, ease: 'spring' });
-    });
-    tl.to(pre, { clipPath: 'inset(0% 0% 100% 0%)', duration: 0.9, ease: 'springCrit' }, '+=0.3')
-      .add(leader, '-=0.5');
-    pre.addEventListener('click', () => tl.progress(0.92));
-  } else {
-    pre?.remove();
-    leader();
+  const data = sceneData();
+  const card = $('[data-hero]');
+  if (card) heroCard(card, { photo: data?.heroPhoto, reduce });
+  if (!reduce) {
+    gsap.fromTo('.h-row .h-en, .h-st, .h-edge', { opacity: 0, y: 14 }, { opacity: 1, y: 0, duration: 1.2, ease: 'springFirm', delay: 1.1, stagger: 0.1 });
+    scrubRise($$('.h-sec'));
   }
-
   films();
-  if (reduce || !track) return;
-
-  // the developer: a fluid painted as faint ink under the strip
-  const canvas = $('[data-fluid]');
-  const ink = matchMedia('(prefers-color-scheme: dark)').matches ? [217, 154, 91] : [51, 40, 31];
-  let fluid = null, fctx = null, fimg = null;
-  const makeFluid = (nx, ny) => {
-    fluid = new Fluid(nx, ny);
-    canvas.width = nx; canvas.height = ny;
-    fctx = canvas.getContext('2d');
-    fimg = fctx.createImageData(nx, ny);
-  };
-  let px = -1, py = -1, pt = 0;
-  addEventListener('pointermove', (e) => {
-    if (!fluid) return;
-    const now = performance.now();
-    if (px >= 0 && now - pt < 100) {
-      const dt = Math.max(4, now - pt) / 1000;
-      const s = fluid.nx / innerWidth;
-      // the pointer hands the liquid half its velocity: Δu = ½ v
-      fluid.splat(e.clientX / innerWidth, e.clientY / innerHeight, 0.5 * ((e.clientX - px) / dt) * s, 0.5 * ((e.clientY - py) / dt) * s, 0.022, 0.07, 1);
-    }
-    px = e.clientX; py = e.clientY; pt = now;
-  }, { passive: true });
-
-  const mm = gsap.matchMedia();
-
-  mm.add('(min-width: 861px)', () => {
-    root.classList.add('roll-3d');
-    makeFluid(96, 54);
-    const run = $('[data-roll-run]');
-    const TILT_X = (9 * Math.PI) / 180, TILT_Z = (-2.2 * Math.PI) / 180, PERSP = 1500;
-    let W = innerWidth, Hh = innerHeight, sh = 0, ww = [], C = [], ribbon = null, read = 0, lens = '';
-    const last = cells.length - 1;
-
-    // a frame whose words do not fit its height is set a little smaller (CSS zoom on its contents)
-    function fitFrames() {
-      $$('.cell:not(.cell-photo) > .frame', track).forEach((f) => {
-        f.style.setProperty('--fit', '1');
-        const cs = getComputedStyle(f);
-        const room = f.clientHeight - parseFloat(cs.paddingTop) - parseFloat(cs.paddingBottom);
-        let top = Infinity, bottom = -Infinity;
-        for (const k of f.children) { top = Math.min(top, k.offsetTop); bottom = Math.max(bottom, k.offsetTop + k.offsetHeight); }
-        const need = bottom - top;
-        if (need > room + 1) f.style.setProperty('--fit', Math.max(0.55, room / need).toFixed(3));
-      });
-    }
-
-    function build() {
-      W = innerWidth; Hh = innerHeight;
-      sh = Math.round(Math.min(Hh * 0.66, 620));
-      track.style.setProperty('--sh', `${sh}px`);
-      $$('.cell-photo', track).forEach((c) => {
-        const [a, b] = (c.style.getPropertyValue('--ar') || '3/2').split('/').map(Number);
-        c.style.width = `${Math.round((sh - 102) * (a / b) + 14)}px`;
-      });
-      fitFrames();
-      ww = cells.map((c) => c.offsetWidth);
-      // neighbouring frames overlap by 3 px so the film reads as one continuous strip at every bend
-      ribbon = new Ribbon(ww.map((w) => w - 3));
-      ribbon.setView(W, Hh);
-      C = cells.map((_, i) => ribbon.s[i] + ribbon.L[i] / 2);
-      ribbon.flow = (x, y, z) => {
-        const [X, Y] = project(x, y, z);
-        const [u, v] = fluid.sample(X / W, Y / Hh);
-        const k = W / fluid.nx; // cells/s → px/s
-        return [u * k, v * k];
-      };
-      // the sticky stage stays in view for exactly the length of the strip
-      run.style.height = `${Math.round(span() + roll.offsetHeight)}px`;
-      // every frame carries the whole camera in its own transform: perspective from 50% 42% of the stage
-      // (the track sits at 50% 52%), then the tilt of the scene. There is no shared preserve-3d context,
-      // so no browser has to sort or clip one; the frames are painted far to near by z-index instead
-      const o = (0.1 * Hh).toFixed(1);
-      lens = `translate(0px, ${-o}px) perspective(${PERSP}px) translate(0px, ${o}px) rotateX(9deg) rotateZ(-2.2deg)`;
-    }
-    // the same camera every frame carries in its transform: rotateZ, then rotateX, then perspective from 50% 42%
-    function project(x, y, z) {
-      const x1 = x * Math.cos(TILT_Z) - y * Math.sin(TILT_Z);
-      const y1 = x * Math.sin(TILT_Z) + y * Math.cos(TILT_Z);
-      const y2 = y1 * Math.cos(TILT_X) - z * Math.sin(TILT_X);
-      const z2 = y1 * Math.sin(TILT_X) + z * Math.cos(TILT_X);
-      const k = PERSP / (PERSP - z2);
-      return [W * 0.5 + x1 * k, Hh * 0.42 + (Hh * 0.1 + y2) * k];
-    }
-    const span = () => C[C.length - 1] - C[0];
-    build();
-    read = C[0];
-
-    // the stage is position: sticky inside a run as long as the strip, so nothing is re-parented or
-    // switched from fixed to static when the strip ends: it simply scrolls away with the page
-    const st = ScrollTrigger.create({
-      trigger: run, start: 'top top', end: () => `+=${Math.round(span())}`, invalidateOnRefresh: true,
-      onUpdate: (self) => { read = C[0] + self.progress * span(); },
-      onRefresh: (self) => { read = C[0] + self.progress * span(); },
-      onToggle: (self) => count?.classList.toggle('off', !self.isActive),
-    });
-    const onRefreshInit = () => build();
-    ScrollTrigger.addEventListener('refreshInit', onRefreshInit);
-    const yOf = (i) => st.start + ((C[i] - C[0]) / span()) * (st.end - st.start);
-
-    // tabbing into a frame brings it to the gate
-    const onFocus = (e) => {
-      roll.scrollLeft = 0; roll.scrollTop = 0;
-      const i = cells.indexOf(e.target.closest('[data-cell]'));
-      if (i < 0) return;
-      if (lenis) lenis.scrollTo(yOf(i), { duration: 1.34, easing: DETENT }); else scrollTo(0, yOf(i));
-    };
-    track.addEventListener('focusin', onFocus);
-
-    // film advance detent: when the scroll comes to rest between two frames, the nearer one is drawn
-    // into the gate by a critically damped spring (f = 1.1 Hz, settles to 0.1 % in 9.23 / ω = 1.34 s)
-    let still = 0;
-    const detent = (dt) => {
-      if (!lenis || lenis.isScrolling || !st.isActive) { still = 0; return; }
-      still += dt;
-      if (still < 0.14) return;
-      still = -Infinity; // once per pause
-      let best = 0, gap = Infinity;
-      for (let i = 0; i < C.length; i++) { const d = Math.abs(C[i] - read); if (d < gap) { gap = d; best = i; } }
-      const y = yOf(best);
-      if (Math.abs(y - scrollY) > 1.5) lenis.scrollTo(y, { duration: 1.34, easing: DETENT });
-    };
-
-    let current = -1, lastRead = read;
-    const faded = new Array(cells.length).fill(false), depth = new Array(cells.length).fill(-1);
-    const tick = (time, deltaMs) => {
-      const dt = Math.min(deltaMs / 1000, 1 / 20);
-      if (!dt) return;
-      detent(dt);
-      const speed = Math.abs(read - lastRead) / dt;
-      lastRead = read;
-      // scrolling stirs the slow current; when it stops the current dies away on its own (ribbon.js)
-      ribbon.current = Math.max(ribbon.current, Math.min(1, speed / 600));
-      if (ribbon.current < 0.05) ribbon.current = 0;
-      // asleep: nothing moves, nothing is stirred, no ink left to show; also when the stage is out of view
-      const offstage = scrollY > st.end + Hh;
-      const awake = !ribbon.ready || speed > 0 || ribbon.current > 0 || ribbon.maxSpeed() > 0.5 || fluid.active();
-      if (offstage || !awake) return;
-      ribbon.step(dt, read);
-
-      // the moving film pushes the liquid: momentum in proportion to the relative velocity, plus a trace of dye
-      const s = fluid.nx / W;
-      for (let i = 0; i < ribbon.n; i++) {
-        const o = 3 * i;
-        const [X, Y] = project(ribbon.x[o], ribbon.x[o + 1], ribbon.x[o + 2]);
-        if (X < -40 || X > W + 40 || Y < -40 || Y > Hh + 40) continue;
-        const [fu, fv] = fluid.sample(X / W, Y / Hh);
-        const rx = ribbon.v[o] * s - fu, ry = ribbon.v[o + 1] * s - fv;
-        const sp = Math.hypot(rx, ry);
-        if (sp < 0.4) continue;
-        fluid.splat(X / W, Y / Hh, rx * 0.35, ry * 0.35, 0.03, Math.min(0.08, sp * 0.002), 1);
-      }
-      fluid.step(dt);
-      fluid.draw(fctx, fimg, ink, 230);
-
-      // place every frame from the simulation; frames far down the strip are out of view anyway
-      // (the strip runs off along its tangent), so they are only faded, never removed from the page
-      const near = [];
-      for (let i = 0; i < cells.length; i++) {
-        const c = cells[i];
-        const far = Math.abs(C[i] - read) > 2.6 * W;
-        if (far !== faded[i]) { faded[i] = far; c.classList.toggle('is-far', far); }
-        if (far) continue;
-        const q = ribbon.pose(i);
-        c.style.transform = `${lens} translate3d(${q.cx.toFixed(2)}px, ${q.cy.toFixed(2)}px, ${q.cz.toFixed(2)}px) rotateY(${q.yaw.toFixed(4)}rad) rotateZ(${q.pitch.toFixed(4)}rad) rotateX(${q.roll.toFixed(4)}rad) translate(${(-ww[i] / 2).toFixed(1)}px, ${(-sh / 2).toFixed(1)}px)`;
-        // depth of the frame centre after the tilt, toward the viewer positive
-        const y1 = q.cx * Math.sin(TILT_Z) + q.cy * Math.cos(TILT_Z);
-        near.push([y1 * Math.sin(TILT_X) + q.cz * Math.cos(TILT_X), i]);
-      }
-      near.sort((a, b) => a[0] - b[0]);
-      near.forEach(([, i], k) => { if (depth[i] !== k) { depth[i] = k; cells[i].style.zIndex = String(k + 1); } });
-
-      // the frame counter reads the frame nearest the gate; the tail is the end of the roll
-      let best = 0, gap = Infinity;
-      for (let i = 0; i < C.length; i++) { const d = Math.abs(C[i] - read); if (d < gap) { gap = d; best = i; } }
-      if (best !== current && rc) {
-        current = best;
-        const end = best === last;
-        count.classList.toggle('is-end', end);
-        gsap.to(rc, { duration: 0.4, scrambleText: { text: end ? 'END' : String(best + 1), chars: end ? 'upperCase' : DIGITS, speed: 0.6 }, overwrite: true });
-      }
-    };
-    gsap.ticker.add(tick);
-    return () => {
-      gsap.ticker.remove(tick);
-      ScrollTrigger.removeEventListener('refreshInit', onRefreshInit);
-      track.removeEventListener('focusin', onFocus);
-      root.classList.remove('roll-3d');
-      run.style.height = '';
-      cells.forEach((c) => { c.style.transform = ''; c.style.width = ''; c.style.zIndex = ''; c.classList.remove('is-far'); });
-      $$('.frame', track).forEach((f) => f.style.removeProperty('--fit'));
-      fluid = null;
-    };
-  });
-
-  mm.add('(max-width: 860px)', () => {
-    makeFluid(42, 76);
-    const n = cells.length;
-    const tilt = new Float64Array(n), tiltV = new Float64Array(n);
-    const swing = new Float64Array(n), swingV = new Float64Array(n);
-    // each frame: θ'' = -ω²θ - 2ζωθ' + k(θ₋ + θ₊ - 2θ) + forcing; coupling lets a disturbance travel along the strip
-    const w = 2 * Math.PI * 1.2, z = 0.32, kc = 40;
-    let lastY = scrollY, lastV = 0;
-    const settled = () => {
-      for (let i = 0; i < n; i++) if (Math.abs(tilt[i]) > 1e-4 || Math.abs(tiltV[i]) > 1e-3 || Math.abs(swing[i]) > 1e-4 || Math.abs(swingV[i]) > 1e-3) return false;
-      return true;
-    };
-    const tick = (time, deltaMs) => {
-      const dt = Math.min(deltaMs / 1000, 1 / 20);
-      if (!dt) return;
-      const vel = (scrollY - lastY) / dt;
-      const acc = (vel - lastV) / dt;
-      lastY = scrollY; lastV = vel;
-      // asleep while the page is still, the strip has stopped swinging and the ink is gone
-      if (vel === 0 && acc === 0 && !fluid.active() && settled()) return;
-      const s = fluid.nx / innerWidth;
-      // the strip moving up through the liquid drags it along both edges
-      if (Math.abs(vel) > 30) {
-        for (const ex of [0.06, 0.94]) fluid.splat(ex, 0.3 + Math.random() * 0.5, 0, -vel * s * 0.12, 0.08, Math.min(0.04, Math.abs(vel) * 0.00003), 1);
-      }
-      fluid.step(dt);
-      fluid.draw(fctx, fimg, ink, 230);
-      const H = 1 / 240, steps = Math.max(1, Math.round(dt / H)), h = dt / steps;
-      const top = [];
-      for (let i = 0; i < n; i++) top.push(cells[i].getBoundingClientRect());
-      for (let k = 0; k < steps; k++) {
-        for (let i = 0; i < n; i++) {
-          const r = top[i];
-          const seen = r.bottom > -100 && r.top < innerHeight + 100;
-          const flowX = seen ? fluid.sample(0.5, Math.min(0.98, Math.max(0.02, (r.top + r.height / 2) / innerHeight)))[0] : 0;
-          const lap = (i > 0 ? tilt[i - 1] : tilt[i]) + (i < n - 1 ? tilt[i + 1] : tilt[i]) - 2 * tilt[i];
-          const a = -w * w * tilt[i] - 2 * z * w * tiltV[i] + kc * lap - acc * 0.000045;
-          tiltV[i] += a * h; tilt[i] += tiltV[i] * h;
-          const b = -w * w * swing[i] - 2 * z * w * swingV[i] + flowX * 0.06;
-          swingV[i] += b * h; swing[i] += swingV[i] * h;
-        }
-      }
-      for (let i = 0; i < n; i++) {
-        const r = top[i];
-        if (r.bottom < -100 || r.top > innerHeight + 100) continue;
-        const tx = Math.max(-0.35, Math.min(0.35, tilt[i])), sy = Math.max(-0.2, Math.min(0.2, swing[i]));
-        cells[i].style.transform = `perspective(900px) rotateX(${tx.toFixed(4)}rad) rotateY(${sy.toFixed(4)}rad)`;
-      }
-    };
-    gsap.ticker.add(tick);
-    return () => { gsap.ticker.remove(tick); cells.forEach((c) => { c.style.transform = ''; }); fluid = null; };
-  });
+  mountScene('spine', data);
 }
 
 function series() {
@@ -579,7 +305,8 @@ function series() {
     });
   });
 
-  photoLightbox('[data-gallery]', 'a.fr-open');
+  const lb = photoLightbox('[data-gallery]', 'a.fr-open');
+  mountScene('darkroom', sceneData(), (si, fi) => lb.loadAndOpen(fi, { gallery: $('[data-gallery]') }));
 
   const rail = $('.rail');
   if (rail && !reduce) ScrollTrigger.create({ start: 0, end: 'max', onUpdate: (self) => rail.style.setProperty('--rail', `${-self.scroll() * 0.6}px`) });
@@ -639,6 +366,9 @@ function photoLightbox(gallery, children) {
 
 function works() {
   splitReveal(document, 0.05);
+  // the darkroom walk through every series; a print leads to its frame on the series page
+  const data = sceneData();
+  mountScene('darkroom', data, (si, fi) => { const s = data.series[si]; if (s?.href) leakTo(`${s.href}#f${fi + 1}`); });
   if (!reduce) {
     $$('.ws').forEach((ws) => {
       gsap.fromTo($('.ws-img img', ws), { scale: 1.14 }, { scale: 1, ease: 'none', scrollTrigger: { trigger: ws, start: 'top bottom', end: 'center 55%', scrub: true } });

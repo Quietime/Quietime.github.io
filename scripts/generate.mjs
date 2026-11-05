@@ -44,7 +44,7 @@ for (const L of LANGS) {
     formEndpoint: contact.formEndpoint, email: contact.email,
     ui: {
       copied: t.copied, copyFail: t.copyFail, soundOn: t.soundOn, soundOff: t.soundOff, notReady: t.notReady,
-      f: { ...t.f, budgets: undefined }, pswp: t.pswp,
+      f: { ...t.f, budgets: undefined }, pswp: t.pswp, view: t.cursor.view,
     },
   };
 
@@ -161,53 +161,91 @@ ${site.samples && site.sampleCredit ? `<p class="ftr-credit">${esc(site.sampleCr
 ${rest.length ? `<ol class="film-rows">${rest.map((f) => `<li><button type="button" class="film-row" ${filmAttrs(f)} aria-label="${esc(filmState(f))}：${esc(f.title)}"><span class="fr-t">${esc(f.title)}</span><span class="fr-e">${esc(f.sub)}</span><span class="fr-k">${esc(facts(f)[0] || f.kind)}</span><span class="fr-s">${esc(filmState(f))}</span></button></li>`).join('')}</ol>` : ''}`;
   }
 
-  // ── Home: one continuous take along a single strip of film ──
+  // ── Scene data, shared by the home spine and the darkroom ──
+  // a picture as a texture: the largest size up to `max` pixels wide
+  const texUrl = (p, max = 960) => {
+    const ws = p.widths.filter((w) => w <= max);
+    return `${p.dir}/${p.base}-${ws.length ? ws[ws.length - 1] : p.widths[0]}.webp`;
+  };
+  const sceneJSON = (o) => `<script type="application/json" id="qt-scene">${JSON.stringify(o).replace(/</g, '\\u003c')}</script>`;
+  const framesOf = (s) => s.frames.map((f) => ({ f, p: P(f.src) })).filter((x) => x.p);
+  const capBar = `<div class="cap" data-cap aria-hidden="true"><p class="k" data-cap-k></p><p class="t" data-cap-t></p><p class="s" data-cap-s></p></div>`;
+  const darkSlates = {
+    head: [`${site.edgeCode} ▸ 0`, site.name, site.nameZh, 'DARKROOM · ONE TAKE'],
+    end: [`${site.edgeCode} ▸ END`, t.endRoll, t.scene.writeUs, contact.email || ''],
+  };
+  const darkCaps = {
+    head: [`${site.edgeCode} ▸ 0`, t.scene.darkroom, t.scene.darkroomSub],
+    end: [`${site.edgeCode} ▸ END`, t.endRoll, contact.email || ''],
+  };
+  const darkSeries = (s, i) => {
+    const fr = framesOf(s);
+    return {
+      href: seriesHref(s),
+      slate: [`ROLL ${i + 1}`, s.title, s.sub, t.scene.prints(fr.length)],
+      cap: [`ROLL ${i + 1}`, s.title, s.sub],
+      frames: fr.map(({ p }) => ({ w: p.w, h: p.h })),
+      images: fr.map(({ p }) => texUrl(p)),
+    };
+  };
+
+  // ── Home: a title card, then one strip of film, a stop for every series ──
   function home() {
+    let from = 0;
+    const spine = series.map((s, i) => {
+      const fr = framesOf(s);
+      const o = { n: fr.length, from, cap: [`ROLL ${i + 1}`, s.title, `${s.sub} · ${t.frames(fr.length)}`], images: fr.map(({ p }) => texUrl(p)) };
+      from += fr.length;
+      return o;
+    });
+    const first = framesOf(series[0] || { frames: [] })[0];
+    const data = {
+      edge: site.edgeCode,
+      heroPhoto: first ? texUrl(first.p, 1600) : '',
+      capHead: [`${site.edgeCode} ▸ 0`, t.scene.head, t.scene.headSub],
+      capEnd: [`${site.edgeCode} ▸ END`, t.endRoll, contact.email || ''],
+      images: spine.flatMap((x) => x.images),
+      series: spine.map(({ images, ...rest }) => rest),
+    };
+    // without WebGL (or with reduced motion) the run holds a plain strip: a slate and the first frames of each series
+    const cells = [];
     let n = 0;
     const cellEdge = () => { n += 1; return `<span class="cell-edge">${edge(n)}</span>`; };
-    const cells = [];
-    cells.push(`<div class="cell cell-leader" data-cell><div class="frame">
-<div class="leader-in">
-<p class="leader-brand"><span>${esc(site.name)}</span><span>${esc(site.nameZh)}</span></p>
-<p class="leader-statement" data-split>${site.statement.map((l) => `<span class="line"><span>${phrases(l)}</span></span>`).join('')}</p>
-<p class="leader-hint">${esc(t.leaderHint)}</p>
-</div></div>${cellEdge()}</div>`);
     series.forEach((s, i) => {
-      cells.push(`<div class="cell cell-slate" data-cell><div class="frame">
+      cells.push(`<div class="cell cell-slate"><div class="frame">
 <p class="slate-roll">${esc(t.roll(i + 1))}</p>
 <h2 class="slate-title"><a href="${seriesHref(s)}" data-cursor="${esc(t.cursor.open)}">${esc(s.title)}</a></h2>
 <p class="slate-sub">${esc(s.sub)}</p>
 <p class="slate-n">${esc(t.frames(s.frames.length))}</p>
 <a class="more" href="${seriesHref(s)}">${esc(t.openRoll)}</a></div>${cellEdge()}</div>`);
       s.frames.slice(0, 3).forEach((f, k) => {
-        const p = P(f.src);
-        cells.push(`<a class="cell cell-photo" data-cell href="${seriesHref(s)}#f${k + 1}" data-cursor="${esc(t.cursor.open)}" aria-label="${esc(s.title)} ${esc(t.frameN(k + 1))}" style="--ar:${p?.w || 3}/${p?.h || 2}"><span class="frame">${picture(f.src, { sizes: '(max-width: 860px) 90vw, 60vw', alt: f.caption, eager: i === 0 && k === 0 })}</span><span class="cell-cap">${esc(f.caption)}</span>${cellEdge()}</a>`);
+        cells.push(`<a class="cell cell-photo" href="${seriesHref(s)}#f${k + 1}" data-cursor="${esc(t.cursor.open)}" aria-label="${esc(s.title)} ${esc(t.frameN(k + 1))}"><span class="frame">${picture(f.src, { sizes: '(max-width: 860px) 90vw, 60vw', alt: f.caption })}</span><span class="cell-cap">${esc(f.caption)}</span>${cellEdge()}</a>`);
       });
     });
-    cells.push(`<div class="cell cell-films" data-cell><div class="frame">
-<div class="films-head"><h2>${esc(t.nav.films)}</h2><p>${esc(t.filmsSub)}</p></div>
-${filmGrid()}
-<p class="more-wrap"><a class="more" href="${href('films')}">${esc(t.allFilms)}</a></p></div>${cellEdge()}</div>`);
-    cells.push(`<div class="cell cell-about" data-cell><div class="frame">
-<p class="about-q">${esc(homeTeaser || about.intro[0] || '')}</p>
-<a class="more" href="${href('about')}">${esc(t.aboutLink)}</a></div>${cellEdge()}</div>`);
-    cells.push(`<div class="cell cell-tail" data-cell><div class="frame">
-<p class="tail-end">${esc(t.endRoll)}</p>
-<div class="tail-contact">${contactLines(true)}</div>
-<a class="more" href="${href('contact')}">${esc(t.book)}</a></div>
-<span class="cell-edge"><span class="edge">${esc(site.edgeCode)}<i>▸ END</i></span></span></div>`);
+    const title = (site.name || 'Quietime').toUpperCase();
     return `${head({ key: 'index', title: '' })}
-<div class="pre" data-pre aria-hidden="true">
-<div class="pre-win"><span class="pre-n" data-pre-n>S</span></div>
-<p class="pre-word"><span>${esc(site.edgeCode)}</span><span>36 EXP</span></p>
-</div>
-<canvas class="fluid" data-fluid aria-hidden="true"></canvas>
 <main id="main" class="home">
-<h1 class="sr-only">${esc(site.title)}</h1>
-<div class="roll-run" data-roll-run><section class="roll" data-roll aria-label="${esc(site.title)}">
-<div class="roll-cam" data-roll-cam><div class="roll-track" data-roll-track>${cells.join('\n')}</div></div>
-</section></div>
-<p class="roll-count" data-roll-count aria-hidden="true"><span data-rc>1</span><span class="of">/ ${n}</span></p>
+<section class="hero" data-hero aria-label="${esc(site.title)}">
+<p class="h-edge">${esc(site.edgeCode)} ▸ 0 · 36 EXP</p>
+<h1 class="h-title" data-hero-title aria-label="${esc(site.name)} ${esc(site.nameZh)}">${esc(title)}</h1>
+<div class="h-row"><p class="h-zh" data-hero-zh aria-hidden="true">${esc(site.nameZh)}</p><p class="h-en">${esc(t.scene.heroEn)}</p></div>
+<p class="h-st">${site.statement.map((l) => esc(l)).join('<br>')}</p>
+<p class="h-hint" aria-hidden="true">${esc(t.scene.scroll)} ↓</p>
+</section>
+<div class="run" data-run>
+<section class="roll" aria-label="${esc(t.nav.works)}"><div class="roll-cam"><div class="roll-track">${cells.join('\n')}</div></div></section>
+</div>
+${capBar}
+<section class="h-sec h-films" aria-labelledby="h-films-t">
+<div class="h-sec-head"><h2 id="h-films-t">${esc(t.nav.films)}</h2><p>${esc(t.filmsSub)}</p></div>
+${filmGrid()}
+<p class="more-wrap"><a class="more" href="${href('films')}">${esc(t.allFilms)}</a></p>
+</section>
+<section class="h-sec h-about">
+<p class="about-q">${esc(homeTeaser || about.intro[0] || '')}</p>
+<p class="h-about-links"><a class="more" href="${href('about')}">${esc(t.aboutLink)}</a><a class="more" href="${href('contact')}">${esc(t.book)}</a></p>
+</section>
+${sceneJSON(data)}
 </main>
 ${playerMarkup()}
 ${footer()}`;
@@ -223,9 +261,15 @@ ${footer()}`;
       const p = P(f.src);
       return `<a class="sc" href="${seriesHref(s)}#f${i + 1}" data-cursor="hide" data-full="${p ? largest(p) : ''}" aria-label="${esc(s.title)} ${esc(t.frameN(i + 1))}">${picture(f.src, { sizes: '(max-width: 860px) 45vw, 18vw', alt: f.caption })}<span class="sc-n">${i + 1}</span></a>`;
     }).join('')}</div></section>`).join('');
-    return `${head({ key: 'works', title: t.nav.works, desc: `${site.title}：${series.map((s) => s.title).join('、')}` })}
+    const dark = series.map(darkSeries);
+    const data = { slates: darkSlates, caps: darkCaps, images: dark.flatMap((x) => x.images), series: dark.map(({ images, ...rest }) => rest) };
+    return `${head({ key: 'works', title: t.nav.works, desc: `${site.title}：${series.map((s) => s.title).join('、')}`, theme: 'room' })}
 <main id="main" class="works">
-<header class="page-head"><h1 data-split><span class="line"><span>${esc(t.nav.works)}</span></span></h1>
+<header class="page-head dr-head"><p class="dr-edge">${esc(site.edgeCode)} ▸ 0</p><h1 data-split><span class="line"><span>${esc(t.nav.works)}</span></span></h1><p class="dr-lede">${esc(t.scene.darkroomSub)}</p></header>
+<div class="run" data-run></div>
+${capBar}
+${sceneJSON(data)}
+<header class="page-head w-index-head">
 <div class="toggle" role="group" aria-label="${esc(t.views.label)}"><button type="button" aria-pressed="true" data-view="list">${esc(t.views.list)}</button><button type="button" aria-pressed="false" data-view="sheet">${esc(t.views.sheet)}</button></div>
 ${site.samples ? `<p class="sample-note">${esc(t.samples)}</p>` : ''}
 </header>
@@ -258,7 +302,13 @@ ${footer()}`;
       }
     }
     const meta = [[t.metaFrames, String(fr.length)], ...s.meta];
-    return `${head({ key: `series-${s.slug}`, title: s.title, desc: s.statement || site.description })}
+    const dk = darkSeries(s, i);
+    const data = {
+      slates: { head: darkSlates.head, end: next && next !== s ? [`${site.edgeCode} ▸ END`, t.next, next.title, next.sub] : darkSlates.end },
+      caps: { head: darkCaps.head, end: next && next !== s ? [`${site.edgeCode} ▸ END`, t.next, next.title] : darkCaps.end },
+      images: dk.images, series: [{ ...dk, images: undefined }],
+    };
+    return `${head({ key: `series-${s.slug}`, title: s.title, desc: s.statement || site.description, theme: 'room' })}
 <div class="rail" aria-hidden="true"></div>
 <main id="main" class="series">
 <header class="s-head">
@@ -267,6 +317,9 @@ ${footer()}`;
 <dl class="s-meta">${meta.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
 </header>
 ${s.statement ? `<div class="s-statement"><p class="zh" data-words>${esc(s.statement)}</p></div>` : '<div class="s-gap"></div>'}
+<div class="run" data-run></div>
+${capBar}
+${sceneJSON(data)}
 <div class="frames" data-gallery>${body}</div>
 ${series.length > 1 ? `<nav class="s-next" aria-label="${esc(t.next)}"><a href="${seriesHref(next)}" data-cursor="${esc(t.cursor.next)}"><span class="k">${esc(t.next)}</span><span class="s-next-txt"><span class="t">${esc(next.title)}</span><span class="e">${esc(next.sub)}</span></span>${picture(next.frames[0].src, { sizes: '(max-width: 860px) 92vw, 40vw' })}</a></nav>` : ''}
 <p class="counter" aria-hidden="true" data-counter><span data-cur>1</span><span class="of">/ ${fr.length}</span></p>

@@ -38,6 +38,10 @@ export const UI = {
     },
     pswp: { prev: '上一格', next: '下一格', close: '关闭', label: '照片查看', error: '这张照片暂时无法加载。' },
     cursor: { view: '查看', open: '进入', play: '播放', soon: '整理中', next: '下一卷' },
+    scene: {
+      heroEn: 'photography & moving image', head: '卷头', headSub: '胶片会在每个系列停下来，铺平给你看。',
+      darkroom: '暗房', darkroomSub: '照片还没干，一路往里走。', prints: (n) => `${n} 张`, scroll: '向下滚动', writeUs: '写信约拍',
+    },
     nf: { title: '这一格是空的。', text: '你要找的页面不在这卷胶片里。', back: '回到第一格' },
   },
 
@@ -72,6 +76,10 @@ export const UI = {
     },
     pswp: { prev: 'Previous', next: 'Next', close: 'Close', label: 'Photo viewer', error: 'This photograph could not be loaded.' },
     cursor: { view: 'View', open: 'Open', play: 'Play', soon: 'Soon', next: 'Next' },
+    scene: {
+      heroEn: 'photography & moving image', head: 'Leader', headSub: 'The film stops at every series and lies flat for you.',
+      darkroom: 'Darkroom', darkroomSub: 'The prints are still wet. Walk on in.', prints: (n) => `${n} prints`, scroll: 'Scroll', writeUs: 'Write to book a shoot',
+    },
     nf: { title: 'This frame is blank.', text: 'The page you were looking for never made it onto this roll.', back: 'Back to the first frame' },
   },
 
@@ -105,6 +113,10 @@ export const UI = {
     },
     pswp: { prev: '前へ', next: '次へ', close: '閉じる', label: '写真ビューア', error: 'この写真を読み込めませんでした。' },
     cursor: { view: '見る', open: '開く', play: '再生', soon: '準備中', next: '次へ' },
+    scene: {
+      heroEn: 'photography & moving image', head: 'リーダー', headSub: 'シリーズごとにフィルムが止まり、平らにひらいて見せてくれる。',
+      darkroom: '暗室', darkroomSub: 'まだ乾ききらない写真のあいだを、奥へ。', prints: (n) => `${n} 枚`, scroll: 'スクロール', writeUs: 'メールで撮影のご相談を',
+    },
     nf: { title: 'このコマは、空白です。', text: 'お探しのページは、このロールには写っていませんでした。', back: '最初のコマへ戻る' },
   },
 };

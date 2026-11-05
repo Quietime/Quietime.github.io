@@ -16,7 +16,7 @@
 
 **能做什么**
 
-- **作品系列**：新建系列、上传照片、拖动排序、写说明、选排法（宽幅、偏右、偏左、小图、并排）、填写相机和胶片信息、暂不发布。
+- **作品系列**：新建系列；在“批量添加照片”里一次选好多张或直接拖进去；要写说明、选排法（宽幅、偏右、偏左、小图、并排）的照片放在“照片”里一张张添加，可以拖动排序；填写相机和胶片信息；暂不发布。首页这一卷胶片的长度、作品页和系列页的暗房，都按照片张数自动生成。
 - **网站设置 → B站影像**：粘贴 BV 号、视频链接，或 B站“分享 → 嵌入代码”都可以。构建时会自动读取 B站 的标题、封面、时长、播放量和发布日期，在网站里点开即可播放。
 - **网站设置 → 基本信息与联系方式**里还有：背景音乐开关与上传、联系页的合作流程与常见问题、微信二维码、表单提交地址（可选，填 Formspree 或 Web3Forms 后访客可以直接在网页提交）。
 - **网站设置 → 基本信息与联系方式**：首页标语、邮箱、社交平台链接（微信号留空就不显示）、关于页介绍、服务项目、版权声明。
@@ -42,10 +42,13 @@ content/
 
 ## 网站功能
 
-- 首页一镜到底：一条悬在显影液里的胶片，由物理仿真驱动（弹簧、惯性、二次阻力、重力、扭转、不可伸长约束），背景是实时计算的不可压缩流体，两者双向耦合。公式与验算见 `docs/physics.md`
+- 首屏：巨大的 QUIETIME 字母像镂空模板压在照片上，字母按重力落下、反弹停稳，鼠标扫过会把它们推开再弹回
+- 首页一镜到底：一条 35mm 胶片做页面的脊柱，每个系列是一段铺平的胶片，格数等于照片数；系列之间胶片向后弯折、扭转一圈，能看到背面的反像
+- 作品页和系列页一镜到底：暗房里晾着的照片迎面而来，到眼前化成颗粒消散；五种挂法各按刚体摆的物理摆动，滚动停下时会因惯性前后轻摆；麻绳下垂、有毛刺，地面有倒影；照片边缘做了抗锯齿
+- 所有动效的公式与验算见 `docs/physics.md`
 - 中文、English、日本語三种语言，各自意译而不是逐句对译；第一次访问按浏览器语言自动切换，右上角可以换
 - 月亮只是标志，出现在页眉、图标和分享图上
-- 定制光标：在照片、影片、链接上会变成“查看”“播放”等提示，触屏设备自动关闭
+- 定制光标：有惯性的对焦环，指到链接时对焦角标吸附上去并合焦变色，在照片、影片上显示“查看”“播放”等提示，触屏设备自动关闭
 - 背景音乐：访客第一次点击后淡入，右上角可开关，会记住选择
 - 图库：全部照片齐边排列，可按系列筛选，点开连续浏览
 - 联系：预约表单（含校验与发送状态）、合作流程、常见问题、邮箱一键复制
@@ -71,7 +74,9 @@ npm run dev
 | [justified-layout](https://github.com/flickr/justified-layout) | 图库的齐边排版（Flickr 开源） |
 | [sharp](https://github.com/lovell/sharp) | 图片处理 |
 | [Vite](https://github.com/vitejs/vite) | 构建 |
-| [Fontsource](https://github.com/fontsource/fontsource) | 思源宋体、思源黑体、Noto Serif JP、Newsreader、Questrial、Barlow Condensed，随站托管，国内也能正常显示 |
+| [three.js](https://github.com/mrdoob/three.js) | 首页胶片与暗房的三维渲染 |
+| [Fontsource](https://github.com/fontsource/fontsource) | 思源宋体、思源黑体、Noto Serif JP、Newsreader、Questrial、Barlow Condensed、Anton、Instrument Serif，随站托管，国内也能正常显示 |
+| [得意黑 Smiley Sans](https://github.com/atelier-anchor/smiley-sans)（[中文网字计划](https://chinese-font.netlify.app/) 分包） | 中文标题字体，按需只下载用到的字 |
 
 设计与检查用到的 Skill 放在 `.claude/skills/`，说明见那里的 README。
 
@@ -82,8 +87,9 @@ npm run dev
 - `scripts/images.mjs` 图片处理
 - `scripts/generate.mjs` 生成页面
 - `scripts/admin.mjs` 把后台程序复制到网站里
-- `site/src/` 样式与交互，`cursor.js` 光标，`sound.js` 背景音乐
+- `site/src/` 样式与交互，`cursor.js` 光标，`hero.js` 首屏落字，`sound.js` 背景音乐
+- `site/src/scene/` 三维场景：`spine.js` 首页胶片，`darkroom.js` 暗房，`stage.js` 把场景挂到页面上，`kit.js` 共用部分（含抗锯齿的照片着色器）
 - `scripts/i18n.mjs` 三种语言的界面文字；要加新语言，在这里加一份并在后台补上对应字段
 - `scripts/bilibili.mjs` 构建时读取 B站 元数据
-- `site/src/physics/` 弹簧、流体、胶片三个物理模块；`scripts/physics-check.mjs` 数值验算
+- `site/src/physics/spring.js` 阻尼弹簧；`scripts/physics-check.mjs` 数值验算
 - `site/public/admin/config.yml` 后台的字段配置
