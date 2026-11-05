@@ -153,5 +153,6 @@
   "samples": false,
   "sample_credit_zh": "示例影像来自 Kodak Lossless True Color Image Suite（Kodak PhotoCD PCD0992），Eastman Kodak 公开发布，作品整理完成后替换。",
   "sample_credit_en": "Sample images from the Kodak Lossless True Color Image Suite (Kodak PhotoCD PCD0992), released by Eastman Kodak. They will be replaced by the studio archive.",
-  "sample_credit_ja": "サンプル画像は Eastman Kodak が公開した Kodak Lossless True Color Image Suite（Kodak PhotoCD PCD0992）のものです。作品の準備が整いしだい差し替えます。"
+  "sample_credit_ja": "サンプル画像は Eastman Kodak が公開した Kodak Lossless True Color Image Suite（Kodak PhotoCD PCD0992）のものです。作品の準備が整いしだい差し替えます。",
+  "hero_image": "/content/series/city-weather/07.jpg"
 }

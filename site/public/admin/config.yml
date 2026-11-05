@@ -133,6 +133,7 @@ collections:
           - { name: statement_zh, label: 片头的一句话（中文，可分行）, widget: text }
           - { name: statement_en, label: Opening line (English), widget: text, required: false }
           - { name: statement_ja, label: 冒頭のことば（日本語）, widget: text, required: false }
+          - { name: hero_image, label: 首屏大字里的照片, widget: image, required: false, media_folder: /content/uploads, public_folder: /content/uploads, hint: 首页 QUIETIME 几个大字镂空透出的照片。建议横幅风景，2400 像素宽以上；留空就用第一个系列的第一张 }
           - { name: edge_code, label: 胶片边码文字, widget: string, hint: 印在每一格下方，例如 QUIETIME 400 }
           - { name: wechat, label: 微信号, widget: string, required: false }
           - { name: email, label: 邮箱, widget: string, required: false }

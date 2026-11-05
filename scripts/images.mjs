@@ -69,6 +69,7 @@ for (const s of content.series) {
   console.log(`photos: ${s.slug} ${s.frames.length}`);
 }
 for (const f of content.films) if (f.src) manifest[f.src] ??= await processImage(f.src, 'films');
+if (content.site.heroImage) manifest[content.site.heroImage] ??= await processImage(content.site.heroImage, 'brand');
 if (content.contact.qr) manifest[content.contact.qr] ??= await processImage(content.contact.qr, 'brand');
 await fs.mkdir(path.join(ROOT, '.cache'), { recursive: true });
 await fs.writeFile(path.join(ROOT, '.cache/photos.json'), JSON.stringify(manifest, null, 1));

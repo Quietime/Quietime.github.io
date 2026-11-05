@@ -202,7 +202,8 @@ ${rest.length ? `<ol class="film-rows">${rest.map((f) => `<li><button type="butt
     const first = framesOf(series[0] || { frames: [] })[0];
     const data = {
       edge: site.edgeCode,
-      heroPhoto: first ? texUrl(first.p, 1600) : '',
+      // the letters of the title are cut out of this picture: a landscape set in the admin, else the first frame
+      heroPhoto: P(site.heroImage) ? texUrl(P(site.heroImage), 1600) : first ? texUrl(first.p, 1600) : '',
       capHead: [`${site.edgeCode} ▸ 0`, t.scene.head, t.scene.headSub],
       capEnd: [`${site.edgeCode} ▸ END`, t.endRoll, contact.email || ''],
       images: spine.flatMap((x) => x.images),

@@ -71,6 +71,7 @@ export async function loadContent(lang = 'zh') {
       url: S.url || 'https://quietime.github.io/',
       statement: pick(S, 'statement', lang).split('\n').filter(Boolean),
       edgeCode: S.edge_code || 'QUIETIME 400',
+      heroImage: resolveImage(S.hero_image, 'content/uploads'),
       samples: Boolean(S.samples),
       sampleCredit: pick(S, 'sample_credit', lang),
     },
