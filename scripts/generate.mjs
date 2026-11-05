@@ -23,8 +23,10 @@ function picture(src, { sizes = '100vw', alt = '', cls = '', eager = false } = {
   return `<picture class="ph ${cls}" style="--ar:${p.w}/${p.h};--pc:${p.color}"><source type="image/webp" srcset="${set('webp')}" sizes="${sizes}"><img class="dev" src="${largest(p, 'jpg')}" srcset="${set('jpg')}" sizes="${sizes}" width="${p.w}" height="${p.h}" alt="${esc(alt)}" loading="${eager ? 'eager' : 'lazy'}" decoding="async"></picture>`;
 }
 
-// splits a line at Chinese or Japanese punctuation so phrases never break in the middle
-const phrases = (l) => esc(l).split(/(?<=[，。、；！？])/).map((t) => `<span class="nw">${t}</span>`).join('');
+// splits a Chinese or Japanese line at its punctuation so a phrase never breaks in the middle;
+// Latin text keeps its spaces and wraps normally
+const CJK = /[\u3040-\u30ff\u3400-\u9fff]/;
+const phrases = (l) => (CJK.test(l) ? esc(l).split(/(?<=[，。、；！？])/).map((t) => `<span class="nw">${t}</span>`).join('') : esc(l));
 
 const out = path.join(ROOT, 'site');
 const pages = {};
@@ -202,9 +204,9 @@ ${filmGrid()}
 <canvas class="fluid" data-fluid aria-hidden="true"></canvas>
 <main id="main" class="home">
 <h1 class="sr-only">${esc(site.title)}</h1>
-<section class="roll" data-roll aria-label="${esc(site.title)}">
+<div class="roll-run" data-roll-run><section class="roll" data-roll aria-label="${esc(site.title)}">
 <div class="roll-cam" data-roll-cam><div class="roll-track" data-roll-track>${cells.join('\n')}</div></div>
-</section>
+</section></div>
 <p class="roll-count" data-roll-count aria-hidden="true"><span data-rc>1</span><span class="of">/ ${n}</span></p>
 </main>
 ${playerMarkup()}
@@ -332,14 +334,14 @@ ${footer()}`;
 <header class="page-head"><h1 data-split><span class="line"><span>${esc(t.nav.contact)}</span></span></h1><p class="lede">${esc(contact.lede)}</p></header>
 <div class="ct-grid">
 <form class="ct-form" data-form novalidate>
-<div class="fld"><input id="f-name" name="name" type="text" autocomplete="name" placeholder=" " required><label for="f-name">${esc(t.f.name)}</label><p class="fld-msg" data-msg></p></div>
-<div class="fld"><input id="f-reach" name="reach" type="text" autocomplete="email" placeholder=" " required><label for="f-reach">${esc(t.f.reach)}</label><p class="fld-msg" data-msg></p></div>
+<div class="fld"><input id="f-name" aria-describedby="f-name-msg" name="name" type="text" autocomplete="name" placeholder=" " required><label for="f-name">${esc(t.f.name)}</label><p class="fld-msg" id="f-name-msg" data-msg aria-live="polite"></p></div>
+<div class="fld"><input id="f-reach" aria-describedby="f-reach-msg" name="reach" type="text" autocomplete="email" placeholder=" " required><label for="f-reach">${esc(t.f.reach)}</label><p class="fld-msg" id="f-reach-msg" data-msg aria-live="polite"></p></div>
 <fieldset class="chips"><legend>${esc(t.f.kind)}</legend>${kinds.map((k, i) => `<label><input type="radio" name="kind" value="${esc(k)}"${i === 0 ? ' checked' : ''}><span>${esc(k)}</span></label>`).join('')}</fieldset>
 <div class="fld-row">
 <div class="fld"><input id="f-date" name="date" type="date" placeholder=" "><label for="f-date">${esc(t.f.date)}</label></div>
 <div class="fld"><select id="f-budget" name="budget"><option value="">${esc(none)}</option>${budgets.map((b) => `<option>${esc(b)}</option>`).join('')}</select><label for="f-budget" class="is-up">${esc(t.f.budget)}</label></div>
 </div>
-<div class="fld"><textarea id="f-msg" name="message" rows="5" placeholder=" " required></textarea><label for="f-msg">${esc(t.f.msg)}</label><p class="fld-msg" data-msg></p></div>
+<div class="fld"><textarea id="f-msg" aria-describedby="f-msg-msg" name="message" rows="5" placeholder=" " required></textarea><label for="f-msg">${esc(t.f.msg)}</label><p class="fld-msg" id="f-msg-msg" data-msg aria-live="polite"></p></div>
 <div class="ct-send"><button type="submit" class="send" data-send><span class="send-t">${esc(t.f.send)}</span><span class="send-spin" aria-hidden="true"></span></button><p class="send-note" data-note role="status" aria-live="polite"></p></div>
 </form>
 <aside class="ct-side">

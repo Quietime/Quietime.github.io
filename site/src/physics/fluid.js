@@ -5,11 +5,11 @@
 //   ∂d/∂t = -(u·∇)d                           (dye carried by the flow)
 //
 // Each step: add forces → vorticity confinement → semi-Lagrangian advection of velocity →
-// pressure projection (Jacobi iterations on ∇²p = ∇·u, then u -= ∇p) → advect dye → dissipate.
+// pressure projection (SOR iterations on ∇²p = ∇·u, then u -= ∇p) → advect dye → dissipate.
 // Velocities are in grid cells per second. Walls are solid (zero normal velocity).
 
 export class Fluid {
-  constructor(nx, ny, { iterations = 30, sor = 1.75, vorticity = 1.6, velDecay = 0.6, dyeDecay = 0.4 } = {}) {
+  constructor(nx, ny, { iterations = 30, sor = 1.75, vorticity = 1.6, velDecay = 0.6, dyeDecay = 0.7 } = {}) {
     this.nx = nx; this.ny = ny;
     const n = nx * ny;
     this.u = new Float32Array(n); this.v = new Float32Array(n);
@@ -19,6 +19,7 @@ export class Fluid {
     this.iterations = iterations;
     this.sor = sor;           // over-relaxation factor for Gauss-Seidel
     this.eps = vorticity;     // vorticity confinement strength
+    this.curl0 = 1;           // below this vorticity (1/s) the confinement fades out
     this.velDecay = velDecay; // per second, exponential: u *= e^(-velDecay dt)
     this.dyeDecay = dyeDecay;
   }
@@ -66,7 +67,10 @@ export class Fluid {
   step(dt) {
     const { nx, ny, u, v, u0, v0, p, div, curl, d, d0 } = this;
 
-    // vorticity confinement: f = ε h (N × ω), N = ∇|ω| / |∇|ω||, puts back the small swirls numerical diffusion removes
+    // vorticity confinement: f = ε h (N × ω), N = ∇|ω| / |∇|ω||, puts back the small swirls numerical diffusion removes.
+    // That diffusion comes from interpolating along the flow, so it grows with the speed of the flow; the
+    // correction is scaled by min(1, |ω| / ω₀) to match, and fades out in nearly still liquid instead of
+    // feeding faint eddies forever
     for (let j = 1; j < ny - 1; j++) for (let i = 1; i < nx - 1; i++) {
       const k = i + j * nx;
       curl[k] = 0.5 * ((v[k + 1] - v[k - 1]) - (u[k + nx] - u[k - nx]));
@@ -76,8 +80,9 @@ export class Fluid {
       const gx = 0.5 * (Math.abs(curl[k + 1]) - Math.abs(curl[k - 1]));
       const gy = 0.5 * (Math.abs(curl[k + nx]) - Math.abs(curl[k - nx]));
       const len = Math.hypot(gx, gy) + 1e-5;
-      u[k] += this.eps * (gy / len) * curl[k] * dt;
-      v[k] -= this.eps * (gx / len) * curl[k] * dt;
+      const e = this.eps * Math.min(1, Math.abs(curl[k]) / this.curl0);
+      u[k] += e * (gy / len) * curl[k] * dt;
+      v[k] -= e * (gx / len) * curl[k] * dt;
     }
 
     // semi-Lagrangian advection of velocity: trace each cell back along the flow
@@ -129,6 +134,19 @@ export class Fluid {
     }
   }
 
+  /**
+   * True while anything is still visible or able to move the film: any cell faster than 0.15 cells/s
+   * (about 2 px/s on a wide screen) or dye denser than 0.002 (well under one step of alpha when drawn).
+   * Below both the liquid can sleep.
+   */
+  active() {
+    const { u, v, d } = this;
+    for (let k = 0; k < d.length; k++) {
+      if (d[k] > 0.002 || Math.abs(u[k]) > 0.15 || Math.abs(v[k]) > 0.15) return true;
+    }
+    return false;
+  }
+
   /** Root-mean-square divergence, used to check the projection. */
   divergenceRMS() {
     const { nx, ny, u, v } = this;
@@ -145,12 +163,14 @@ export class Fluid {
    * Paint the dye as faint ink on a small canvas (scaled up smoothly by CSS). Where the liquid turns,
    * the magnitude of the vorticity |ω| shades it a little too, so eddies show even where there is no dye.
    */
-  draw(ctx, img, [r, g, b], strength, swirl = 7) {
+  draw(ctx, img, [r, g, b], strength, swirl = 7, max = 96) {
     const { d, curl } = this;
     const px = img.data;
     for (let k = 0, o = 0; k < d.length; k++, o += 4) {
       px[o] = r; px[o + 1] = g; px[o + 2] = b;
-      px[o + 3] = Math.min(150, d[k] * strength + Math.abs(curl[k]) * swirl);
+      // soft ceiling: the ink approaches max but never piles up into a solid blot
+      const a = d[k] * strength + Math.abs(curl[k]) * swirl;
+      px[o + 3] = max * (1 - Math.exp(-a / max));
     }
     ctx.putImageData(img, 0, 0);
   }

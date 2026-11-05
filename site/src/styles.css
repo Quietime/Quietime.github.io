@@ -213,28 +213,34 @@ html.leak-in .leak { opacity: 1; --flash: 1; animation: failsafe 0s 2.6s forward
 .roll-count { display: none; }
 
 /* wide screens: the strip hangs in space and every frame is placed by the physics in main.js */
-.roll-3d .roll { height: 100svh; padding: 0; overflow: hidden; }
-.roll-3d .roll-cam { position: absolute; inset: 0; perspective: 1500px; perspective-origin: 50% 42%; }
-.roll-3d .roll-track { position: absolute; left: 50%; top: 52%; width: 0; height: 0; padding: 0; margin: 0; max-width: none; display: block;
-  background: none; transform-style: preserve-3d; transform: rotateX(9deg) rotateZ(-2.2deg); }
+/* the stage sticks for the length of the strip; clip (not hidden) so focus can never scroll it sideways */
+.roll-3d .roll { position: sticky; top: 0; height: 100svh; padding: 0; overflow: clip; }
+.roll-3d .roll-cam { position: absolute; inset: 0; }
+/* each frame carries the perspective and the tilt of the scene in its own transform (main.js) */
+.roll-3d .roll-track { position: absolute; left: 50%; top: 52%; width: 0; height: 0; padding: 0; margin: 0; max-width: none; display: block; background: none; }
 .roll-3d .roll-track::before, .roll-3d .roll-track::after { display: none; }
 .roll-3d .cell { position: absolute; left: 0; top: 0; height: var(--sh, 560px); padding: 46px 7px 56px; background: var(--film);
-  transform-origin: 50% 50%; will-change: transform; backface-visibility: hidden; }
+  transform-origin: 0 0; will-change: transform; }
 .roll-3d .cell::before, .roll-3d .cell::after { content: ""; position: absolute; left: 0; right: 0; height: 13px;
   background: repeating-linear-gradient(90deg, transparent 0 9px, var(--hole, var(--bg)) 9px 23px, transparent 23px 32px); }
 .roll-3d .cell::before { top: 16px; } .roll-3d .cell::after { bottom: 15px; }
 .roll-3d .frame { height: 100%; }
+.roll-3d .cell:not(.cell-photo) > .frame { padding: clamp(20px, 4.4vh, 52px) clamp(26px, 3.6vw, 56px); }
+.roll-3d .cell:not(.cell-photo) > .frame > * { zoom: var(--fit, 1); }
+.roll-3d .cell.is-far { opacity: 0; pointer-events: none; }
 .roll-3d .cell-photo .ph { width: 100%; height: 100%; aspect-ratio: auto; }
 .roll-3d .cell-leader { width: min(78vw, 1180px); }
 .roll-3d .cell-leader .frame { display: flex; align-items: center; }
 .roll-3d .cell-slate { width: clamp(360px, 29vw, 450px); }
 .roll-3d .cell-slate .frame { display: flex; flex-direction: column; justify-content: flex-end; }
-.roll-3d .cell-films { width: min(74vw, 1060px); }
-.roll-3d .cell-films .frame { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.6fr); grid-template-rows: auto 1fr auto; gap: 0 34px; align-content: start; }
+.roll-3d .cell-films { width: min(88vw, 1180px); }
+.roll-3d .cell-films .frame { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 1.3fr); grid-template-rows: auto 1fr auto; gap: 0 34px; align-content: start; }
 .roll-3d .cell-films .films-head { grid-column: 1; grid-row: 1; }
 .roll-3d .cell-films .screen { grid-column: 2; grid-row: 1 / span 3; }
 .roll-3d .cell-films .film-rows { grid-column: 1; grid-row: 2; margin-top: 0; }
-.roll-3d .cell-films .more-wrap { grid-column: 1; grid-row: 3; }
+.roll-3d .cell-films .more-wrap { grid-column: 1; grid-row: 3; margin-top: 12px; }
+.roll-3d .cell-films .film-row { padding: 8px 0; }
+.roll-3d .cell-films .films-head p { margin-bottom: 14px; }
 .roll-3d .cell-about, .roll-3d .cell-tail { width: clamp(480px, 44vw, 700px); }
 .roll-3d .cell-about .frame, .roll-3d .cell-tail .frame { display: flex; flex-direction: column; justify-content: center; }
 .roll-3d .cell-edge { left: 10px; bottom: 33px; }
@@ -243,6 +249,7 @@ html.leak-in .leak { opacity: 1; --flash: 1; animation: failsafe 0s 2.6s forward
   font-family: var(--f-edge); font-weight: 500; font-size: 15px; letter-spacing: .14em; color: var(--accent); transition: opacity .4s; }
 .roll-count .of { color: var(--fg-2); }
 .roll-3d .roll-count.off { opacity: 0; }
+.roll-count.is-end .of { display: none; }
 
 /* series pages: a strip of sprocket holes advances along the left edge as you read */
 .rail { display: none; }
@@ -637,7 +644,7 @@ html.in-room, html[data-theme-base="room"] { --err: #E58A6E; }
 :lang(en) .s-title, :lang(en) .page-head h1, :lang(en) .slate-title, :lang(en) .ws h2, :lang(en) .s-next .t,
 :lang(en) .leader-statement, :lang(en) .nf h1, :lang(en) .mn-zh { letter-spacing: -.01em; }
 :lang(en) .s-title { font-size: clamp(52px, 8.4vw, 132px); line-height: 1.02; }
-:lang(en) .leader-statement { font-size: clamp(30px, 3.6vw, 56px); line-height: 1.25; font-weight: 400; }
+:lang(en) .leader-statement { font-size: clamp(30px, 3.6vw, 56px); line-height: 1.25; font-weight: 400; text-wrap: pretty; }
 :lang(en) .slate-title { line-height: 1.05; }
 :lang(en) .about-q, :lang(en) .ab-text p, :lang(en) .s-statement .zh, :lang(en) .ws-st { letter-spacing: 0; line-height: 1.6; }
 :lang(en) .ab-text .ab-lead { line-height: 1.45; }
@@ -645,6 +652,11 @@ html.in-room, html[data-theme-base="room"] { --err: #E58A6E; }
 :lang(ja) .leader-statement, :lang(ja) .s-statement .zh, :lang(ja) .about-q { line-break: strict; }
 
 @media (max-width: 600px) {
-  .nw { white-space: normal; }
-  .leader-statement { font-size: clamp(24px, 6.4vw, 30px); }
+  /* each phrase of the statement on its own line, never broken; main.js sizes the type to the widest
+     phrase, and only if that would go below 17px does a phrase wrap, evenly */
+  .nw { display: block; overflow: hidden; padding-bottom: .04em; }
+  .nw-wrap .nw { white-space: normal; text-wrap: balance; }
+  .leader-statement { font-size: clamp(19px, 5.6vw, 28px); letter-spacing: .02em; }
+  .cell-leader { padding-inline: 14px; }
+  .cell-leader .frame { padding: 26px 18px; }
 }

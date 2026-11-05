@@ -46,40 +46,79 @@ log('2. Stable fluid, incompressibility');
   for (let s = 0; s < 120; s++) f.step(1 / 60);
   kinetic = 0; for (let i = 0; i < f.u.length; i++) kinetic += f.u[i] ** 2 + f.v[i] ** 2;
   log(`   kinetic energy after 2 s without forcing: ${pct(kinetic / k0)} of the start (decays, never blows up)`);
+  // once the eddies are faint the confinement fades out, so the flow should die away as e^(-velDecay t)
+  const peak = () => { let m = 0; for (let i = 0; i < f.u.length; i++) m = Math.max(m, Math.abs(f.u[i]), Math.abs(f.v[i])); return m; };
+  let t = 2, sleep = -1, a = 0, ta = 0;
+  for (; t < 60; t += 1 / 60) {
+    f.step(1 / 60);
+    if (!a && peak() < 0.5) { a = peak(); ta = t; }
+    if (!f.active()) { sleep = t; break; }
+  }
+  const rate = Math.log(a / peak()) / (t - ta);
+  log(`   late decay rate ${rate.toFixed(2)}/s against the set damping ${f.velDecay}/s; the liquid can sleep after ${sleep.toFixed(1)} s`);
 }
 
-// 3. Film ribbon: inextensible, lags while pulled, settles after it stops
+// 3. Film ribbon: inextensible, stiff against folding, lags while pulled, settles after it stops
 log('3. Film ribbon');
 {
-  const widths = [1300, 430, 760, 760, 760, 430, 520, 760, 760, 430, 760, 760, 760, 1100, 700, 700];
-  const r = new Ribbon(widths);
+  const widths = [1123, 430, 760, 760, 760, 430, 520, 760, 760, 430, 760, 760, 760, 1060, 634, 634];
+  const r = new Ribbon(widths.map((w) => w - 3));
   r.setView(1440, 900);
   const total = widths.reduce((a, b) => a + b, 0);
   r.reset(650);
-  let read = 650, maxStretch = 0, maxLag = 0;
+  let read = 650, maxStretch = 0, maxLag = 0, maxFold = 0;
   const dt = 1 / 60;
-  // accelerate to 1400 px/s, cruise, then stop dead
-  for (let t = 0; t < 6; t += dt) {
-    const speed = t < 1 ? 1400 * t : t < 4 ? 1400 : 0;
+  // accelerate to 1400 px/s, cruise, then stop dead; scrolling keeps the slow current at full strength
+  for (let t = 0; t < 4; t += dt) {
+    const speed = t < 1 ? 1400 * t : 1400;
     read = Math.min(total - 400, read + speed * dt);
+    r.current = 1;
     r.step(dt, read);
     maxStretch = Math.max(maxStretch, r.stretch());
-    if (t > 2 && t < 4) {
+    maxFold = Math.max(maxFold, r.maxFold());
+    if (t > 2) {
       // lag of the far node behind its rest position, against the direction of travel
-      const T = r.target(r.s[r.n - 1] - read, r.time, [0, 0, 0]);
+      const T = r.target(r.s[r.n - 1] - read, r.phase, [0, 0, 0]);
       maxLag = Math.max(maxLag, Math.hypot(r.x[3 * (r.n - 1)] - T[0], r.x[3 * (r.n - 1) + 1] - T[1], r.x[3 * (r.n - 1) + 2] - T[2]));
     }
   }
-  // switch the slow current off so only the decay of the motion is measured
-  RIBBON.drift = 0;
-  let settle = 0;
-  for (let t = 0; t < 10; t += dt) { r.step(dt, read); if (r.maxSpeed() > 2) settle = t; }
-  RIBBON.drift = 0.22;
+  // after the stop the current dies away by itself (e^(-t/calm)); the page sleeps once it is below 5 %
+  // and no node moves faster than 0.5 px/s
+  let slow = 0, sleep = -1;
+  for (let t = 0; t < 40; t += dt) {
+    if (r.current < 0.05) r.current = 0;
+    r.step(dt, read);
+    maxFold = Math.max(maxFold, r.maxFold());
+    if (r.maxSpeed() > 2) slow = t;
+    if (sleep < 0 && r.current === 0 && r.maxSpeed() < 0.5) sleep = t;
+  }
   log(`   largest stretch of any frame while moving: ${pct(maxStretch)} (film should not stretch)`);
+  log(`   largest fold between neighbouring frames: ${(maxFold * 180 / Math.PI).toFixed(1)}° (limit ${(RIBBON.maxBend * 180 / Math.PI).toFixed(0)}°)`);
   log(`   trailing of the free end at 1400 px/s: ${maxLag.toFixed(0)} px (drag and inertia)`);
-  log(`   time to settle below 2 px/s after a sudden stop: ${settle.toFixed(2)} s`);
-  // theory for the loosest node: the envelope decays as e^(-ζωt), so it falls from v₀ to 2 px/s in ln(v₀/2)/(ζω)
-  log(`   theory for the free end, ln(1400/2)/(ζω): ${(Math.log(700) / (0.3 * 2 * Math.PI * 0.5)).toFixed(2)} s (nodes nearer the gate are stiffer and settle sooner)`);
+  log(`   after a sudden stop: below 2 px/s in ${slow.toFixed(2)} s, asleep after ${sleep.toFixed(2)} s`);
+  log(`   theory: the current falls to 5 % in calm · ln 20 = ${(RIBBON.calm * Math.log(20)).toFixed(2)} s, then the loosest node rings down as e^(-ζωt)`);
+
+  // the far ends run off along the tangent of the arc and never come back into view
+  const proj = (W, Hh, x, y, z) => {
+    const tz = (-2.2 * Math.PI) / 180, tx = (9 * Math.PI) / 180;
+    const x1 = x * Math.cos(tz) - y * Math.sin(tz), y1 = x * Math.sin(tz) + y * Math.cos(tz);
+    const z2 = y1 * Math.sin(tx) + z * Math.cos(tx);
+    return W * 0.5 + x1 * (1500 / (1500 - z2));
+  };
+  const bad = [];
+  for (const [W, Hh] of [[900, 700], [1440, 900], [2560, 1440]]) {
+    const q = new Ribbon([100]); q.setView(W, Hh);
+    const T = [0, 0, 0];
+    for (let u = 2.6 * W; u < 40 * W; u += 0.05 * W) {
+      for (const sgn of [-1, 1]) {
+        q.target(sgn * u, 0, T);
+        // nearest edge of a frame up to 1180 px wide, seen from the front
+        const X = proj(W, Hh, T[0] - sgn * 590, T[1], T[2]);
+        if (X > -10 && X < W + 10) { bad.push(`${W}px u=${(sgn * u / W).toFixed(1)}W`); break; }
+      }
+    }
+  }
+  log(`   frames more than 2.6 screen widths from the gate that are still in view: ${bad.length ? bad.slice(0, 4).join(', ') : 'none'}`);
 }
 
 export default lines;
