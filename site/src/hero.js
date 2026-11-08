@@ -43,14 +43,21 @@ export default function hero(root, { photo, reduce }) {
   addEventListener('resize', fit);
   document.fonts?.load('400 100px "Anton"', 'QUIETIME').then(fit).catch(() => {});
 
+  // the loop runs only while the card is on screen and something is still moving; a pointer wakes it
+  let visible = true, raf = 0, last = 0;
+  const wake = () => { if (!raf && visible) { last = performance.now(); raf = requestAnimationFrame(tick); } };
+  new IntersectionObserver(([en]) => { visible = en.isIntersecting; if (visible) wake(); }).observe(root);
+
   const pan = new Spring({ freq: 0.7, zeta: 0.9 });
   let px = 0, py = 0, pt = 0;
   addEventListener('pointermove', (e) => {
     const now = performance.now(), dt = Math.max(0.008, (now - pt) / 1000);
     const vx = pt ? (e.clientX - px) / dt : 0, vy = pt ? (e.clientY - py) / dt : 0;
     px = e.clientX; py = e.clientY; pt = now;
+    if (!visible) return;
     pan.target = -(e.clientX / innerWidth - 0.5) * innerWidth * 0.16;
-    if (reduce || root.getBoundingClientRect().bottom < 0) return;
+    wake();
+    if (reduce) return;
     for (const L of letters) {
       if (!L.landed) continue;
       const r = L.el.getBoundingClientRect(), dx = px - (r.left + r.width / 2), dy = py - (r.top + r.height / 2);
@@ -63,30 +70,31 @@ export default function hero(root, { photo, reduce }) {
     }
   }, { passive: true });
 
-  let clock = 0, last = performance.now();
+  let clock = 0;
   const w = 2 * Math.PI * 2.2, z = 0.45, wr = 2 * Math.PI * 1.6;
-  const tick = (now) => {
+  const lastStart = letters.reduce((m, L) => Math.max(m, L.t0), 0);
+  const still = (L) => L.landed && Math.abs(L.x) + Math.abs(L.y) < 0.05 && Math.abs(L.vx) + Math.abs(L.vy) < 0.5 && Math.abs(L.a) + Math.abs(L.va) < 1e-3;
+  function tick(now) {
     const dt = Math.min(0.05, (now - last) / 1000); last = now; clock += dt;
-    if (root.getBoundingClientRect().bottom > 0) {
-      title.style.setProperty('--pan', `${pan.step(dt).toFixed(1)}px`);
-      const n = Math.max(1, Math.round(dt / (1 / 240))), h = dt / n;
-      for (const L of letters) {
-        if (clock < L.t0) { L.el.style.transform = `translate(0, ${L.y}px)`; continue; }
-        for (let i = 0; i < n; i++) {
-          if (!L.landed) {
-            L.vy += G * h; L.y += L.vy * h;
-            L.va += (-(wr * wr) * L.a - 2 * 0.3 * wr * L.va) * h; L.a += L.va * h;
-            if (L.y >= 0) { L.y = 0; L.vy = -E * L.vy; L.va -= 2.2 * L.a; if (Math.abs(L.vy) < 60) { L.vy = 0; L.landed = true; } }
-          } else {
-            L.vx += (-w * w * L.x - 2 * z * w * L.vx) * h; L.x += L.vx * h;
-            L.vy += (-w * w * L.y - 2 * z * w * L.vy) * h; L.y += L.vy * h;
-            L.va += (-w * w * L.a - 2 * z * w * L.va) * h; L.a += L.va * h;
-          }
+    title.style.setProperty('--pan', `${pan.step(dt).toFixed(1)}px`);
+    const n = Math.max(1, Math.round(dt / (1 / 240))), h = dt / n;
+    for (const L of letters) {
+      if (clock < L.t0) { L.el.style.transform = `translate(0, ${L.y}px)`; continue; }
+      for (let i = 0; i < n; i++) {
+        if (!L.landed) {
+          L.vy += G * h; L.y += L.vy * h;
+          L.va += (-(wr * wr) * L.a - 2 * 0.3 * wr * L.va) * h; L.a += L.va * h;
+          if (L.y >= 0) { L.y = 0; L.vy = -E * L.vy; L.va -= 2.2 * L.a; if (Math.abs(L.vy) < 60) { L.vy = 0; L.landed = true; } }
+        } else {
+          L.vx += (-w * w * L.x - 2 * z * w * L.vx) * h; L.x += L.vx * h;
+          L.vy += (-w * w * L.y - 2 * z * w * L.vy) * h; L.y += L.vy * h;
+          L.va += (-w * w * L.a - 2 * z * w * L.va) * h; L.a += L.va * h;
         }
-        L.el.style.transform = `translate(${L.x.toFixed(1)}px, ${L.y.toFixed(1)}px) rotate(${L.a.toFixed(4)}rad)`;
       }
+      L.el.style.transform = `translate(${L.x.toFixed(1)}px, ${L.y.toFixed(1)}px) rotate(${L.a.toFixed(4)}rad)`;
     }
-    requestAnimationFrame(tick);
-  };
-  requestAnimationFrame(tick);
+    const busy = clock < lastStart + 0.1 || !pan.atRest(0.1) || !letters.every(still);
+    raf = busy && visible ? requestAnimationFrame(tick) : 0;
+  }
+  wake();
 }

@@ -44,4 +44,6 @@ export class Spring {
     }
     return this.x;
   }
+  /** True once the spring sits at its target and has stopped moving (to within `eps`), so a loop can sleep. */
+  atRest(eps = 0.01) { return Math.abs(this.x - this.target) < eps && Math.abs(this.v) < eps; }
 }

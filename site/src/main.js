@@ -1,11 +1,8 @@
-import '@fontsource/noto-serif-sc/400.css';
-import '@fontsource/noto-serif-sc/500.css';
-import '@fontsource/noto-sans-sc/400.css';
 import '@fontsource/questrial/400.css';
 import '@fontsource/barlow-condensed/500.css';
 import '@fontsource/anton/400.css';
 import '@fontsource/instrument-serif/400-italic.css';
-import '@chinese-fonts/dyh/dist/SmileySans-Oblique/result.css';
+import 'lenis/dist/lenis.css';
 import 'photoswipe/style.css';
 import './styles.css';
 
@@ -46,9 +43,12 @@ try { CFG = JSON.parse($('#qt-config')?.textContent || '{}'); } catch { CFG = {}
 const U = CFG.ui || {};
 const F = U.f || {};
 
-// type for the other languages loads only on their pages
-if (CFG.lang === 'en') { import('@fontsource/newsreader/400.css'); import('@fontsource/newsreader/500.css'); }
-if (CFG.lang === 'ja') { import('@fontsource/noto-serif-jp/400.css'); import('@fontsource/noto-serif-jp/500.css'); import('@fontsource/noto-sans-jp/400.css'); }
+// CJK type arrives as its own stylesheet after the first paint (fonts/cjk.js); each language adds its own face
+const fontsReady = Promise.all([
+  import('./fonts/cjk.js'),
+  CFG.lang === 'en' ? import('./fonts/en.js') : null,
+  CFG.lang === 'ja' ? import('./fonts/ja.js') : null,
+]).catch(() => {});
 
 // a chosen language is remembered, so the first-visit language guess never overrides it
 document.addEventListener('click', (e) => {
@@ -244,7 +244,7 @@ async function mountScene(kind, data, onPick) {
   if (!data || !run || reduce) { root.classList.add('no-gl'); return; }
   const kit = await import('./scene/kit.js');
   if (!kit.webglOK()) { root.classList.add('no-gl'); return; }
-  const { mountStage } = await import('./scene/stage.js');
+  const [{ mountStage }] = await Promise.all([import('./scene/stage.js'), fontsReady]);
   await mountStage({ kind, data, run, cap: $('[data-cap]'), onPick });
   run.dataset.hot = U.view || '';
   ScrollTrigger.refresh();

@@ -1,13 +1,29 @@
 // Shared pieces for the two WebGL scenes (home: the film spine, works and series: the darkroom).
-import * as THREE from 'three';
+import {
+  BoxGeometry, BufferAttribute, BufferGeometry, CanvasTexture, CatmullRomCurve3, Color,
+  DataTexture, DoubleSide, Float32BufferAttribute, FloatType, Fog, Group,
+  Line, LineBasicMaterial, LineSegments, LinearMipmapLinearFilter, LinearSRGBColorSpace, MathUtils,
+  Mesh, MeshBasicMaterial, NearestFilter, NoColorSpace, PerspectiveCamera, PlaneGeometry,
+  Quaternion, RGBAFormat, Raycaster, RepeatWrapping, Scene, ShaderMaterial,
+  Texture, TubeGeometry, Vector2, Vector3, WebGLRenderer,
+} from 'three';
 
-export { THREE };
+// only what the scenes use, by name, so the bundler leaves the rest of three.js out
+export const THREE = {
+  BoxGeometry, BufferAttribute, BufferGeometry, CanvasTexture, CatmullRomCurve3, Color,
+  DataTexture, DoubleSide, Float32BufferAttribute, FloatType, Fog, Group,
+  Line, LineBasicMaterial, LineSegments, LinearMipmapLinearFilter, LinearSRGBColorSpace, MathUtils,
+  Mesh, MeshBasicMaterial, NearestFilter, NoColorSpace, PerspectiveCamera, PlaneGeometry,
+  Quaternion, RGBAFormat, Raycaster, RepeatWrapping, Scene, ShaderMaterial,
+  Texture, TubeGeometry, Vector2, Vector3, WebGLRenderer,
+};
 export const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 export const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 export const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
 
+// three.js draws with WebGL 2 only (and the film shader samples with textureGrad, a GLSL ES 3.0 call)
 export function webglOK() {
-  try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch { return false; }
+  try { return !!document.createElement('canvas').getContext('webgl2'); } catch { return false; }
 }
 
 /** A damped spring driven towards a moving target:  x'' = -ω² (x - x*) - 2ζω x', fixed 1/240 s sub-steps. */
@@ -40,10 +56,34 @@ export function cssColor(name, el = document.body) {
   return new THREE.Color().setRGB(r / 255, g / 255, b / 255, THREE.LinearSRGBColorSpace);
 }
 
-export function loadImages(urls) {
-  return Promise.all(urls.map((src) => new Promise((ok) => {
-    const i = new Image(); i.decoding = 'async'; i.onload = () => ok(i); i.onerror = () => ok(null); i.src = src;
-  })));
+/**
+ * Starts loading every picture at once and reports each one as it arrives, so a scene can show itself straight
+ * away and fill in. The first `first` pictures ask the browser for priority. Loaded once per page: a scene rebuilt
+ * on resize subscribes again and gets the pictures already in hand.
+ */
+export function streamImages(urls, first = 8) {
+  const list = urls.map(() => null), subs = new Set();
+  let left = urls.length;
+  urls.forEach((src, i) => {
+    const im = new Image();
+    im.decoding = 'async';
+    if ('fetchPriority' in im) im.fetchPriority = i < first ? 'high' : 'low';
+    const done = (ok) => { left -= 1; if (ok) list[i] = im; subs.forEach((f) => f(i, ok ? im : null)); };
+    im.onload = () => done(true); im.onerror = () => done(false);
+    im.src = src;
+  });
+  return {
+    list,
+    get pending() { return left; },
+    onLoad(f) { subs.add(f); return () => subs.delete(f); },
+  };
+}
+
+/** Waits for the faces a canvas will draw with (the text drawn into slates and the film's edge codes), at most `ms`. */
+export function canvasFonts(specs, ms = 2000) {
+  if (!document.fonts?.load) return Promise.resolve();
+  const all = Promise.all(specs.filter(([, text]) => text).map(([font, text]) => document.fonts.load(font, text).catch(() => {})));
+  return Promise.race([all, new Promise((ok) => { setTimeout(ok, ms); })]);
 }
 
 export function imageTexture(img, renderer) {

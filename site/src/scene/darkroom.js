@@ -45,9 +45,10 @@ function ropeTexture(renderer) {
  * onPick(seriesIndex, frameIndex) is called when a print is clicked.
  */
 export function darkroomScene({ renderer, scene, camera, data, imgs, fog, onPick, host }) {
-  scene.fog = new THREE.Fog(fog, 2.5, 16);
+  const FAR = 16;
+  scene.fog = new THREE.Fog(fog, 2.5, FAR);
   camera.fov = 42; camera.updateProjectionMatrix();
-  const light = { light: new THREE.Vector3(0.15, 0.85, 0.75), lightCol: new THREE.Vector3(1.0, 0.8, 0.58), amb: 0.45, fog, near: 2.5, far: 16 };
+  const light = { light: new THREE.Vector3(0.15, 0.85, 0.75), lightCol: new THREE.Vector3(1.0, 0.8, 0.58), amb: 0.45, fog, near: 2.5, far: FAR };
   const group = new THREE.Group(); scene.add(group);
   const items = [], rows = [], disposables = [], caps = [], pickable = [];
   const narrow = camera.aspect < 0.8;
@@ -235,15 +236,16 @@ export function darkroomScene({ renderer, scene, camera, data, imgs, fog, onPick
       stream(zc);
       const vc = (zc - lastZ) / Math.max(dt, 1e-3); lastZ = zc;
       const V = -vc, acc = clamp((V - lastV) / Math.max(dt, 1e-3), -60, 60); lastV = V;
-      // a row breaks into grain as it reaches you: fully there 2.3 units ahead, gone at 0.9
+      // a row breaks into grain as it reaches you: fully there 2.3 units ahead, gone at 0.9. Rows further off than
+      // the fog's far end are only fog colour, so they are neither drawn nor simulated
       for (const row of rows) {
-        const fade = smooth(0.9, 2.3, zc - row.z);
+        const ahead = zc - row.z, fade = smooth(0.9, 2.3, ahead), seen = fade > 0.01 && ahead < FAR;
         row.mats[0].opacity = fade; row.mats[1].opacity = 0.75 * fade;
-        row.mats[0].visible = row.mats[1].visible = fade > 0.01;
+        row.mats[0].visible = row.mats[1].visible = seen;
         for (const it of row.items) {
           it.mats.forEach((mm) => { mm.uniforms.uFade.value = fade; });
           it.bits.forEach((bt) => { bt.visible = fade > 0.5; });
-          it.pivot.visible = it.rp.visible = fade > 0.01;
+          it.pivot.visible = it.rp.visible = seen;
         }
       }
       const n = Math.max(1, Math.round(dt / (1 / 240))), h = dt / n;

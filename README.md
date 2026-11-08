@@ -21,7 +21,7 @@
 - **网站设置 → 基本信息与联系方式**里还有：背景音乐开关与上传、联系页的合作流程与常见问题、微信二维码、表单提交地址（可选，填 Formspree 或 Web3Forms 后访客可以直接在网页提交）。
 - **网站设置 → 基本信息与联系方式**：首页标语、邮箱、社交平台链接（微信号留空就不显示）、关于页介绍、服务项目、版权声明。
 
-每次保存都会提交到 `main` 分支，GitHub Actions 大约两分钟后自动发布。照片建议上传长边 2400 到 3000 像素、5MB 以内的 JPG；网站会自动生成多种尺寸的 WebP 和 JPEG，读取相机、镜头、光圈、快门和 ISO，不会带上 GPS 位置。
+每次保存都会提交到 `main` 分支，GitHub Actions 自动发布（照片有缓存，只有新增或改动的照片会重新压缩，通常一两分钟内完成）。照片建议上传长边 2400 到 3000 像素、5MB 以内的 JPG；网站会自动生成多种尺寸的 WebP（另附一张 JPEG 给不支持 WebP 的浏览器）和每个系列的分享卡片，读取相机、镜头、光圈、快门和 ISO，不会带上 GPS 位置。
 
 ## 内容文件
 
@@ -62,6 +62,13 @@ npm install
 npm run dev
 ```
 
+构建与检查：
+
+```bash
+npm run build    # 生成页面并打包到 dist/
+npm run check    # 物理验算 + 检查 dist/ 里的链接、图片、canonical、sitemap 是否齐全（发布前 CI 也会跑）
+```
+
 ## 用到的开源项目
 
 | 项目 | 用途 |
@@ -91,5 +98,6 @@ npm run dev
 - `site/src/scene/` 三维场景：`spine.js` 首页胶片，`darkroom.js` 暗房，`stage.js` 把场景挂到页面上，`kit.js` 共用部分（含抗锯齿的照片着色器）
 - `scripts/i18n.mjs` 三种语言的界面文字；要加新语言，在这里加一份并在后台补上对应字段
 - `scripts/bilibili.mjs` 构建时读取 B站 元数据
+- `scripts/check-site.mjs` 发布前检查构建结果；`site/src/fonts/` 按语言分开加载的字体；`site/src/ambient.js` 生成式背景音乐
 - `site/src/physics/spring.js` 阻尼弹簧；`scripts/physics-check.mjs` 数值验算
 - `site/public/admin/config.yml` 后台的字段配置

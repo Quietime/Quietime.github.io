@@ -12,15 +12,19 @@ const MM = { width: 35, pitch: 38, imgW: 36, imgH: 24, perfPitch: 4.75, perfAlon
 // a picture keeps its own shape on the strip: every frame is the same 24 mm high across the film, and as long as
 // the picture is wide (36 mm for 3:2, 16 mm for an upright 2:3), with 2 mm of film base between frames
 const ASPECT = [0.5, 1.5];
-const aspectOf = (im) => (im && im.width && im.height ? clamp(im.width / im.height, ASPECT[0], ASPECT[1]) : 1.5);
-const frameMM = (im) => MM.imgH * aspectOf(im) + 2;
+const aspectOf = (sz) => (sz && sz[0] && sz[1] ? clamp(sz[0] / sz[1], ASPECT[0], ASPECT[1]) : 1.5);
+const frameMM = (sz) => MM.imgH * aspectOf(sz) + 2;
 
-/** Every picture upright in its own cell of one canvas, the edge code printed under it. */
-function filmAtlas(imgs, renderer, edgeCode) {
+/**
+ * Every picture upright in its own cell of one canvas, the edge code printed under it. The cells are drawn as
+ * the pictures arrive; `kMax` (pixels per millimetre of film) is what the screen can actually show, so a phone
+ * gets a smaller atlas than a large desktop screen.
+ */
+function filmAtlas(sizes, stream, renderer, edgeCode, kMax) {
   const max = Math.min(8192, renderer.capabilities.maxTextureSize);
-  const n = Math.max(1, imgs.length);
+  const n = Math.max(1, sizes.length);
   const cellW = MM.imgH * ASPECT[1], cellH = MM.imgH + 1.8; // millimetres
-  let k = 14;
+  let k = kMax;
   const fits = (kk) => { const cols = Math.floor(max / Math.ceil(cellW * kk)); return cols > 0 && Math.ceil(n / cols) * Math.ceil(cellH * kk) <= max; };
   while (!fits(k) && k > 3) k -= 0.5;
   const CW = Math.ceil(cellW * k), CH = Math.ceil(cellH * k);
@@ -29,23 +33,33 @@ function filmAtlas(imgs, renderer, edgeCode) {
   const g = c.getContext('2d');
   g.fillStyle = '#2A211B'; g.fillRect(0, 0, c.width, c.height);
   const ih = MM.imgH * k;
-  imgs.forEach((im, f) => {
-    const ox = (f % cols) * CW, oy = Math.floor(f / cols) * CH, iw = MM.imgH * aspectOf(im) * k;
-    if (im) {
-      g.save(); g.beginPath(); g.rect(ox, oy, iw, ih); g.clip();
-      const sc = Math.max(iw / im.width, ih / im.height);
-      g.drawImage(im, ox + (iw - im.width * sc) / 2, oy + (ih - im.height * sc) / 2, im.width * sc, im.height * sc);
-      g.restore();
-    }
-    g.fillStyle = '#D99A5B'; g.font = `500 ${Math.round(1.25 * k)}px "Barlow Condensed", sans-serif`; g.textBaseline = 'middle';
-    g.fillText(`${f + 1}A ▸ ${edgeCode}`, ox + 0.2 * k, oy + ih + 0.9 * k);
-  });
+  g.fillStyle = '#D99A5B'; g.font = `500 ${Math.round(1.25 * k)}px "Barlow Condensed", sans-serif`; g.textBaseline = 'middle';
+  sizes.forEach((_, f) => g.fillText(`${f + 1}A ▸ ${edgeCode}`, (f % cols) * CW + 0.2 * k, Math.floor(f / cols) * CH + ih + 0.9 * k));
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.NoColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy();
-  return { tex: t, cols, rows, k, CW, CH, AW: c.width, AH: c.height };
+  let dirty = false, lastUp = 0;
+  const draw = (f, im) => {
+    if (!im || f >= sizes.length) return;
+    const ox = (f % cols) * CW, oy = Math.floor(f / cols) * CH, iw = MM.imgH * aspectOf(sizes[f]) * k;
+    g.save(); g.beginPath(); g.rect(ox, oy, iw, ih); g.clip();
+    const sc = Math.max(iw / im.width, ih / im.height);
+    g.drawImage(im, ox + (iw - im.width * sc) / 2, oy + (ih - im.height * sc) / 2, im.width * sc, im.height * sc);
+    g.restore();
+    dirty = true;
+  };
+  stream.list.forEach((im, f) => draw(f, im));
+  const off = stream.onLoad(draw);
+  t.needsUpdate = true; dirty = false;
+  return {
+    tex: t, cols, rows, k, CW, CH, AW: c.width, AH: c.height,
+    // a re-upload of the whole atlas at most four times a second while pictures are still coming in
+    flush(now) { if (dirty && (now - lastUp > 250 || !stream.pending)) { t.needsUpdate = true; dirty = false; lastUp = now; } },
+    dispose() { off(); t.dispose(); },
+  };
 }
 
 export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
+  const sizes = data.sizes || [];
   const W = 1, PITCH = (W * MM.pitch) / MM.width, R = 0.8, D = 2.5;
   const stops = [
     { kind: 'head', n: 3, cap: data.capHead },
@@ -57,7 +71,7 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
   stops.forEach((st) => {
     const se = st.kind === 'series' ? data.series[st.si] : null;
     st.frames = se ? Array.from({ length: st.n }, (_, i) => se.from + (i % Math.max(1, se.n))) : [];
-    st.len = st.frames.reduce((a, pi) => a + frameMM(imgs[pi]), 0) / MMW; // world units, without leader
+    st.len = st.frames.reduce((a, pi) => a + frameMM(sizes[pi]), 0) / MMW; // world units, without leader
     st.S = Math.max(2.6, st.len / 2 + PITCH);
   });
   const STOPS = stops.length;
@@ -107,12 +121,12 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
 
   // which picture sits where along the film, looked up by the millimetre: each series fills its own stretch in
   // order, with a frame of blank leader at each end; the bends between stops carry all the pictures in turn
-  const nImg = Math.max(1, imgs.length);
+  const nImg = Math.max(1, sizes.length);
   const Lmm = L * MMW, frames = [];
   let cur = 0, cyc = 0;
   const put = (photo, len) => { frames.push([photo, cur, len, photo === 65535 ? 0 : len - 2]); cur += len; };
   const fillTo = (end) => {
-    for (;;) { const pi = cyc % nImg, fl = frameMM(imgs[pi]); if (cur + fl > end) break; put(pi, fl); cyc += 1; }
+    for (;;) { const pi = cyc % nImg, fl = frameMM(sizes[pi]); if (cur + fl > end) break; put(pi, fl); cyc += 1; }
     if (end > cur) put(65535, end - cur);
   };
   stops.forEach((stp, k) => {
@@ -120,7 +134,7 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
     const c0 = (start[k] + stp.S) * MMW, a0 = c0 - (stp.len * MMW) / 2;
     fillTo(a0 - MM.pitch);
     put(65535, Math.max(0, a0 - cur));
-    for (const pi of stp.frames) put(pi, frameMM(imgs[pi]));
+    for (const pi of stp.frames) put(pi, frameMM(sizes[pi]));
     put(65535, MM.pitch);
   });
   fillTo(Lmm + 4);
@@ -136,7 +150,11 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
   const fmap = new THREE.DataTexture(fmData, FW, FH, THREE.RGBAFormat, THREE.FloatType);
   fmap.magFilter = fmap.minFilter = THREE.NearestFilter; fmap.needsUpdate = true;
 
-  const atlas = filmAtlas(imgs, renderer, data.edge);
+  // the take: how wide a view of the film the camera holds, and so how many pixels a millimetre of film covers
+  const tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
+  const visW = clamp(camera.aspect * 2.9, 2.3, 4.8), d0 = visW / 2 / (tan * camera.aspect);
+  const pxPerMM = renderer.getDrawingBufferSize(new THREE.Vector2()).x / (visW * MMW);
+  const atlas = filmAtlas(sizes, imgs, renderer, data.edge, clamp(Math.ceil(pxPerMM * 1.1), 8, 14));
   const mat = new THREE.ShaderMaterial({
     side: THREE.DoubleSide,
     alphaToCoverage: true,
@@ -196,8 +214,6 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
 
   // the take: at each stop the camera travels along the stretch, then pulls back and drops to the next one.
   // A stop lasts as long as its stretch is wider than the view, so twenty pictures take longer than six
-  const tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
-  const visW = clamp(camera.aspect * 2.9, 2.3, 4.8), d0 = visW / 2 / (tan * camera.aspect);
   const reach = stops.map((stp) => Math.max(0, stp.len / 2 - visW * 0.42));
   const hold = reach.map((r) => 0.55 + ((2 * r) / visW) * 0.5);   // half a screen of scrolling per view width of film
   const segs = [];
@@ -210,6 +226,7 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
   return {
     pages: tot + 0.4,
     update(dt, pr) {
+      atlas.flush(performance.now());
       const t = pr * tot;
       let sg = segs[segs.length - 1];
       for (const x of segs) if (t <= x.b) { sg = x; break; }
@@ -226,6 +243,6 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
       const near = Math.round(sig);
       return { cap: stops[clamp(near, 0, STOPS - 1)].cap, show: 1 - clamp(Math.abs(sig - near) * 3, 0, 1) };
     },
-    dispose() { scene.remove(mesh); geo.dispose(); mat.dispose(); fmap.dispose(); atlas.tex.dispose(); },
+    dispose() { scene.remove(mesh); geo.dispose(); mat.dispose(); fmap.dispose(); atlas.dispose(); },
   };
 }
