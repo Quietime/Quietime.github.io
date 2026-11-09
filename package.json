@@ -8,15 +8,18 @@
     "admin": "node scripts/admin.mjs",
     "images": "node scripts/images.mjs",
     "pages": "node scripts/generate.mjs",
-    "prepare-site": "npm run admin && npm run bilibili && npm run images && npm run pages",
+    "prepare-site": "npm run validate && npm run admin && npm run bilibili && npm run images && npm run pages",
     "dev": "npm run prepare-site && vite",
     "build": "npm run prepare-site && vite build",
     "preview": "vite preview",
     "bilibili": "node scripts/bilibili.mjs",
-    "check": "node scripts/physics-check.mjs && node scripts/check-site.mjs"
+    "check": "node scripts/physics-check.mjs && node scripts/check-site.mjs",
+    "validate": "node scripts/validate.mjs",
+    "smoke": "node scripts/smoke.mjs"
   },
   "devDependencies": {
     "@theatre/studio": "^0.7.2",
+    "playwright": "^1.63.0",
     "sharp": "^0.34.5",
     "vite": "^6.4.5"
   },

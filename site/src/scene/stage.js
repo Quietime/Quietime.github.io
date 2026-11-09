@@ -16,7 +16,7 @@ function canvasText(kind, data) {
   return [[`500 54px ${FONTS.edge}`, `${at(0)}${at(3)}`], [`400 150px ${FONTS.display}`, at(1)], [`400 46px ${FONTS.serif}`, at(2)]];
 }
 
-export async function mountStage({ kind, data, run, cap, onPick }) {
+export async function mountStage({ kind, data, run, cap, onPick, onFail }) {
   // the spine paints every picture into one atlas, and starts with whatever has arrived; the darkroom streams
   // the pictures for the rows ahead of the camera itself
   const imgs = kind === 'spine' ? streamImages(data.images) : data.images;
@@ -47,12 +47,12 @@ export async function mountStage({ kind, data, run, cap, onPick }) {
   let t = 0;
   addEventListener('resize', () => {
     clearTimeout(t);
-    t = setTimeout(() => {
+    t = setTimeout(() => { if (failed || lost) return; try {
       const narrow = innerWidth / innerHeight < 0.8;
       if (innerWidth !== lastW || narrow !== lastNarrow) build();
       else { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
       if (!running) draw(performance.now());
-    }, 180);
+    } catch (e) { fail(e); } }, 180);
   });
 
   const progress = (r) => {
@@ -76,9 +76,26 @@ export async function mountStage({ kind, data, run, cap, onPick }) {
     }
     renderer.render(scene, camera);
   };
-  const frame = (now) => { draw(now); if (running) raf = requestAnimationFrame(frame); };
+  let failed = false;
+  const fail = (e) => { if (failed) return; failed = true; running = false; cancelAnimationFrame(raf); onFail?.(e); };
+  const frame = (now) => {
+    try { draw(now); } catch (e) { fail(e); return; }
+    if (running) raf = requestAnimationFrame(frame);
+  };
+  // a phone that backgrounds the tab may take the WebGL context away. Keep it restorable; if it is not back within
+  // two seconds, show the plain page. When it returns, rebuild the scene (three.js re-creates its own GL state).
+  let lostTimer = 0, lost = false;
+  canvas.addEventListener('webglcontextlost', (e) => {
+    e.preventDefault(); lost = true; cancelAnimationFrame(raf); raf = 0;
+    lostTimer = setTimeout(() => fail(new Error('WebGL context lost')), 2000);
+  });
+  canvas.addEventListener('webglcontextrestored', () => {
+    clearTimeout(lostTimer); lost = false;
+    if (failed) return;
+    try { build(); if (running) raf = requestAnimationFrame(frame); else draw(performance.now()); } catch (e) { fail(e); }
+  });
   const setRunning = (on) => {
-    if (on === running) return;
+    if (on === running || failed || lost) return;
     running = on;
     cancelAnimationFrame(raf);
     if (on) { last = performance.now(); raf = requestAnimationFrame(frame); } else {
@@ -88,5 +105,5 @@ export async function mountStage({ kind, data, run, cap, onPick }) {
   };
   // the same reach as `live` above, with a screen of margin so the scene is already moving when it appears
   new IntersectionObserver(([en]) => setRunning(en.isIntersecting), { rootMargin: '100% 0px 100% 0px' }).observe(run);
-  draw(performance.now());
+  try { draw(performance.now()); } catch (e) { fail(e); }
 }

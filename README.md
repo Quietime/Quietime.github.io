@@ -65,8 +65,9 @@ npm run dev
 构建与检查：
 
 ```bash
-npm run build    # 生成页面并打包到 dist/
+npm run build    # 先检查 content/ 里的内容（缺图、错的版式会直接报出文件和字段），再生成页面并打包到 dist/
 npm run check    # 物理验算 + 检查 dist/ 里的链接、图片、canonical、sitemap 是否齐全（发布前 CI 也会跑）
+npm run smoke    # 用真实浏览器在桌面和手机尺寸打开每一页，有报错就失败（每个 PR 都会跑）
 ```
 
 ## 用到的开源项目
@@ -94,10 +95,10 @@ npm run check    # 物理验算 + 检查 dist/ 里的链接、图片、canonical
 - `scripts/images.mjs` 图片处理
 - `scripts/generate.mjs` 生成页面
 - `scripts/admin.mjs` 把后台程序复制到网站里
-- `site/src/` 样式与交互，`cursor.js` 光标，`hero.js` 首屏落字，`sound.js` 背景音乐
+- `site/src/` 样式与交互：`main.js` 入口，`core.js` 各页共用的部分，`pages/` 每页一个模块（只在那一页加载），`parts/` 播放器和看图器，`cursor.js` 光标，`hero.js` 首屏落字，`sound.js` 背景音乐
 - `site/src/scene/` 三维场景：`spine.js` 首页胶片，`darkroom.js` 暗房，`stage.js` 把场景挂到页面上，`kit.js` 共用部分（含抗锯齿的照片着色器）
 - `scripts/i18n.mjs` 两种语言的界面文字；要加新语言，在这里加一份并在后台补上对应字段
 - `scripts/bilibili.mjs` 构建时读取 B站 元数据
-- `scripts/check-site.mjs` 发布前检查构建结果；`site/src/fonts/` 按语言分开加载的字体；`site/src/ambient.js` 生成式背景音乐
+- `scripts/validate.mjs` 构建前检查内容；`scripts/check-site.mjs` 发布前检查构建结果；`scripts/smoke.mjs` 浏览器冒烟测试；`site/src/fonts/` 按语言分开加载的字体；`site/src/ambient.js` 生成式背景音乐
 - `site/src/physics/spring.js` 阻尼弹簧；`scripts/physics-check.mjs` 数值验算
 - `site/public/admin/config.yml` 后台的字段配置
