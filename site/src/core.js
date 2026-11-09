@@ -201,6 +201,12 @@ async function mountScene(kind, data, onPick) {
     const [{ mountStage }] = await Promise.all([import('./scene/stage.js'), fontsReady]);
     await mountStage({ kind, data, run, cap: $('[data-cap]'), onPick, onFail: fallBack });
     run.dataset.hot = U.view || '';
+    const skip = $('[data-run-skip]'), after = $('#after-run');
+    if (skip && after) {
+      // shown while the scene crosses the middle of the screen
+      new IntersectionObserver(([en]) => skip.classList.toggle('is-on', en.isIntersecting), { rootMargin: '-50% 0px -50% 0px' }).observe(run);
+      skip.addEventListener('click', () => { scrollToEl(after, 0); after.focus({ preventScroll: true }); });
+    }
     ScrollTrigger.refresh();
   } catch (e) { fallBack(e); }
 }

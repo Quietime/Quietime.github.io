@@ -8,6 +8,7 @@ export const LANGS = [
 
 export const UI = {
   zh: {
+    skipFilm: '跳过胶片 ↓', skipRoom: '跳过暗房 ↓',
     skip: '跳到正文', home: '首页', tagline: '摄影作品与影像', menu: '菜单', language: '语言',
     nav: { works: '作品', gallery: '图库', films: '影像', about: '关于', contact: '联系' },
     sound: '背景音乐', soundOn: '声音开', soundOff: '声音关',
@@ -45,6 +46,7 @@ export const UI = {
   },
 
   en: {
+    skipFilm: 'Skip the film strip ↓', skipRoom: 'Skip the darkroom ↓',
     skip: 'Skip to content', home: 'Home', tagline: 'Photographs and films', menu: 'Menu', language: 'Language',
     nav: { works: 'Work', gallery: 'Gallery', films: 'Films', about: 'About', contact: 'Contact' },
     sound: 'Background music', soundOn: 'Sound on', soundOff: 'Sound off',

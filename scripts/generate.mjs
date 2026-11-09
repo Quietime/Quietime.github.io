@@ -191,6 +191,8 @@ ${rest.length ? `<ol class="film-rows">${rest.map((f) => `<li><button type="butt
   const sceneJSON = (o) => `<script type="application/json" id="qt-scene">${JSON.stringify(o).replace(/</g, '\\u003c')}</script>`;
   const framesOf = (s) => s.frames.map((f) => ({ f, p: P(f.src) })).filter((x) => x.p);
   const capBar = `<div class="cap" data-cap aria-hidden="true"><p class="k" data-cap-k></p><p class="t" data-cap-t></p><p class="s" data-cap-s></p></div>`;
+  // a way past a long scroll scene, and the point it lands on
+  const skip = (label) => `<button type="button" class="run-skip" data-run-skip>${esc(label)}</button><span id="after-run" tabindex="-1"></span>`;
   const darkSlates = {
     head: [`${site.edgeCode} ▸ 0`, site.name, site.nameZh, 'DARKROOM · ONE TAKE'],
     end: [`${site.edgeCode} ▸ END`, t.endRoll, t.scene.writeUs, contact.email || ''],
@@ -268,11 +270,12 @@ ${rest.length ? `<ol class="film-rows">${rest.map((f) => `<li><button type="butt
 <section class="roll" aria-label="${esc(t.nav.works)}"><div class="roll-cam"><div class="roll-track">${cells.join('\n')}</div></div></section>
 </div>
 ${capBar}
-<section class="h-sec h-films" aria-labelledby="h-films-t">
+${skip(t.skipFilm)}
+${films.some(ready) ? `<section class="h-sec h-films" aria-labelledby="h-films-t">
 <div class="h-sec-head"><h2 id="h-films-t">${esc(t.nav.films)}</h2><p>${esc(t.filmsSub)}</p></div>
 ${filmGrid()}
 <p class="more-wrap"><a class="more" href="${href('films')}">${esc(t.allFilms)}</a></p>
-</section>
+</section>` : ''}
 <section class="h-sec h-about">
 <p class="about-q">${esc(homeTeaser || about.intro[0] || '')}</p>
 <p class="h-about-links"><a class="more" href="${href('about')}">${esc(t.aboutLink)}</a><a class="more" href="${href('contact')}">${esc(t.book)}</a></p>
@@ -300,6 +303,7 @@ ${footer()}`;
 <header class="page-head dr-head"><p class="dr-edge">${esc(site.edgeCode)} ▸ 0</p><h1 data-split><span class="line"><span>${esc(t.nav.works)}</span></span></h1><p class="dr-lede">${esc(t.scene.darkroomSub)}</p></header>
 <div class="run" data-run></div>
 ${capBar}
+${skip(t.skipRoom)}
 ${sceneJSON(data)}
 <header class="page-head w-index-head">
 <div class="toggle" role="group" aria-label="${esc(t.views.label)}"><button type="button" aria-pressed="true" data-view="list">${esc(t.views.list)}</button><button type="button" aria-pressed="false" data-view="sheet">${esc(t.views.sheet)}</button></div>
@@ -358,6 +362,7 @@ ${footer()}`;
 ${s.statement ? `<div class="s-statement"><p class="zh" data-words>${esc(s.statement)}</p></div>` : '<div class="s-gap"></div>'}
 <div class="run" data-run></div>
 ${capBar}
+${skip(t.skipRoom)}
 ${sceneJSON(data)}
 <div class="frames" data-gallery>${body}</div>
 ${series.length > 1 ? `<nav class="s-next" aria-label="${esc(t.next)}"><a href="${seriesHref(next)}" data-cursor="${esc(t.cursor.next)}"><span class="k">${esc(t.next)}</span><span class="s-next-txt"><span class="t">${esc(next.title)}</span><span class="e">${esc(next.sub)}</span></span>${picture(next.frames[0].src, { sizes: '(max-width: 860px) 92vw, 40vw' })}</a></nav>` : ''}
