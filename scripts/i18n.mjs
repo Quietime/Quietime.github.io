@@ -39,7 +39,7 @@ export const UI = {
     pswp: { prev: '上一格', next: '下一格', close: '关闭', label: '照片查看', error: '这张照片暂时无法加载。' },
     cursor: { view: '查看', open: '进入', play: '播放', soon: '整理中', next: '下一卷' },
     scene: {
-      heroEn: 'photography & moving image', head: '卷头', headSub: '胶片会在每个系列停下来，铺平给你看。',
+      heroEn: '摄影与影像', head: '卷头', headSub: '胶片会在每个系列停下来，铺平给你看。',
       darkroom: '暗房', darkroomSub: '照片还没干，一路往里走。', prints: (n) => `${n} 张`, scroll: '向下滚动', writeUs: '写信约拍',
     },
     nf: { title: '这一格是空的。', text: '你要找的页面不在这卷胶片里。', back: '回到第一格' },

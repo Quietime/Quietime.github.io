@@ -1,7 +1,5 @@
-import '@fontsource/questrial/400.css';
 import '@fontsource/barlow-condensed/500.css';
 import '@fontsource/anton/400.css';
-import '@fontsource/instrument-serif/400-italic.css';
 import 'lenis/dist/lenis.css';
 import 'photoswipe/style.css';
 import './styles.css';

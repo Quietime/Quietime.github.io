@@ -158,11 +158,11 @@ export function printSize(w, h, long) {
 export function slateTexture(lines, renderer, fonts) {
   const c = document.createElement('canvas'); c.width = 1024; c.height = 600;
   const g = c.getContext('2d');
-  g.fillStyle = '#F3ECE0'; g.fillRect(0, 0, c.width, c.height);
+  g.fillStyle = '#ECE9E2'; g.fillRect(0, 0, c.width, c.height);
   const fit = (text, font, size, max) => { let s = size; g.font = font.replace('{s}', s); while (g.measureText(text).width > max && s > 20) { s -= 4; g.font = font.replace('{s}', s); } };
   g.fillStyle = '#A85E1C'; g.font = `500 54px ${fonts.edge}`; g.fillText(lines[0] || '', 80, 150);
-  g.fillStyle = '#33281F'; fit(lines[1] || '', `400 {s}px ${fonts.display}`, 150, 860); g.fillText(lines[1] || '', 72, 336);
-  g.fillStyle = '#6B5A49'; fit(lines[2] || '', `400 {s}px ${fonts.serif}`, 46, 860); g.fillText(lines[2] || '', 80, 440);
+  g.fillStyle = '#1F1E1C'; fit(lines[1] || '', `500 {s}px ${fonts.display}`, 150, 860); g.fillText(lines[1] || '', 72, 336);
+  g.fillStyle = '#57534D'; fit(lines[2] || '', `400 {s}px ${fonts.serif}`, 46, 860); g.fillText(lines[2] || '', 80, 440);
   g.font = `500 40px ${fonts.edge}`; g.fillText(lines[3] || '', 80, 530);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.NoColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy();
   return t;
@@ -170,6 +170,6 @@ export function slateTexture(lines, renderer, fonts) {
 
 export const FONTS = {
   edge: '"Barlow Condensed", "Arial Narrow", sans-serif',
-  display: '"Smiley Sans Oblique", "Noto Sans SC", sans-serif',
-  serif: '"Newsreader", "Noto Serif SC", serif',
+  display: '"Noto Serif SC", "Songti SC", serif',
+  serif: '"Noto Serif SC", "Songti SC", serif',
 };

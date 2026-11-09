@@ -13,7 +13,7 @@ function canvasText(kind, data) {
   if (kind === 'spine') return [[`500 40px ${FONTS.edge}`, `0123456789A▸ ${data.edge || ''}`]];
   const slates = [data.slates?.head, data.slates?.end, ...(data.series || []).map((s) => s.slate)].filter(Boolean);
   const at = (k) => slates.map((l) => l[k] || '').join('');
-  return [[`500 54px ${FONTS.edge}`, `${at(0)}${at(3)}`], [`400 150px ${FONTS.display}`, at(1)], [`400 46px ${FONTS.serif}`, at(2)]];
+  return [[`500 54px ${FONTS.edge}`, `${at(0)}${at(3)}`], [`500 150px ${FONTS.display}`, at(1)], [`400 46px ${FONTS.serif}`, at(2)]];
 }
 
 export async function mountStage({ kind, data, run, cap, onPick, onFail }) {

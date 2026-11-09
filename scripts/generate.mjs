@@ -75,7 +75,7 @@ ${LANGS.map((l) => `<link rel="alternate" hreflang="${l.html}" href="${pageUrl(k
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${esc(full)}</title>
 <meta name="description" content="${esc(desc)}">
-<meta name="theme-color" content="${theme === 'room' ? '#1B1612' : '#EFE6D8'}">
+<meta name="theme-color" content="${theme === 'room' ? '#151517' : '#ECE9E2'}">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
@@ -478,7 +478,7 @@ ${footer()}`;
   if (L.code === 'zh') {
     await fs.writeFile(path.join(out, 'public/manifest.webmanifest'), JSON.stringify({
       name: site.title, short_name: site.name, description: site.description, lang: 'zh-CN',
-      start_url: './', scope: './', display: 'standalone', background_color: '#1B1612', theme_color: '#1B1612',
+      start_url: './', scope: './', display: 'standalone', background_color: '#151517', theme_color: '#151517',
       icons: [
         { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
         { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },

@@ -37,7 +37,6 @@ const F = U.f || {};
 // CJK type arrives as its own stylesheet after the first paint (fonts/cjk.js); each language adds its own face
 const fontsReady = Promise.all([
   import('./fonts/cjk.js'),
-  CFG.lang === 'en' ? import('./fonts/en.js') : null,
 ]).catch(() => {});
 
 // a chosen language is remembered, so the first-visit language guess never overrides it

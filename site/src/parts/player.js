@@ -36,7 +36,7 @@ export default function films() {
     if (reduce) { load(); } else {
       const state = Flip.getState(box);
       Flip.fit(box, $('.ph', b) || b, { scale: true });
-      gsap.fromTo(player, { backgroundColor: 'rgba(14,11,9,0)' }, { backgroundColor: 'rgba(14,11,9,.95)', duration: 0.6 });
+      gsap.fromTo(player, { backgroundColor: 'rgba(14,14,16,0)' }, { backgroundColor: 'rgba(14,14,16,.95)', duration: 0.6 });
       Flip.to(state, { duration: 0.8, ease: 'springCrit', scale: true, onComplete: load });
     }
     $('[data-player-close]', player).focus();

@@ -3,7 +3,7 @@
 网站地址：https://quietime.github.io
 管理后台：https://quietime.github.io/admin/
 
-一卷彩色负片做成的摄影网站。相纸色底、胶片边码、月亮标志的分层动画，影像区和页脚是放映室的深色。
+一卷胶片做成的摄影网站。宣纸灰白的底、墨色的字、一处朱砂红，胶片边码和月亮标志的分层动画，影像区和页脚是墨色的暗房。
 
 ## 管理后台
 
@@ -83,8 +83,7 @@ npm run smoke    # 用真实浏览器在桌面和手机尺寸打开每一页，�
 | [sharp](https://github.com/lovell/sharp) | 图片处理 |
 | [Vite](https://github.com/vitejs/vite) | 构建 |
 | [three.js](https://github.com/mrdoob/three.js) | 首页胶片与暗房的三维渲染 |
-| [Fontsource](https://github.com/fontsource/fontsource) | 思源宋体、思源黑体、Noto Serif JP、Newsreader、Questrial、Barlow Condensed、Anton、Instrument Serif，随站托管，国内也能正常显示 |
-| [得意黑 Smiley Sans](https://github.com/atelier-anchor/smiley-sans)（[中文网字计划](https://chinese-font.netlify.app/) 分包） | 中文标题字体，按需只下载用到的字 |
+| [Fontsource](https://github.com/fontsource/fontsource) | 思源宋体（中英文正文与标题）、Anton（首屏 QUIETIME）、Barlow Condensed（胶片边码），随站托管，国内也能正常显示 |
 
 设计与检查用到的 Skill 放在 `.claude/skills/`，说明见那里的 README。
 
