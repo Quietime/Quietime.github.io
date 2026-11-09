@@ -6,7 +6,7 @@
 //   they have settled, as a camera confirms focus. A click is a shutter press: a kick to the ring's scale.
 // Elements can ask for a label with data-cursor="查看"; data-cursor="hide" hides it (the loupe takes over).
 // A canvas with the class is-hot (a print under the pointer in the darkroom) shows its data-hot label.
-import { Spring } from './physics/spring.js';
+import { Spring, frameTime } from './physics/spring.js';
 
 const S = (freq, zeta, value = 0) => new Spring({ freq, zeta, value });
 
@@ -65,7 +65,7 @@ export default function cursor() {
   addEventListener('blur', () => wrap.classList.remove('on'));
 
   function tick(now) {
-    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    const dt = frameTime(now, last); last = now;
     if (started) {
       for (const [s, v] of [[dx, mx], [dy, my], [rx, mx], [ry, my]]) s.target = v;
       const x0 = dx.step(dt), y0 = dy.step(dt);

@@ -4,7 +4,7 @@
 // (f = 2.2 Hz, ζ = 0.45): a pointer sweeping through hands it a quarter of its velocity (Gaussian falloff, capped
 // at 900 px/s) and it swings back. The photograph inside the stencilled letters follows the pointer on a soft
 // spring, as if the print slid under the stencil.
-import { Spring } from './physics/spring.js';
+import { Spring, frameTime, substeps } from './physics/spring.js';
 
 const G = 3920, E = 0.32;
 
@@ -38,6 +38,13 @@ export default function hero(root, { photo, reduce }) {
     title.style.fontSize = `${Math.floor(((100 * room) / title.scrollWidth) * 0.985)}px`;
     title.style.setProperty('--bw', `${title.scrollWidth * 1.18}px`);
     title.querySelectorAll('.l').forEach((l) => l.style.setProperty('--ox', `${l.offsetLeft}px`));
+    // each letter's resting centre relative to the card, so a pointer move costs one layout read, not one per letter
+    const rb = root.getBoundingClientRect();
+    for (const L of letters) {
+      const t = L.el.style.transform; L.el.style.transform = 'none';
+      const r = L.el.getBoundingClientRect(); L.el.style.transform = t;
+      L.cx = r.left + r.width / 2 - rb.left; L.cy = r.top + r.height / 2 - rb.top; L.h = r.height;
+    }
   };
   fit();
   addEventListener('resize', fit);
@@ -58,10 +65,11 @@ export default function hero(root, { photo, reduce }) {
     pan.target = -(e.clientX / innerWidth - 0.5) * innerWidth * 0.16;
     wake();
     if (reduce) return;
+    const rb = root.getBoundingClientRect();
     for (const L of letters) {
-      if (!L.landed) continue;
-      const r = L.el.getBoundingClientRect(), dx = px - (r.left + r.width / 2), dy = py - (r.top + r.height / 2);
-      const fall = Math.exp(-(dx * dx + dy * dy) / (2 * (r.height * 0.5) ** 2));
+      if (!L.landed || !L.h) continue;
+      const dx = px - (rb.left + L.cx + L.x), dy = py - (rb.top + L.cy + L.y);
+      const fall = Math.exp(-(dx * dx + dy * dy) / (2 * (L.h * 0.5) ** 2));
       if (fall < 0.03) continue;
       L.vx += vx * 0.25 * fall; L.vy += vy * 0.25 * fall;
       const sp = Math.hypot(L.vx, L.vy);
@@ -75,9 +83,9 @@ export default function hero(root, { photo, reduce }) {
   const lastStart = letters.reduce((m, L) => Math.max(m, L.t0), 0);
   const still = (L) => L.landed && Math.abs(L.x) + Math.abs(L.y) < 0.05 && Math.abs(L.vx) + Math.abs(L.vy) < 0.5 && Math.abs(L.a) + Math.abs(L.va) < 1e-3;
   function tick(now) {
-    const dt = Math.min(0.05, (now - last) / 1000); last = now; clock += dt;
+    const dt = frameTime(now, last); last = now; clock += dt;
     title.style.setProperty('--pan', `${pan.step(dt).toFixed(1)}px`);
-    const n = Math.max(1, Math.round(dt / (1 / 240))), h = dt / n;
+    const n = substeps(dt), h = dt / n;
     for (const L of letters) {
       if (clock < L.t0) { L.el.style.transform = `translate(0, ${L.y}px)`; continue; }
       for (let i = 0; i < n; i++) {

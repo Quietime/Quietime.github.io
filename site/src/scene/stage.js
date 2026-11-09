@@ -2,7 +2,7 @@
 // take, and a caption in the lower left. Progress through the run drives the scene; the hero above it is a leader
 // that lifts away to reveal the canvas.
 // The scene draws only while its run is on or near the screen; past it the loop stops until the run comes back.
-import { THREE, makeRenderer, cssColor, streamImages, canvasFonts, FONTS } from './kit.js';
+import { THREE, makeRenderer, cssColor, streamImages, canvasFonts, FONTS, frameTime } from './kit.js';
 import { spineScene } from './spine.js';
 import { darkroomScene } from './darkroom.js';
 
@@ -61,7 +61,7 @@ export async function mountStage({ kind, data, run, cap, onPick }) {
   };
   let last = performance.now(), key = '', raf = 0, running = false;
   const draw = (now) => {
-    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+    const dt = frameTime(now, last); last = now;
     const r = run.getBoundingClientRect();
     // past the end of the run the page covers the canvas: stop drawing
     const live = r.bottom > 0 && r.top < innerHeight * 1.5;

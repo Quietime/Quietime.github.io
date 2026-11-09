@@ -24,7 +24,19 @@ export function springEase(zeta = 0.7) {
   return (t) => (t >= 1 ? 1 : 1 - Math.exp(-zeta * w * t) * (Math.cos(wd * t) + k * Math.sin(wd * t)));
 }
 
-/** A spring integrated in real time (semi-implicit Euler with fixed 1/240 s sub-steps). */
+/** Integration sub-step: every simulation on the site advances in steps no longer than this. */
+export const STEP = 1 / 240;
+/**
+ * Seconds since the last frame, for a simulation. Low frame rates are integrated in full (more sub-steps), so a slow
+ * device never sees motion in slow motion; only a real stall (a background tab, a breakpoint) longer than MAX_FRAME
+ * is skipped rather than replayed.
+ */
+export const MAX_FRAME = 0.25;
+export const frameTime = (now, last) => Math.min(MAX_FRAME, Math.max(0, (now - last) / 1000));
+/** n sub-steps of at most STEP covering dt. */
+export const substeps = (dt) => Math.max(1, Math.ceil(dt / STEP));
+
+/** A spring integrated in real time (semi-implicit Euler with sub-steps of at most 1/240 s). */
 export class Spring {
   constructor({ freq = 2, zeta = 0.7, value = 0 } = {}) {
     this.w = 2 * Math.PI * freq;
@@ -35,7 +47,7 @@ export class Spring {
     this.target = value;
   }
   step(dt) {
-    const n = Math.max(1, Math.ceil(dt / (1 / 240)));
+    const n = substeps(dt);
     const h = dt / n;
     for (let i = 0; i < n; i++) {
       const a = -this.w * this.w * (this.x - this.target) - 2 * this.z * this.w * this.v;
@@ -44,6 +56,8 @@ export class Spring {
     }
     return this.x;
   }
+  /** Jump to the target (reduced motion). */
+  snap() { this.x = this.target; this.v = 0; return this.x; }
   /** True once the spring sits at its target and has stopped moving (to within `eps`), so a loop can sleep. */
   atRest(eps = 0.01) { return Math.abs(this.x - this.target) < eps && Math.abs(this.v) < eps; }
 }

@@ -1,6 +1,6 @@
 // Numerical checks for the motion models. Run with: node scripts/physics-check.mjs
 // Compares the simulations with the closed-form physics they are meant to follow.
-import { springEase, Spring } from '../site/src/physics/spring.js';
+import { springEase, Spring, frameTime, substeps, STEP, MAX_FRAME } from '../site/src/physics/spring.js';
 
 const pct = (x) => `${(x * 100).toFixed(2)}%`;
 const deg = (x) => `${((x * 180) / Math.PI).toFixed(1)}°`;
@@ -85,6 +85,47 @@ log('3. Title card letters, restitution');
   }
   log(`   drop 600 px: bounce heights ${peaks.map((p) => p.toFixed(1)).join(', ')} px; theory 600·e² = ${(600 * E * E).toFixed(1)}, then ×${(E * E).toFixed(3)} each`);
   expect(peaks.length > 0 && near(peaks[0], 600 * E * E, 0.05), 'first bounce height off by more than 5%');
+}
+
+// 4. Frame-rate independence: the same 2 s of motion at 120, 60, 20 and 7 frames per second ends in the same place.
+//    (Before, every loop capped a frame at 0.05 s, so below 20 fps simulated time fell behind and motion slowed down.)
+log('4. Frame rate');
+{
+  const run = (fps) => {
+    const s = new Spring({ freq: 1.2, zeta: 0.3, value: 0 }); s.target = 1;
+    let now = 0, last = 0;
+    for (let k = 0; k < Math.round(2 * fps); k++) { now += 1000 / fps; s.step(frameTime(now, last)); last = now; }
+    return s.x;
+  };
+  const ref = run(240), worst = Math.max(...[120, 60, 20, 7].map((f) => Math.abs(run(f) - ref)));
+  log(`   position after 2 s at 120/60/20/7 fps differs from 240 fps by at most ${worst.toExponential(1)}`);
+  expect(worst < 1e-3, 'motion depends on the frame rate');
+  expect(substeps(MAX_FRAME) * STEP >= MAX_FRAME - 1e-9 && MAX_FRAME / substeps(MAX_FRAME) <= STEP + 1e-12, 'sub-steps longer than 1/240 s');
+  expect(frameTime(5000, 0) === MAX_FRAME, 'a long stall is not capped');
+}
+
+// 5. Darkroom soft stop against the old hard clamp: the print's visible angular speed (Δθ per step) must not jump
+log('5. Darkroom soft stop');
+{
+  const stop = (x, edge, v) => { const o = Math.abs(x) - edge; return o > 0 ? -Math.sign(x) * 900 * o * o - 40 * o * v : 0; };
+  const L = 0.475, k2 = (0.95 * 0.95) / 12, K = L / (k2 + L * L), w = Math.sqrt((9.8 * L) / (k2 + L * L));
+  // the strongest push a scroll can give (acceleration capped at 60, scaled by S = 0.03), on a swing already
+  // moving at 5 rad/s, about five times what any scroll produces
+  const maxPush = K * 0.03 * 60;
+  const run = (soft) => {
+    let th = 0, v = 5, peak = 0, jump = 0, seen = 5;
+    for (let t = 0; t < 4; t += STEP) {
+      const push = t < 1 ? maxPush : 0, prevTh = th;
+      v += (push - K * 9.8 * Math.sin(th) - 2 * 0.12 * w * v + (soft ? stop(th, 0.35, v) : 0)) * STEP;
+      th = soft ? Math.max(-0.7, Math.min(0.7, th + v * STEP)) : Math.max(-0.5, Math.min(0.5, th + v * STEP));
+      const obs = (th - prevTh) / STEP; jump = Math.max(jump, Math.abs(obs - seen)); seen = obs; peak = Math.max(peak, Math.abs(th));
+    }
+    return { peak, jump };
+  };
+  const soft = run(true), hard = run(false);
+  log(`   soft stop: largest angle ${deg(soft.peak)}, largest jump in visible speed ${soft.jump.toFixed(2)} rad/s; old hard clamp: ${hard.jump.toFixed(2)} rad/s`);
+  expect(soft.peak < 0.7, 'the soft stop lets a print past 0.7 rad');
+  expect(soft.jump < hard.jump / 10, 'the soft stop is not much smoother than the old hard clamp');
 }
 
 if (failures.length) { console.error(`\nphysics: ${failures.length} check(s) failed`); process.exitCode = 1; } else log('physics: all checks pass');

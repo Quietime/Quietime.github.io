@@ -1,4 +1,5 @@
 // Shared pieces for the two WebGL scenes (home: the film spine, works and series: the darkroom).
+import { Spring, substeps, STEP, frameTime } from '../physics/spring.js';
 import {
   BoxGeometry, BufferAttribute, BufferGeometry, CanvasTexture, CatmullRomCurve3, Color,
   DataTexture, DoubleSide, Float32BufferAttribute, FloatType, Fog, Group,
@@ -20,21 +21,18 @@ export const THREE = {
 export const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 export const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 export const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+export { substeps, STEP, frameTime };
 
 // three.js draws with WebGL 2 only (and the film shader samples with textureGrad, a GLSL ES 3.0 call)
 export function webglOK() {
   try { return !!document.createElement('canvas').getContext('webgl2'); } catch { return false; }
 }
 
-/** A damped spring driven towards a moving target:  x'' = -ω² (x - x*) - 2ζω x', fixed 1/240 s sub-steps. */
+/** A spring that follows a moving target (the shared Spring of physics/spring.js); reduced motion jumps straight there. */
 export class Follow {
-  constructor(f, z, x = 0) { this.w = 2 * Math.PI * f; this.z = z; this.x = x; this.v = 0; }
-  step(target, dt) {
-    if (reduce) { this.x = target; this.v = 0; return this.x; }
-    const n = Math.max(1, Math.round(dt / (1 / 240))), h = dt / n;
-    for (let i = 0; i < n; i++) { this.v += (-this.w * this.w * (this.x - target) - 2 * this.z * this.w * this.v) * h; this.x += this.v * h; }
-    return this.x;
-  }
+  constructor(f, z, x = 0) { this.s = new Spring({ freq: f, zeta: z, value: x }); }
+  get x() { return this.s.x; }
+  step(target, dt) { this.s.target = target; return reduce ? this.s.snap() : this.s.step(dt); }
 }
 
 export function makeRenderer(canvas) {
