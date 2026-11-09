@@ -621,7 +621,6 @@ html.in-room, html[data-theme-base="room"] { --err: #E58A6E; }
 
 /* ═════ languages ═════ */
 :lang(en) { --f-serif: "Newsreader", "Noto Serif SC", Georgia, serif; }
-:lang(ja) { --f-serif: "Noto Serif JP", "Noto Serif SC", "Hiragino Mincho ProN", serif; --f-ui: "Questrial", "Noto Sans JP", "Noto Sans SC", "Hiragino Sans", sans-serif; }
 :lang(en) .s-title, :lang(en) .page-head h1, :lang(en) .slate-title, :lang(en) .ws h2, :lang(en) .s-next .t,
 :lang(en) .nf h1, :lang(en) .mn-zh { letter-spacing: -.01em; }
 :lang(en) .s-title { font-size: clamp(52px, 8.4vw, 132px); line-height: 1.02; }
@@ -629,7 +628,6 @@ html.in-room, html[data-theme-base="room"] { --err: #E58A6E; }
 :lang(en) .about-q, :lang(en) .ab-text p, :lang(en) .s-statement .zh, :lang(en) .ws-st { letter-spacing: 0; line-height: 1.6; }
 :lang(en) .ab-text .ab-lead { line-height: 1.45; }
 :lang(en) .page-head h1 { letter-spacing: -.02em; }
-:lang(ja) .s-statement .zh, :lang(ja) .about-q { line-break: strict; }
 
 @media (max-width: 600px) {
   .hero { padding-top: 96px; gap: 10px; }

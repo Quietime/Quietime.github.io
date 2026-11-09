@@ -1,4 +1,4 @@
-// Writes the static HTML pages into site/, one full set per language (index.html, index.en.html, index.ja.html ...).
+// Writes the static HTML pages into site/, one full set per language (index.html, index.en.html ...).
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { moonSVG } from './moon.mjs';
@@ -95,7 +95,7 @@ ${LANGS.filter((l) => l !== L).map((l) => `<meta property="og:locale:alternate" 
 <meta property="og:image:height" content="${og.h}">
 <meta name="twitter:card" content="summary_large_image">
 ${ld ? `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>` : ''}
-<script>(function(d){d.classList.replace('no-js','js');try{var s=localStorage.getItem('qt-lang');if(!s&&d.lang==='zh-CN'&&!/bot|crawl|spider|slurp|preview|facebookexternalhit/i.test(navigator.userAgent)){var n=(navigator.language||'').toLowerCase();var to=n.indexOf('ja')===0?'ja':(n.indexOf('zh')===0?'':'en');if(to){var a=d.getAttribute('data-alt-'+to);if(a){location.replace(a+location.hash);return}}}if(sessionStorage.getItem('qt-leak'))d.classList.add('leak-in');if(sessionStorage.getItem('qt-pre'))d.classList.add('pre-seen')}catch(e){}})(document.documentElement)</script>
+<script>(function(d){d.classList.replace('no-js','js');try{var s=localStorage.getItem('qt-lang');if(!s&&d.lang==='zh-CN'&&!/bot|crawl|spider|slurp|preview|facebookexternalhit/i.test(navigator.userAgent)){var n=(navigator.language||'').toLowerCase();var to=n.indexOf('zh')===0?'':'en';if(to){var a=d.getAttribute('data-alt-'+to);if(a){location.replace(a+location.hash);return}}}if(sessionStorage.getItem('qt-leak'))d.classList.add('leak-in');if(sessionStorage.getItem('qt-pre'))d.classList.add('pre-seen')}catch(e){}})(document.documentElement)</script>
 <script type="application/json" id="qt-config">${JSON.stringify(config).replace(/</g, '\\u003c')}</script>
 <script type="module" src="./src/main.js"></script>
 </head>
@@ -494,6 +494,29 @@ ${sitemap.map(({ key, lang }) => `<url><loc>${url(key, lang)}</loc>${LANGS.map((
   await fs.writeFile(path.join(out, 'public/robots.txt'), `User-agent: *\nAllow: /\nDisallow: /admin/\n\nSitemap: ${site.url}sitemap.xml\n`);
 }
 
+// The site used to have Japanese pages (*.ja.html). Each old address now forwards to its English page, so links that
+// people saved or shared keep working; the stubs are not indexed and the sitemap does not list them.
+{
+  const { site } = await loadContent('en');
+  for (const f of Object.keys(pages).filter((k) => k.endsWith('.en.html'))) {
+    const to = f, old = f.replace(/\.en\.html$/, '.ja.html');
+    pages[old] = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>${esc(site.title)}</title>
+<meta name="description" content="${esc(site.description)}">
+<meta name="robots" content="noindex">
+<link rel="canonical" href="${site.url}${to}">
+<meta http-equiv="refresh" content="0; url=${to}">
+<script>location.replace(${JSON.stringify(to)} + location.hash)</script>
+</head>
+<body><p><a href="${to}">${esc(site.title)}</a></p></body>
+</html>
+`;
+  }
+}
+
 for (const f of (await fs.readdir(out)).filter((f) => f.endsWith('.html'))) await fs.unlink(path.join(out, f));
 for (const [f, html] of Object.entries(pages)) await fs.writeFile(path.join(out, f), html);
-console.log(`pages: ${Object.keys(pages).length} (${LANGS.map((l) => l.code).join(', ')})`);
+console.log(`pages: ${Object.keys(pages).filter((k) => !k.endsWith('.ja.html')).length} (${LANGS.map((l) => l.code).join(', ')}), plus redirects from the old Japanese addresses`);

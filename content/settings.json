@@ -5,10 +5,8 @@
   "edge_code": "QUIETIME 400",
   "description_zh": "Quietime 静夜工作室，摄影作品、影像与委托拍摄。",
   "description_en": "Quietime is a small photography studio. Personal series, short films and commissions, made slowly.",
-  "description_ja": "Quietime（静夜工作室）は、写真作品と映像、撮影のご依頼をお受けする小さなスタジオです。",
   "statement_zh": "夜色替我们收起喧哗，\n剩下的光，才肯慢慢落进底片里。",
   "statement_en": "After the noise of the day has gone home,\nthe light stays a little longer. Long enough for the film.",
-  "statement_ja": "喧騒が眠りについたあとで、\nひかりはようやく、フィルムの上に腰をおろす。",
   "wechat": "",
   "email": "quietime@foxmail.com",
   "copyright": "Copyright © Quietime Photography. All rights reserved.",
@@ -37,114 +35,87 @@
   ],
   "home_teaser_zh": "我们拍人，也拍人离开之后留下的光。委托拍摄、商业合作与作品授权，都可以从一封邮件开始。",
   "home_teaser_en": "We photograph people, and the light they leave behind when they go. Commissions, brand work and licensing can all begin with a short letter.",
-  "home_teaser_ja": "人を撮り、その人が去ったあとに残る光も撮る。撮影のご依頼も、企業とのお仕事も、作品の使用も、まずは一通のメールから。",
   "about_intro_zh": "Quietime 静夜工作室相信，好的照片多半不是抓住的，而是等来的。我们习惯在人声退去之后才开始工作，给光一点时间，也给被拍的人一点时间。\n\n工作室承接人像、空间与品牌委托，也持续进行自己的长期系列。每一次拍摄，我们都希望留下的不只是好看的画面，还有那一刻真实的温度。",
   "about_intro_en": "Quietime believes good photographs are rarely caught. Mostly they are waited for. We tend to start once the voices have drifted off, giving the light some time, and the people in front of the camera some time as well.\n\nThe studio takes on portraits, places and brand commissions, and keeps working on long series of its own. Each time we hope to bring back more than a good-looking picture. We want the warmth that was really in the room.",
-  "about_intro_ja": "よい写真は、つかまえるものではなく、待つものだと思っています。人の声が遠のいてから仕事をはじめ、光にも、写される人にも、すこし時間をあげる。それが私たちのやり方です。\n\nポートレート、空間、ブランドの撮影をお受けしながら、自分たちの長いシリーズも撮りつづけています。持ち帰りたいのは、きれいな絵だけではありません。その場にたしかにあった、あたたかさです。",
   "services": [
     {
       "title_zh": "人像与家庭",
       "title_en": "Portraits and families",
-      "title_ja": "ポートレートと家族",
       "text_zh": "在熟悉的地方慢慢拍，不赶时间。",
-      "text_en": "Slow sessions in a place you already know well.",
-      "text_ja": "慣れた場所で、急がずに。"
+      "text_en": "Slow sessions in a place you already know well."
     },
     {
       "title_zh": "空间与建筑",
       "title_en": "Spaces and architecture",
-      "title_ja": "空間と建築",
       "text_zh": "记录一个地方在不同光线里的样子。",
-      "text_en": "How a place looks as the light moves through its day.",
-      "text_ja": "一日の光のなかで、場所が見せる表情を。"
+      "text_en": "How a place looks as the light moves through its day."
     },
     {
       "title_zh": "品牌与商业",
       "title_en": "Brands and commerce",
-      "title_ja": "ブランドと広告",
       "text_zh": "为产品和团队拍摄有呼吸感的画面。",
-      "text_en": "Pictures of products and teams that still breathe.",
-      "text_ja": "商品とチームを、息づかいごと。"
+      "text_en": "Pictures of products and teams that still breathe."
     },
     {
       "title_zh": "授权与展览",
       "title_en": "Licensing and exhibitions",
-      "title_ja": "作品の貸出と展示",
       "text_zh": "作品授权、画册与展览合作。",
-      "text_en": "Prints, books, exhibitions and image licensing.",
-      "text_ja": "使用許諾、写真集、展覧会のご相談。"
+      "text_en": "Prints, books, exhibitions and image licensing."
     }
   ],
   "contact_lede_zh": "告诉我们想拍什么、在哪里、大概什么时候。我们会在两天内回复，先聊想法，再谈方案。",
   "contact_lede_en": "Tell us what you have in mind, where, and roughly when. We reply within two days, and we would rather hear about the idea before we talk about the plan.",
-  "contact_lede_ja": "何を、どこで、いつごろ撮りたいか、教えてください。二日以内にお返事します。段取りの前に、まずは思いを聞かせてください。",
   "form_endpoint": "",
   "process": [
     {
       "title_zh": "聊一聊",
       "title_en": "Talk",
-      "title_ja": "話す",
       "text_zh": "说说你想留下什么样的画面，我们一起看看参考，确定风格与地点。",
-      "text_en": "Tell us what you would like to keep. We look at references together and settle on a mood and a place.",
-      "text_ja": "残したい景色について聞かせてください。参考を一緒に見ながら、雰囲気と場所を決めます。"
+      "text_en": "Tell us what you would like to keep. We look at references together and settle on a mood and a place."
     },
     {
       "title_zh": "定方案",
       "title_en": "Plan",
-      "title_ja": "決める",
       "text_zh": "确认日期、时长、人数与交付内容，给出明确的报价。",
-      "text_en": "Date, length, people and what you will receive, with a clear quote.",
-      "text_ja": "日程、時間、人数、お届けする内容を確かめて、はっきりとしたお見積もりを。"
+      "text_en": "Date, length, people and what you will receive, with a clear quote."
     },
     {
       "title_zh": "拍摄",
       "title_en": "Shoot",
-      "title_ja": "撮る",
       "text_zh": "按约定的时间到场，不赶时间，让光和人都慢下来。",
-      "text_en": "We arrive on time and then take our time, until the light and everyone in it have slowed down.",
-      "text_ja": "約束の時間に伺い、光も人も、ゆっくりになるまで待ちます。"
+      "text_en": "We arrive on time and then take our time, until the light and everyone in it have slowed down."
     },
     {
       "title_zh": "选片与交付",
       "title_en": "Choose and deliver",
-      "title_ja": "選ぶ、届ける",
       "text_zh": "先发初选给你挑，再精修交付；胶片拍摄会附上扫描底片。",
-      "text_en": "You choose from a first edit and we finish the ones you love. Film shoots come with the scanned negatives.",
-      "text_ja": "まず候補からお選びいただき、仕上げてお届けします。フィルムの撮影には、スキャンしたネガも添えます。"
+      "text_en": "You choose from a first edit and we finish the ones you love. Film shoots come with the scanned negatives."
     }
   ],
   "faq": [
     {
       "q_zh": "多久可以拿到照片？",
       "q_en": "When will the photographs be ready?",
-      "q_ja": "写真はいつ届きますか。",
       "a_zh": "数码拍摄一般在两周内交付精修；胶片需要冲扫，约三到四周。",
-      "a_en": "Digital work is usually delivered within two weeks. Film has to be developed and scanned, so allow three to four.",
-      "a_ja": "デジタルはおおむね二週間以内に。フィルムは現像とスキャンがあるため、三、四週間ほどいただきます。"
+      "a_en": "Digital work is usually delivered within two weeks. Film has to be developed and scanned, so allow three to four."
     },
     {
       "q_zh": "可以去外地拍吗？",
       "q_en": "Will you travel?",
-      "q_ja": "遠方での撮影はできますか。",
       "a_zh": "可以。外地拍摄的交通与住宿另计，提前两周预约比较稳妥。",
-      "a_en": "Gladly. Travel and lodging are charged separately, and two weeks of notice makes everything easier.",
-      "a_ja": "よろこんで伺います。交通費と宿泊費は別にいただき、二週間前までのご予約をおすすめしています。"
+      "a_en": "Gladly. Travel and lodging are charged separately, and two weeks of notice makes everything easier."
     },
     {
       "q_zh": "照片可以商用吗？",
       "q_en": "Can the photographs be used commercially?",
-      "q_ja": "商用で使うことはできますか。",
       "a_zh": "个人委托默认仅限个人使用；商业用途请在沟通时说明，我们会签署授权协议。",
-      "a_en": "Personal commissions are for personal use. If you need the pictures for commercial work, tell us early and we will put a licence in writing.",
-      "a_ja": "個人のご依頼は、個人でのご利用が前提です。商用の場合は早めにお知らせください。使用許諾の契約を結びます。"
+      "a_en": "Personal commissions are for personal use. If you need the pictures for commercial work, tell us early and we will put a licence in writing."
     },
     {
       "q_zh": "需要提前多久预约？",
       "q_en": "How far ahead should I book?",
-      "q_ja": "どのくらい前に予約すればいいですか。",
       "a_zh": "建议提前两到三周。节假日与黄金时段的档期紧张，越早越好。",
-      "a_en": "Two or three weeks is comfortable. Holidays and the golden hour go quickly, so earlier is better.",
-      "a_ja": "二、三週間前が目安です。休日や夕暮れどきの枠は埋まりやすいので、お早めに。"
+      "a_en": "Two or three weeks is comfortable. Holidays and the golden hour go quickly, so earlier is better."
     }
   ],
   "music_on": true,
@@ -153,6 +124,5 @@
   "samples": false,
   "sample_credit_zh": "示例影像来自 Kodak Lossless True Color Image Suite（Kodak PhotoCD PCD0992），Eastman Kodak 公开发布，作品整理完成后替换。",
   "sample_credit_en": "Sample images from the Kodak Lossless True Color Image Suite (Kodak PhotoCD PCD0992), released by Eastman Kodak. They will be replaced by the studio archive.",
-  "sample_credit_ja": "サンプル画像は Eastman Kodak が公開した Kodak Lossless True Color Image Suite（Kodak PhotoCD PCD0992）のものです。作品の準備が整いしだい差し替えます。",
   "hero_image": "/content/series/city-weather/02.jpg"
 }

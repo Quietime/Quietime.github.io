@@ -38,6 +38,10 @@ for (const f of pages) {
   if (!/<title>[^<]+<\/title>/.test(html)) bad(f, 'no <title>');
   if (!/<meta name="description" content="[^"]+">/.test(html)) bad(f, 'no description');
   if (!/<html lang="[^"]+"/.test(html)) bad(f, 'no lang');
+  if (html.includes('http-equiv="refresh"')) {
+    if (!html.includes('name="robots" content="noindex"')) bad(f, 'redirect page is indexable');
+    continue;
+  }
   if (f.startsWith('404')) {
     if (!html.includes('name="robots" content="noindex"')) bad(f, '404 page is indexable');
   } else {

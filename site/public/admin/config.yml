@@ -1,7 +1,7 @@
 # Quietime 静夜工作室 管理后台（Sveltia CMS，兼容 Decap CMS 配置）
 # 登录方式：选择“Sign In Using Access Token / 使用访问令牌登录”，填入 GitHub 个人访问令牌。
 # 每次保存都会提交到 main 分支，GitHub Actions 约两分钟后自动发布。
-# 文字分中文、English、日本語三栏。外文留空时，网站会先显示中文。
+# 文字分中文、English 两栏。英文留空时，网站会先显示中文。
 backend:
   name: github
   repo: Quietime/quietime.github.io
@@ -30,7 +30,7 @@ collections:
   - name: series
     label: 作品系列
     label_singular: 系列
-    description: 每个系列一个文件夹。照片上传后会和系列放在一起，网站会自动生成各种尺寸。建议上传长边 2400 到 3000 像素、5MB 以内的 JPG。三种语言请各自意译，不必逐字对应。
+    description: 每个系列一个文件夹。照片上传后会和系列放在一起，网站会自动生成各种尺寸。建议上传长边 2400 到 3000 像素、5MB 以内的 JPG。中英文请各自意译，不必逐字对应。
     folder: content/series
     path: '{{slug}}/index'
     format: json
@@ -45,12 +45,10 @@ collections:
     fields:
       - { name: title_zh, label: 标题（中文）, widget: string }
       - { name: title_en, label: Title (English), widget: string, hint: 第一次保存时会用它生成网址，之后改标题不会改变网址 }
-      - { name: title_ja, label: タイトル（日本語）, widget: string, required: false }
       - { name: order, label: 排序, widget: number, value_type: int, default: 100, hint: 数字小的排在前面 }
       - { name: draft, label: 暂不发布, widget: boolean, default: false, required: false }
       - { name: statement_zh, label: 系列自述（中文）, widget: text, required: false }
       - { name: statement_en, label: Statement (English), widget: text, required: false }
-      - { name: statement_ja, label: ステートメント（日本語）, widget: text, required: false }
       - name: meta
         label: 拍摄信息
         label_singular: 一项
@@ -63,8 +61,6 @@ collections:
           - { name: v_zh, label: 内容（中文）, widget: string }
           - { name: k_en, label: Item (English), widget: string, required: false }
           - { name: v_en, label: Value (English), widget: string, required: false }
-          - { name: k_ja, label: 項目（日本語）, widget: string, required: false }
-          - { name: v_ja, label: 内容（日本語）, widget: string, required: false }
       - name: bulk
         label: 批量添加照片
         widget: image
@@ -82,7 +78,6 @@ collections:
           - { name: image, label: 照片, widget: image }
           - { name: caption_zh, label: 说明（中文）, widget: string, required: false }
           - { name: caption_en, label: Caption (English), widget: string, required: false }
-          - { name: caption_ja, label: キャプション（日本語）, widget: string, required: false }
           - name: layout
             label: 排法
             widget: select
@@ -113,10 +108,8 @@ collections:
               - { name: bvid, label: B站视频, widget: text, required: false, hint: 粘贴 BV 号、视频链接，或 B站“分享 → 嵌入代码”都可以。网站构建时会自动读取标题、封面、时长和播放量。留空时显示“整理中”。 }
               - { name: title_zh, label: 片名（中文）, widget: string, required: false, hint: 留空就用 B站 上的标题 }
               - { name: title_en, label: Title (English), widget: string, required: false }
-              - { name: title_ja, label: タイトル（日本語）, widget: string, required: false }
               - { name: kind_zh, label: 类型（中文）, widget: string, required: false, hint: 例如 短片、Vlog、幕后 }
               - { name: kind_en, label: Type (English), widget: string, required: false }
-              - { name: kind_ja, label: 種類（日本語）, widget: string, required: false }
               - { name: cover, label: 封面, widget: image, required: false, hint: 留空就用 B站 封面。建议 16:9，1920×1080 }
 
       - name: settings
@@ -129,10 +122,8 @@ collections:
           - { name: url, label: 网站地址, widget: string }
           - { name: description_zh, label: 网站简介（中文，搜索引擎显示）, widget: text }
           - { name: description_en, label: Description (English), widget: text, required: false }
-          - { name: description_ja, label: サイトの説明（日本語）, widget: text, required: false }
           - { name: statement_zh, label: 片头的一句话（中文，可分行）, widget: text }
           - { name: statement_en, label: Opening line (English), widget: text, required: false }
-          - { name: statement_ja, label: 冒頭のことば（日本語）, widget: text, required: false }
           - { name: hero_image, label: 首屏大字里的照片, widget: image, required: false, media_folder: /content/uploads, public_folder: /content/uploads, hint: 首页 QUIETIME 几个大字镂空透出的照片。建议横幅风景，2400 像素宽以上；留空就用第一个系列的第一张 }
           - { name: edge_code, label: 胶片边码文字, widget: string, hint: 印在每一格下方，例如 QUIETIME 400 }
           - { name: wechat, label: 微信号, widget: string, required: false }
@@ -150,10 +141,8 @@ collections:
               - { name: url, label: 链接, widget: string, required: false }
           - { name: home_teaser_zh, label: 首页“关于”一格的话（中文）, widget: text, required: false }
           - { name: home_teaser_en, label: Home about frame (English), widget: text, required: false }
-          - { name: home_teaser_ja, label: ホームの紹介文（日本語）, widget: text, required: false }
           - { name: about_intro_zh, label: 关于页介绍（中文，段落之间空一行）, widget: text }
           - { name: about_intro_en, label: About (English), widget: text, required: false }
-          - { name: about_intro_ja, label: スタジオについて（日本語）, widget: text, required: false }
           - name: services
             label: 服务项目
             label_singular: 一项服务
@@ -164,11 +153,8 @@ collections:
               - { name: text_zh, label: 说明（中文）, widget: string, required: false }
               - { name: title_en, label: Name (English), widget: string, required: false }
               - { name: text_en, label: Note (English), widget: string, required: false }
-              - { name: title_ja, label: 名称（日本語）, widget: string, required: false }
-              - { name: text_ja, label: 説明（日本語）, widget: string, required: false }
           - { name: contact_lede_zh, label: 联系页开头的一段话（中文）, widget: text, required: false }
           - { name: contact_lede_en, label: Contact intro (English), widget: text, required: false }
-          - { name: contact_lede_ja, label: お問い合わせの前文（日本語）, widget: text, required: false }
           - { name: form_endpoint, label: 表单提交地址, widget: string, required: false, hint: 可选。填 Formspree 或 Web3Forms 的地址后，访客可以直接在网页里提交；留空则会生成一封邮件。 }
           - name: process
             label: 合作流程
@@ -181,8 +167,6 @@ collections:
               - { name: text_zh, label: 说明（中文）, widget: text }
               - { name: title_en, label: Step (English), widget: string, required: false }
               - { name: text_en, label: Note (English), widget: text, required: false }
-              - { name: title_ja, label: 名称（日本語）, widget: string, required: false }
-              - { name: text_ja, label: 説明（日本語）, widget: text, required: false }
           - name: faq
             label: 常见问题
             label_singular: 一个问题
@@ -194,12 +178,9 @@ collections:
               - { name: a_zh, label: 回答（中文）, widget: text }
               - { name: q_en, label: Question (English), widget: string, required: false }
               - { name: a_en, label: Answer (English), widget: text, required: false }
-              - { name: q_ja, label: 質問（日本語）, widget: string, required: false }
-              - { name: a_ja, label: 回答（日本語）, widget: text, required: false }
           - { name: music_on, label: 播放背景音乐, widget: boolean, required: false, hint: 访客第一次点击页面后淡入，右上角可以关闭 }
           - { name: music_file, label: 背景音乐文件, widget: file, required: false, media_folder: /content/uploads, public_folder: /content/uploads, hint: 可选，建议 MP3、5MB 以内、可以循环的曲子。留空则播放网站自带的氛围音乐。 }
           - { name: music_volume, label: 音量, widget: number, value_type: int, min: 5, max: 100, default: 40, required: false }
           - { name: samples, label: 目前使用示例照片, widget: boolean, required: false, hint: 换成自己的作品后关掉，示例说明就会消失 }
           - { name: sample_credit_zh, label: 示例照片来源（中文）, widget: text, required: false }
           - { name: sample_credit_en, label: Sample credit (English), widget: text, required: false }
-          - { name: sample_credit_ja, label: サンプルの出典（日本語）, widget: text, required: false }

@@ -1,28 +1,22 @@
 {
   "title_zh": "城与天色",
   "title_en": "The City and Its Weather",
-  "title_ja": "街と空模様",
   "order": 40,
   "draft": false,
   "statement_zh": "雷雨、晚霞、一棵站了很久的树，还有夜里亮起来的海湾。人不在画面里，城市替她们记着天色。",
   "statement_en": "A thunderstorm, an evening sky, a tree that has stood there a long time, and a bay that lights up at night. No one is in these frames. The city keeps the weather for them.",
-  "statement_ja": "雷雨、夕焼け、長いあいだそこに立つ一本の木、そして夜に灯る湾。画面に人はいない。街が、かわりに空模様を覚えている。",
   "meta": [
     {
       "k_zh": "类型",
       "k_en": "Kind",
-      "k_ja": "種類",
       "v_zh": "城市与风景",
-      "v_en": "City and landscape",
-      "v_ja": "街と風景"
+      "v_en": "City and landscape"
     },
     {
       "k_zh": "摄影",
       "k_en": "Photographs",
-      "k_ja": "撮影",
       "v_zh": "Quietime 静夜",
-      "v_en": "Quietime",
-      "v_ja": "Quietime"
+      "v_en": "Quietime"
     }
   ],
   "frames": [
@@ -30,56 +24,48 @@
       "image": "01.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "wide"
     },
     {
       "image": "02.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     },
     {
       "image": "03.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "left"
     },
     {
       "image": "04.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "wide"
     },
     {
       "image": "05.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     },
     {
       "image": "06.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "left"
     },
     {
       "image": "07.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "wide"
     },
     {
       "image": "08.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     }
   ]

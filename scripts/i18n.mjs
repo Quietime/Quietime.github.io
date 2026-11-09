@@ -4,7 +4,6 @@
 export const LANGS = [
   { code: 'zh', suffix: '', html: 'zh-CN', label: '中', name: '中文' },
   { code: 'en', suffix: '.en', html: 'en', label: 'EN', name: 'English' },
-  { code: 'ja', suffix: '.ja', html: 'ja', label: '日', name: '日本語' },
 ];
 
 export const UI = {
@@ -81,42 +80,5 @@ export const UI = {
       darkroom: 'Darkroom', darkroomSub: 'The prints are still wet. Walk on in.', prints: (n) => `${n} prints`, scroll: 'Scroll', writeUs: 'Write to book a shoot',
     },
     nf: { title: 'This frame is blank.', text: 'The page you were looking for never made it onto this roll.', back: 'Back to the first frame' },
-  },
-
-  ja: {
-    skip: '本文へ移動', home: 'ホーム', tagline: '写真と映像', menu: 'メニュー', language: '言語',
-    nav: { works: '作品', gallery: 'ギャラリー', films: '映像', about: 'について', contact: 'お問い合わせ' },
-    sound: 'BGM', soundOn: 'サウンド オン', soundOff: 'サウンド オフ',
-    wechat: 'WeChat', email: 'メール', copied: 'コピーしました', copyFail: 'コピーできませんでした。文字を選択してください。',
-    frames: (n) => `${n}コマ`, frameN: (n) => `${n}コマ目`, roll: (n) => `ロール ${n}`,
-    leaderHint: 'スクロールすると、フィルムが一コマずつ送られていきます。',
-    openRoll: 'このロールを見る', filmsSub: 'ショートフィルム、Vlog、そして撮影の舞台裏。bilibiliで公開しています。',
-    allFilms: 'すべての映像', aboutLink: 'スタジオについて', endRoll: 'このロールはここまで', book: '撮影を相談する',
-    play: '再生', soon: '準備中', filmsEmpty: '映像は準備中です。', notReady: 'この映像はまだ編集中です。',
-    openBili: 'bilibiliで開く', close: '閉じる', player: '動画プレーヤー',
-    plays: (n) => (n >= 10000 ? `${(n / 10000).toFixed(n >= 100000 ? 0 : 1)}万回再生` : `${n}回再生`),
-    views: { list: 'シリーズ', sheet: 'コンタクトシート', label: '表示' },
-    samples: '現在はサンプル画像を表示しています。Quietimeの作品は準備中です。', openSeries: 'シリーズを見る',
-    metaFrames: 'コマ数', next: '次のロール', viewFrame: (n) => `${n}コマ目を拡大`,
-    all: 'すべて', filter: 'シリーズで絞り込む',
-    filmsLede: 'ショートフィルム、Vlog、撮影の舞台裏。bilibiliで公開している映像を、ここでそのままご覧いただけます。',
-    together: 'ご一緒できること', toForm: 'ご依頼フォームへ',
-    f: {
-      name: 'お名前', reach: 'メールまたは電話番号', kind: 'ご依頼の内容', other: 'その他', date: 'ご希望の時期', budget: 'ご予算',
-      budgets: ['未定', '3,000人民元未満', '3,000〜8,000人民元', '8,000〜20,000人民元', '20,000人民元以上'],
-      msg: 'どんなイメージか、聞かせてください', send: '送信', process: 'ご依頼の流れ', faq: 'よくあるご質問', qr: 'QRコードからWeChatに追加',
-      required: 'ご記入ください。', badReach: 'メールアドレスか電話番号を正しくご記入ください。', sending: '送信中',
-      sent: '送信しました。二日以内にお返事します。',
-      mailed: 'メールアプリを開きました。そのまま送信してください。内容はコピー済みなので、ほかの場所にも貼り付けられます。',
-      failed: '送信できませんでした。メールで直接ご連絡ください。', subject: '撮影のご相談',
-      body: { name: 'お名前', reach: 'ご連絡先', kind: 'ご依頼の内容', date: 'ご希望の時期', budget: 'ご予算', none: '未定' },
-    },
-    pswp: { prev: '前へ', next: '次へ', close: '閉じる', label: '写真ビューア', error: 'この写真を読み込めませんでした。' },
-    cursor: { view: '見る', open: '開く', play: '再生', soon: '準備中', next: '次へ' },
-    scene: {
-      heroEn: 'photography & moving image', head: 'リーダー', headSub: 'シリーズごとにフィルムが止まり、平らにひらいて見せてくれる。',
-      darkroom: '暗室', darkroomSub: 'まだ乾ききらない写真のあいだを、奥へ。', prints: (n) => `${n} 枚`, scroll: 'スクロール', writeUs: 'メールで撮影のご相談を',
-    },
-    nf: { title: 'このコマは、空白です。', text: 'お探しのページは、このロールには写っていませんでした。', back: '最初のコマへ戻る' },
   },
 };

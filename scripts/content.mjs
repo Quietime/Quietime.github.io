@@ -2,7 +2,7 @@
 //   content/settings.json        site wording, contact, socials, about, music
 //   content/films.json           Bilibili films
 //   content/series/<slug>/index.json + the photos next to it
-// Text fields carry a language suffix (title_zh, title_en, title_ja). A missing translation
+// Text fields carry a language suffix (title_zh, title_en). A missing translation
 // falls back to Chinese, so a new language can be filled in gradually.
 import fs from 'node:fs/promises';
 import path from 'node:path';

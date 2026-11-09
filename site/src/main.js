@@ -47,7 +47,6 @@ const F = U.f || {};
 const fontsReady = Promise.all([
   import('./fonts/cjk.js'),
   CFG.lang === 'en' ? import('./fonts/en.js') : null,
-  CFG.lang === 'ja' ? import('./fonts/ja.js') : null,
 ]).catch(() => {});
 
 // a chosen language is remembered, so the first-visit language guess never overrides it
