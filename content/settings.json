@@ -124,5 +124,8 @@
   "samples": false,
   "sample_credit_zh": "示例影像来自 Kodak Lossless True Color Image Suite（Kodak PhotoCD PCD0992），Eastman Kodak 公开发布，作品整理完成后替换。",
   "sample_credit_en": "Sample images from the Kodak Lossless True Color Image Suite (Kodak PhotoCD PCD0992), released by Eastman Kodak. They will be replaced by the studio archive.",
-  "hero_image": "/content/series/city-weather/02.jpg"
+  "studio_city_zh": "上海",
+  "studio_city_en": "Shanghai",
+  "studio_lat": 31.2304,
+  "studio_lon": 121.4737
 }

@@ -38,7 +38,7 @@ const pages = {};
 
 for (const L of LANGS) {
   const C = await loadContent(L.code);
-  const { site, contact, socials, series, films, about, homeTeaser, music } = C;
+  const { site, contact, socials, series, films, about, homeTeaser, music, sky } = C;
   const t = UI[L.code];
   const href = (name) => `${name}${L.suffix}.html`;
   const seriesHref = (s) => href(`series-${s.slug}`);
@@ -46,6 +46,7 @@ for (const L of LANGS) {
   const config = {
     lang: L.code,
     music: { on: music.on, file: media.music || '', volume: music.volume },
+    sky: { ...sky, words: t.sky, edgeCode: site.edgeCode },
     formEndpoint: /^https:\/\//i.test(contact.formEndpoint) ? contact.formEndpoint : '', email: contact.email,
     ui: {
       copied: t.copied, copyFail: t.copyFail, soundOn: t.soundOn, soundOff: t.soundOff, notReady: t.notReady,
@@ -224,11 +225,9 @@ ${rest.length ? `<ol class="film-rows">${rest.map((f) => `<li><button type="butt
       from += fr.length;
       return o;
     });
-    const first = framesOf(series[0] || { frames: [] })[0];
     const data = {
       edge: site.edgeCode,
       // the letters of the title are cut out of this picture: a landscape set in the admin, else the first frame
-      heroPhoto: P(site.heroImage) ? texUrl(P(site.heroImage), 1600) : first ? texUrl(first.p, 1600) : '',
       capHead: [`${site.edgeCode} ▸ 0`, t.scene.head, t.scene.headSub],
       capEnd: [`${site.edgeCode} ▸ END`, t.endRoll, contact.email || ''],
       // the pictures' shapes come with the page, so the strip is laid out before any picture has loaded
@@ -259,12 +258,12 @@ ${rest.length ? `<ol class="film-rows">${rest.map((f) => `<li><button type="butt
       ...(contact.email ? { email: contact.email } : {}),
       ...(socials.some((x) => /^https?:/i.test(safeUrl(x.url))) ? { sameAs: socials.map((x) => safeUrl(x.url)).filter((u) => /^https?:/i.test(u)) } : {}),
     };
-    return `${head({ key: 'index', title: '', preload: data.heroPhoto, ld })}
+    return `${head({ key: 'index', title: '', ld })}
 <main id="main" class="home">
 <section class="hero" data-hero aria-label="${esc(site.title)}">
-<p class="h-edge">${esc(site.edgeCode)} ▸ 0 · 36 EXP</p>
+<p class="h-edge" data-hero-edge>${esc(site.edgeCode)} ▸ 0${sky.city ? ` · ${esc(sky.city)}` : ''}</p>
 <h1 class="h-title" data-hero-title aria-label="${esc(site.name)} ${esc(site.nameZh)}">${esc(title)}</h1>
-<div class="h-row"><p class="h-zh" data-hero-zh aria-hidden="true">${esc(site.nameZh)}</p><p class="h-en">${esc(t.scene.heroEn)}</p></div>
+<div class="h-row"><p class="h-zh" data-hero-zh aria-hidden="true"><span class="h-seal" data-hero-seal><i>静</i><i>夜</i></span>${esc(site.nameZh)}</p><p class="h-en">${esc(t.scene.heroEn)}</p></div>
 <p class="h-st">${site.statement.map((l) => esc(l)).join('<br>')}</p>
 <p class="h-hint" aria-hidden="true">${esc(t.scene.scroll)} ↓</p>
 </section>

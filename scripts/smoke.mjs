@@ -21,7 +21,17 @@ const server = http.createServer(async (req, res) => {
 const base = `http://localhost:${server.address().port}/`;
 
 const pages = (await fs.readdir(DIST)).filter((f) => f.endsWith('.html') && !f.includes('.ja.'));
-const browser = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+const launched = await chromium.launch({ args: ['--use-gl=angle', '--use-angle=swiftshader', '--enable-unsafe-swiftshader'] });
+// the title card asks Open-Meteo for the studio's weather; tests answer with a fixed reading instead of the live API
+const WEATHER = JSON.stringify({ current: { weather_code: 2, cloud_cover: 30, visibility: 20000, wind_speed_10m: 3, precipitation: 0 }, utc_offset_seconds: 28800 });
+const browser = {
+  async newContext(opts) {
+    const ctx = await launched.newContext(opts);
+    await ctx.route('**/api.open-meteo.com/**', (route) => route.fulfill({ status: 200, contentType: 'application/json', body: WEATHER }));
+    return ctx;
+  },
+  close: () => launched.close(),
+};
 const problems = [];
 const bad = (where, msg) => problems.push(`${where}: ${msg}`);
 
@@ -60,7 +70,8 @@ for (const [size, opts] of [['desktop', { viewport: { width: 1440, height: 900 }
   const playing = await page.evaluate(() => document.querySelector('[data-sound]')?.getAttribute('aria-pressed'));
   if (playing === 'true') bad('music', 'started on the first click without being switched on');
   const t0 = Date.now();
-  await Promise.all([page.waitForURL(/contact\.html$/, { timeout: 5000 }).catch(() => {}), page.locator('.nav a[href="contact.html"]').click()]);
+  // the time until the browser starts the navigation (commit), not until the next page has loaded
+  await Promise.all([page.waitForURL(/contact\.html$/, { timeout: 5000, waitUntil: 'commit' }).catch(() => {}), page.locator('.nav a[href="contact.html"]').click()]);
   if (!page.url().endsWith('contact.html')) bad('navigation', 'clicking a header link did not navigate');
   else if (Date.now() - t0 > 1000) bad('navigation', `a header link took ${Date.now() - t0} ms to navigate`);
   await ctx.close();

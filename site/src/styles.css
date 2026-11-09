@@ -177,10 +177,19 @@ html:not(.gl) .cap { display: none; }
   display: flex; flex-direction: column; justify-content: flex-end; gap: 14px; padding: 120px var(--gut) 7vh; }
 .h-edge { margin: 0; font-family: var(--f-edge); font-weight: 500; font-size: 13px; letter-spacing: .22em; color: var(--accent); }
 .h-title { margin: 0; width: max-content; font-family: var(--f-poster); font-weight: 400; line-height: .8; letter-spacing: -.005em; white-space: nowrap; font-size: 24vw; }
-.h-title .l, .h-zh .l { display: inline-block; will-change: transform; }
-/* the letters are cut out of a photograph, like a stencil laid on a print */
-.h-title .l { color: var(--fg); background-image: var(--img); background-size: var(--bw, 120vw) auto; background-position: calc(var(--pan, 0px) - var(--ox, 0px)) 46%;
-  -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent; }
+/* the title is real text; once the sky canvas has drawn it (hero.js) the text itself turns transparent */
+.h-sky { position: absolute; inset: 0; width: 100%; height: 100%; z-index: 0; pointer-events: none; }
+.hero > :not(.h-sky) { position: relative; z-index: 1; }
+.hero > .h-hint { position: absolute; }
+.hero.sky-on .h-title { color: transparent; }
+.hero { color: var(--fg); }
+/* the seal: a vermilion square with 静夜 in two lines, as in the studio's own pictures */
+.h-seal { display: inline-flex; flex-direction: column; align-items: center; justify-content: center; vertical-align: .12em; margin-right: .22em;
+  width: .5em; height: .5em; background: var(--seal); color: #F2ECE2; border-radius: .04em; font-family: var(--f-serif); font-weight: 500;
+  line-height: 1.04; letter-spacing: 0; }
+.h-seal i { font-style: normal; display: block; font-size: .19em; }
+/* at night the card is dark: the header over it turns pale until it becomes solid */
+html[data-sky="dark"] .hdr:not(.is-solid) { --fg: var(--room-ink); --fg-2: var(--room-ink-2); color: var(--room-ink); }
 .h-row { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 6px 24px; }
 .h-zh { margin: 0; font-family: var(--f-display); font-size: clamp(44px, 8.6vw, 132px); line-height: 1; letter-spacing: .06em; }
 .h-en { margin: 0; font-family: var(--f-italic); font-style: normal; letter-spacing: .04em; font-size: clamp(22px, 2.6vw, 38px); color: var(--fg-2); }
@@ -633,7 +642,6 @@ html.in-room, html[data-theme-base="room"] { --err: #F08A74; }
   .h-hint { display: none; }
   .h-sec-head h2, .h-sec-head p { grid-column: 1 / -1; }
 }
-.h-title.no-img .l { -webkit-text-fill-color: currentColor; background: none; }
 
 /* touch targets: every control gets at least 44 × 44 px of hit area from an invisible pseudo-element, so nothing on
    screen moves. The language links are close together, so theirs stop halfway to the neighbour. */

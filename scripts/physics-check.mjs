@@ -1,6 +1,7 @@
 // Numerical checks for the motion models. Run with: node scripts/physics-check.mjs
 // Compares the simulations with the closed-form physics they are meant to follow.
 import { springEase, Spring, frameTime, substeps, STEP, MAX_FRAME } from '../site/src/physics/spring.js';
+import { astro, refraction, squash, airMass, sunlight, koschmieder, mpLambda, dropSpeed, snowSpeed, lightCurve, starMagnitude, METEOR_K } from '../site/src/sky/astro.js';
 
 const pct = (x) => `${(x * 100).toFixed(2)}%`;
 const deg = (x) => `${((x * 180) / Math.PI).toFixed(1)}°`;
@@ -73,18 +74,16 @@ for (const [name, W2, H2, thread, corner] of [['two pegs, 1.37 × 0.95', 1.37, 0
   expect(peak < (10 * Math.PI) / 180 && settle < 6, 'prints swing too far or ring too long after a stop');
 }
 
-// 3. Title card: a letter dropped from rest bounces with restitution 0.32; each bounce reaches e² of the last height
-log('3. Title card letters, restitution');
+// 3. Title card letters: after a push each letter returns on its spring (f = 2.2 Hz, ζ = 0.45); the overshoot of a
+//    released displacement is e^(−ζπ/√(1−ζ²)) of it
+log('3. Title card letters, the push spring');
 {
-  const G = 3920, E = 0.32, h = 1 / 240;
-  let y = -600, vy = 0, peaks = [], top = 0, rising = false;
-  for (let t = 0; t < 3; t += h) {
-    vy += G * h; y += vy * h;
-    if (y >= 0) { y = 0; vy = -E * vy; rising = true; top = 0; if (Math.abs(vy) < 60) break; }
-    if (rising) { top = Math.min(top, y); if (vy > 0) { peaks.push(-top); rising = false; } }
-  }
-  log(`   drop 600 px: bounce heights ${peaks.map((p) => p.toFixed(1)).join(', ')} px; theory 600·e² = ${(600 * E * E).toFixed(1)}, then ×${(E * E).toFixed(3)} each`);
-  expect(peaks.length > 0 && near(peaks[0], 600 * E * E, 0.05), 'first bounce height off by more than 5%');
+  const w = 2 * Math.PI * 2.2, z = 0.45, h = STEP;
+  let x = 40, v = 0, low = 0;
+  for (let t = 0; t < 3; t += h) { v += (-w * w * x - 2 * z * w * v) * h; x += v * h; low = Math.min(low, x); }
+  const theory = Math.exp((-z * Math.PI) / Math.sqrt(1 - z * z)) * 40;
+  log(`   a letter pushed 40 px swings back past rest by ${(-low).toFixed(1)} px; theory ${theory.toFixed(1)} px`);
+  expect(near(-low, theory, 0.03), 'the letter spring overshoots differently from theory');
 }
 
 // 4. Frame-rate independence: the same 2 s of motion at 120, 60, 20 and 7 frames per second ends in the same place.
@@ -126,6 +125,49 @@ log('5. Darkroom soft stop');
   log(`   soft stop: largest angle ${deg(soft.peak)}, largest jump in visible speed ${soft.jump.toFixed(2)} rad/s; old hard clamp: ${hard.jump.toFixed(2)} rad/s`);
   expect(soft.peak < 0.7, 'the soft stop lets a print past 0.7 rad');
   expect(soft.jump < hard.jump / 10, 'the soft stop is not much smoother than the old hard clamp');
+}
+
+// 6. The title card's sky (site/src/sky/astro.js), each model against an independent reference
+log('6. Sky over the title card');
+{
+  const near = (a, b, tol) => Math.abs(a - b) <= tol;
+  // refraction at the horizon is about 34′ (Bennett's tables), which squashes the setting sun to about 0.8
+  const R0 = refraction(0) * 60, sq = squash(0);
+  log(`   refraction at the horizon ${R0.toFixed(1)}′ (tables: 34′), setting sun ${sq.toFixed(2)} as tall as wide`);
+  expect(near(R0, 34, 1.5), 'horizon refraction is not about 34 arcminutes');
+  expect(sq > 0.72 && sq < 0.88, 'the setting sun is not flattened to about 0.8');
+  // air mass: 1 at the zenith, about 38 at the horizon (Kasten & Young 1989)
+  expect(near(airMass(90), 1, 0.01) && near(airMass(0), 38, 1.5), 'air mass is off at the zenith or the horizon');
+  // sunlight reddens towards the horizon: blue falls first (Rayleigh λ^-4)
+  const s0 = sunlight(0, 0.06), s90 = sunlight(90, 0.06);
+  log(`   sunlight at the horizon rgb(${s0.map(Math.round).join(', ')}), overhead rgb(${s90.map(Math.round).join(', ')})`);
+  expect(s0[0] > s0[1] && s0[1] > s0[2] && s0[2] < 40, 'the low sun is not red-orange');
+  expect(s90[2] / s90[0] > 0.85, 'the high sun is not near white');
+  // equinox noon: the sun stands at 90° − latitude (Shanghai, 31.23° N, 2026-03-20)
+  let top = -90; for (let m = 0; m < 1440; m += 1) top = Math.max(top, astro(Date.UTC(2026, 2, 20, 0, m), 31.2304, 121.4737).sun.alt);
+  log(`   equinox noon altitude in Shanghai ${top.toFixed(2)}° (90° − 31.23° = 58.77°)`);
+  expect(near(top, 58.77, 0.6), 'the noon sun at the equinox is not at 90° − latitude');
+  // moon phases against the published tables for November 2026: new moon 9 Nov, full moon 24 Nov
+  const fNew = astro(Date.UTC(2026, 10, 9, 7), 31.2, 121.5).frac, fFull = astro(Date.UTC(2026, 10, 24, 15), 31.2, 121.5).frac;
+  log(`   moon lit ${(fNew * 100).toFixed(1)}% on 9 Nov 2026, ${(fFull * 100).toFixed(1)}% on 24 Nov 2026 (tables: new, full)`);
+  expect(fNew < 0.02 && fFull > 0.98, 'moon phases disagree with the published dates');
+  // raindrop fall speeds against Gunn & Kinzer's 1949 measurements (m/s)
+  const GK = [[1, 4.03], [2, 6.49], [3, 8.06], [4, 8.83]], worst = Math.max(...GK.map(([D, v]) => Math.abs(dropSpeed(D) - v) / v));
+  log(`   raindrop speeds within ${(worst * 100).toFixed(1)}% of Gunn & Kinzer's measurements`);
+  expect(worst < 0.03, 'raindrop fall speeds are more than 3% off the measurements');
+  // Marshall–Palmer: the mean diameter of the (untruncated) exponential is 1/Λ
+  const R = 6, lam = mpLambda(R); let sum = 0, n = 20000; for (let i = 0; i < n; i++) sum += -Math.log(1 - (i + 0.5) / n) / lam;
+  expect(near(sum / n, 1 / lam, 0.02 / lam), 'drop sizes do not follow e^(−ΛD)');
+  // a meteor peaks at x = 1, i.e. s = 1 − ln 3 / k, with I = Imax, and is (nearly) dark at both ends
+  const sPeak = 1 - Math.log(3) / METEOR_K;
+  log(`   meteor light curve: peak ${lightCurve(sPeak).toFixed(3)} at s = ${sPeak.toFixed(3)}, ends ${lightCurve(0).toFixed(3)} and ${lightCurve(1).toFixed(3)}`);
+  expect(near(lightCurve(sPeak), 1, 1e-6) && lightCurve(0) < 0.02 && lightCurve(1) < 1e-9 && lightCurve(sPeak - 0.05) < 1 && lightCurve(sPeak + 0.05) < 1, 'the meteor light curve does not peak at x = 1');
+  // star counts: with N(<m) ∝ 10^(0.6 m), the share brighter than 5 among stars to 6.5 is (10^3 − 1)/(10^3.9 − 1)
+  let bright = 0; for (let i = 0; i < n; i++) if (starMagnitude((i + 0.5) / n) < 5) bright++;
+  expect(near(bright / n, (1e3 - 1) / (10 ** 3.9 - 1), 0.005), 'star magnitudes do not follow N(<m) ∝ 10^(0.6 m)');
+  // Koschmieder: at a distance equal to the visibility, 2% contrast is left
+  expect(near(koschmieder(1000, 1000), 0.02, 0.0005), 'fog contrast does not fall to 2% at the visibility distance');
+  expect(near(snowSpeed(5), 0.8 * 5 ** 0.16, 1e-9) && snowSpeed(5) > 0.9 && snowSpeed(5) < 1.3, 'snow falls at the wrong speed');
 }
 
 if (failures.length) { console.error(`\nphysics: ${failures.length} check(s) failed`); process.exitCode = 1; } else log('physics: all checks pass');

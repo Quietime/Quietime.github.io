@@ -63,8 +63,9 @@ export async function mountStage({ kind, data, run, cap, onPick, onFail }) {
   const draw = (now) => {
     const dt = frameTime(now, last); last = now;
     const r = run.getBoundingClientRect();
-    // past the end of the run the page covers the canvas: stop drawing
-    const live = r.bottom > 0 && r.top < innerHeight * 1.5;
+    // draw only while the run is on screen: before it (the home page's opaque title card) and past its end the page
+    // covers the canvas
+    const live = r.bottom > 0 && r.top < innerHeight - 2;
     canvas.style.visibility = live ? '' : 'hidden';
     if (!live) { if (cap) cap.style.opacity = '0'; return; }
     const out = cur.update(dt, progress(r));

@@ -26,10 +26,12 @@ if (S) {
   if (!/^https:\/\/.+\/$/.test(S.url || '')) err(f, `url must be the site address ending in "/", got "${S.url || ''}"`);
   if (S.email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(S.email)) err(f, `email "${S.email}" is not an email address`);
   if (S.music_volume != null && !(Number(S.music_volume) >= 0 && Number(S.music_volume) <= 100)) err(f, 'music_volume must be 0–100');
-  for (const k of ['hero_image', 'wechat_qr', 'music_file']) {
+  for (const k of ['wechat_qr', 'music_file']) {
     const rel = S[k] && resolveImage(S[k], 'content/uploads');
     if (rel && !(await exists(rel))) err(f, `${k} points to "${S[k]}", which does not exist`);
   }
+  if (S.studio_lat != null && S.studio_lat !== '' && !(Math.abs(Number(S.studio_lat)) <= 90)) err(f, `studio_lat "${S.studio_lat}" is not a latitude (−90 to 90)`);
+  if (S.studio_lon != null && S.studio_lon !== '' && !(Math.abs(Number(S.studio_lon)) <= 180)) err(f, `studio_lon "${S.studio_lon}" is not a longitude (−180 to 180)`);
   (S.socials || []).forEach((s, i) => { if (s?.url && !isUrl(s.url)) warn(f, `socials[${i}] (${s.label}) "${s.url}" is not a web, mail or phone link and will not be shown`); });
   if (S.form_endpoint && !/^https:\/\//i.test(S.form_endpoint)) warn(f, 'form_endpoint must start with https:// to be used');
   for (const k of ['description', 'statement', 'about_intro', 'contact_lede']) if (S[`${k}_zh`] && !S[`${k}_en`]) warn(f, `${k}_en is empty; the English pages show the Chinese text`);

@@ -38,6 +38,10 @@ export const UI = {
     },
     pswp: { prev: '上一格', next: '下一格', close: '关闭', label: '照片查看', error: '这张照片暂时无法加载。' },
     cursor: { view: '查看', open: '进入', play: '播放', soon: '整理中', next: '下一卷' },
+    sky: {
+      night: '夜', blueAm: '晨光蓝调', bluePm: '暮色蓝调', dawn: '朝霞', dusk: '晚霞', rise: '日出', set: '日落', day: '白昼',
+      cloud: '多云', fog: '雾', rain: '有雨', snow: '落雪', join: '{p} · {w}',
+    },
     scene: {
       heroEn: '摄影与影像', head: '卷头', headSub: '胶片会在每个系列停下来，铺平给你看。',
       darkroom: '暗房', darkroomSub: '照片还没干，一路往里走。', prints: (n) => `${n} 张`, scroll: '向下滚动', writeUs: '写信约拍',
@@ -77,6 +81,10 @@ export const UI = {
     },
     pswp: { prev: 'Previous', next: 'Next', close: 'Close', label: 'Photo viewer', error: 'This photograph could not be loaded.' },
     cursor: { view: 'View', open: 'Open', play: 'Play', soon: 'Soon', next: 'Next' },
+    sky: {
+      night: 'Night', blueAm: 'Blue hour', bluePm: 'Blue hour', dawn: 'First light', dusk: 'Afterglow', rise: 'Sunrise', set: 'Sunset', day: 'Daylight',
+      cloud: 'cloudy', fog: 'fog', rain: 'rain', snow: 'snow', join: '{p}, {w}',
+    },
     scene: {
       heroEn: 'photography & moving image', head: 'Leader', headSub: 'The film stops at every series and lies flat for you.',
       darkroom: 'Darkroom', darkroomSub: 'The prints are still wet. Walk on in.', prints: (n) => `${n} prints`, scroll: 'Scroll', writeUs: 'Write to book a shoot',
