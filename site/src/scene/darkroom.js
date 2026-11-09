@@ -18,7 +18,7 @@
 // (measured in the browser). Air spilling round a print sheds small eddies that push it sideways a little.
 // The ropes are hemp, each sagging under its own weight (a catenary, near enough a parabola over this span),
 // each of its own thickness, tone, sag and number of stray fibres.
-import { THREE, Follow, smooth, clamp, reduce, printMaterial, printSize, slateTexture, imageTexture, FONTS } from './kit.js';
+import { THREE, Follow, smooth, clamp, reduce, printMaterial, printSize, slateTexture, imageTexture, FONTS, substeps } from './kit.js';
 
 function ropeTexture(renderer) {
   const c = document.createElement('canvas'); c.width = 128; c.height = 32;
@@ -45,9 +45,10 @@ function ropeTexture(renderer) {
  * onPick(seriesIndex, frameIndex) is called when a print is clicked.
  */
 export function darkroomScene({ renderer, scene, camera, data, imgs, fog, onPick, host }) {
-  scene.fog = new THREE.Fog(fog, 2.5, 16);
+  const FAR = 16;
+  scene.fog = new THREE.Fog(fog, 2.5, FAR);
   camera.fov = 42; camera.updateProjectionMatrix();
-  const light = { light: new THREE.Vector3(0.15, 0.85, 0.75), lightCol: new THREE.Vector3(1.0, 0.8, 0.58), amb: 0.45, fog, near: 2.5, far: 16 };
+  const light = { light: new THREE.Vector3(0.15, 0.85, 0.75), lightCol: new THREE.Vector3(1.0, 0.8, 0.58), amb: 0.45, fog, near: 2.5, far: FAR };
   const group = new THREE.Group(); scene.add(group);
   const items = [], rows = [], disposables = [], caps = [], pickable = [];
   const narrow = camera.aspect < 0.8;
@@ -144,9 +145,11 @@ export function darkroomScene({ renderer, scene, camera, data, imgs, fog, onPick
   // so a roll of a hundred prints never holds more than a dozen textures (a phone keeps its memory)
   const blank = new THREE.DataTexture(new Uint8Array([60, 52, 44, 255]), 1, 1, THREE.RGBAFormat); blank.needsUpdate = true;
   disposables.push(blank);
-  let order = 0, img = 0;
+  let order = 0;
+  // where each roll's pictures start in imgs, so a roll can hang fewer prints than it has
+  const offs = []; data.series.reduce((a, se, si) => { offs[si] = a; return a + se.frames.length; }, 0);
   const print = (si, fi, slot, row) => {
-    const fr = data.series[si].frames[fi], url = imgs[img++];
+    const fr = data.series[si].frames[fi], url = imgs[offs[si] + fi];
     if (!url) return;
     const [w, h] = printSize(fr.w, fr.h, slot === 0 ? 1.2 : 1.25);
     let style = STYLES[(order++ * 3 + Math.floor(rand() * 5)) % STYLES.length];
@@ -184,8 +187,10 @@ export function darkroomScene({ renderer, scene, camera, data, imgs, fog, onPick
   data.series.forEach((se, si) => {
     const ids = se.frames.map((_, fi) => fi);
     if (narrow) {
+      // a phone hangs one print per row; where the page asks for it (the works page: a sample of each roll, the
+      // series page hangs every print) it hangs only the first few, and the slate gives the whole count
       slate(se.slate, se.cap, rope(z)); z -= ROW;
-      for (const fi of ids) { print(si, fi, 0, rope(z)); z -= ROW; }
+      for (const fi of ids.slice(0, data.narrowLimit || Infinity)) { print(si, fi, 0, rope(z)); z -= ROW; }
       return;
     }
     // first row: a print, the slate of the roll in the middle, a print; then rows of three
@@ -206,6 +211,9 @@ export function darkroomScene({ renderer, scene, camera, data, imgs, fog, onPick
   const zEnd = z + 2.6, zStart = z0 + 3.4;
 
   const cam = new Follow(0.9, 1, zStart);
+  // beyond `edge` a stop pushes back, stiffening with the square of the overshoot o and damping the motion into it:
+  //   a = −sign(x)·k·o² − c·o·v   (rad/s²), k = 900, c = 40
+  const stop = (x, edge, v) => { const o = Math.abs(x) - edge; return o > 0 ? -Math.sign(x) * 900 * o * o - 40 * o * v : 0; };
   const zeta = 0.12, kappa = 0.008, S = 0.03, g = 9.8;
   let lastZ = zStart, lastV = 0, clock = 0;
 
@@ -226,7 +234,7 @@ export function darkroomScene({ renderer, scene, camera, data, imgs, fog, onPick
   addEventListener('pointermove', onMove, { passive: true });
 
   // rough page length: the walk takes about one screen of scrolling per row
-  const pages = Math.max(3, (zStart - zEnd) / ROW) * (narrow ? 0.4 : 0.62) + 1;
+  const pages = Math.max(3, (zStart - zEnd) / ROW) * (narrow ? 0.34 : 0.62) + 1;
   return {
     pages,
     update(dt, pr) {
@@ -235,30 +243,35 @@ export function darkroomScene({ renderer, scene, camera, data, imgs, fog, onPick
       stream(zc);
       const vc = (zc - lastZ) / Math.max(dt, 1e-3); lastZ = zc;
       const V = -vc, acc = clamp((V - lastV) / Math.max(dt, 1e-3), -60, 60); lastV = V;
-      // a row breaks into grain as it reaches you: fully there 2.3 units ahead, gone at 0.9
+      // a row breaks into grain as it reaches you: fully there 2.3 units ahead, gone at 0.9. Rows further off than
+      // the fog's far end are only fog colour, so they are neither drawn nor simulated
       for (const row of rows) {
-        const fade = smooth(0.9, 2.3, zc - row.z);
+        const ahead = zc - row.z, fade = smooth(0.9, 2.3, ahead), seen = fade > 0.01 && ahead < FAR;
         row.mats[0].opacity = fade; row.mats[1].opacity = 0.75 * fade;
-        row.mats[0].visible = row.mats[1].visible = fade > 0.01;
+        row.mats[0].visible = row.mats[1].visible = seen;
         for (const it of row.items) {
           it.mats.forEach((mm) => { mm.uniforms.uFade.value = fade; });
           it.bits.forEach((bt) => { bt.visible = fade > 0.5; });
-          it.pivot.visible = it.rp.visible = fade > 0.01;
+          it.pivot.visible = it.rp.visible = seen;
         }
       }
-      const n = Math.max(1, Math.round(dt / (1 / 240))), h = dt / n;
+      const n = substeps(dt), h = dt / n;
+      const calm = Math.abs(V) < 1e-3 && Math.abs(acc) < 1e-2;
       for (const it of items) {
+        // asleep: hanging still in still air; any scroll wakes it
+        if (calm && Math.abs(it.th) + Math.abs(it.ph - it.phi0) < 2e-5 && Math.abs(it.thv) + Math.abs(it.phv) < 2e-5) continue;
         if (!reduce && it.pivot.visible) {
           const K = it.L / (it.k2 + it.L * it.L);
           for (let s = 0; s < n; s++) {
             const rel = V - it.thv * it.L * Math.cos(it.th);
             const drag = (kappa * rel * Math.abs(rel)) / it.L;
-            it.thv += (K * (S * acc * Math.cos(it.th) - g * Math.sin(it.th)) - 2 * zeta * it.wTh * it.thv + drag) * h;
-            it.th = clamp(it.th + it.thv * h, -0.5, 0.5);
+            // a soft stop past ±0.35 rad (the print meets the rope and its neighbours) instead of a dead halt at the limit
+            it.thv += (K * (S * acc * Math.cos(it.th) - g * Math.sin(it.th)) - 2 * zeta * it.wTh * it.thv + drag + stop(it.th, 0.35, it.thv)) * h;
+            it.th = clamp(it.th + it.thv * h, -0.7, 0.7);
             if (it.sway || it.phi0) {
               const eddy = 0.45 * drag * Math.sin(2 * Math.PI * it.f * clock + it.p);
-              it.phv += (-it.wPh * it.wPh * Math.sin(it.ph - it.phi0) - 2 * zeta * it.wPh * it.phv + eddy) * h;
-              it.ph = clamp(it.ph + it.phv * h, it.phi0 - 0.4, it.phi0 + 0.4);
+              it.phv += (-it.wPh * it.wPh * Math.sin(it.ph - it.phi0) - 2 * zeta * it.wPh * it.phv + eddy + stop(it.ph - it.phi0, 0.28, it.phv)) * h;
+              it.ph = clamp(it.ph + it.phv * h, it.phi0 - 0.6, it.phi0 + 0.6);
             }
           }
         }

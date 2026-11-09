@@ -2,7 +2,7 @@
 //   content/settings.json        site wording, contact, socials, about, music
 //   content/films.json           Bilibili films
 //   content/series/<slug>/index.json + the photos next to it
-// Text fields carry a language suffix (title_zh, title_en, title_ja). A missing translation
+// Text fields carry a language suffix (title_zh, title_en). A missing translation
 // falls back to Chinese, so a new language can be filled in gradually.
 import fs from 'node:fs/promises';
 import path from 'node:path';
@@ -71,9 +71,14 @@ export async function loadContent(lang = 'zh') {
       url: S.url || 'https://quietime.github.io/',
       statement: pick(S, 'statement', lang).split('\n').filter(Boolean),
       edgeCode: S.edge_code || 'QUIETIME 400',
-      heroImage: resolveImage(S.hero_image, 'content/uploads'),
       samples: Boolean(S.samples),
       sampleCredit: pick(S, 'sample_credit', lang),
+    },
+    // where the studio is: the title card shows the sky and weather there (sky/, hero.js)
+    sky: {
+      city: pick(S, 'studio_city', lang),
+      lat: Number.isFinite(Number(S.studio_lat)) && S.studio_lat !== '' ? Number(S.studio_lat) : 31.2304,
+      lon: Number.isFinite(Number(S.studio_lon)) && S.studio_lon !== '' ? Number(S.studio_lon) : 121.4737,
     },
     contact: {
       wechat: S.wechat || '', email: S.email || '', copyright: S.copyright || '',

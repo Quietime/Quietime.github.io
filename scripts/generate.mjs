@@ -1,4 +1,4 @@
-// Writes the static HTML pages into site/, one full set per language (index.html, index.en.html, index.ja.html ...).
+// Writes the static HTML pages into site/, one full set per language (index.html, index.en.html ...).
 import fs from 'node:fs/promises';
 import path from 'node:path';
 import { moonSVG } from './moon.mjs';
@@ -10,8 +10,12 @@ let media = {};
 try { media = JSON.parse(await fs.readFile(path.join(ROOT, '.cache/media.json'), 'utf8')); } catch { /* none */ }
 
 const esc = (s = '') => String(s).replace(/[&<>"]/g, (c) => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;' })[c]);
+// links typed into the admin: only web, mail and phone addresses are written into a page (never javascript: etc.)
+const safeUrl = (u) => (/^(https?:\/\/|mailto:|tel:)/i.test(String(u || '').trim()) ? String(u).trim() : '');
+const OG_LOCALE = { zh: 'zh_CN', en: 'en_US', ja: 'ja_JP' };
+const sitemap = [];
 const P = (src) => photos[src] || null;
-const largest = (p, ext = 'webp') => `${p.dir}/${p.base}-${p.widths[p.widths.length - 1]}.${ext}`;
+const largest = (p) => `${p.dir}/${p.base}-${p.widths[p.widths.length - 1]}.webp`;
 const exifText = (e) => (e ? Object.values(e).filter(Boolean).join('　') : '');
 const dur = (s) => (s ? `${Math.floor(s / 60)}:${String(s % 60).padStart(2, '0')}` : '');
 const day = (t) => (t ? new Date(t * 1000).toISOString().slice(0, 10).replace(/-/g, '.') : '');
@@ -19,8 +23,9 @@ const day = (t) => (t ? new Date(t * 1000).toISOString().slice(0, 10).replace(/-
 function picture(src, { sizes = '100vw', alt = '', cls = '', eager = false } = {}) {
   const p = P(src);
   if (!p) return `<span class="ph ph-missing ${cls}"></span>`;
-  const set = (ext) => p.widths.map((w) => `${p.dir}/${p.base}-${w}.${ext} ${w}w`).join(', ');
-  return `<picture class="ph ${cls}" style="--ar:${p.w}/${p.h};--pc:${p.color}"><source type="image/webp" srcset="${set('webp')}" sizes="${sizes}"><img class="dev" src="${largest(p, 'jpg')}" srcset="${set('jpg')}" sizes="${sizes}" width="${p.w}" height="${p.h}" alt="${esc(alt)}" loading="${eager ? 'eager' : 'lazy'}" decoding="async"></picture>`;
+  const set = p.widths.map((w) => `${p.dir}/${p.base}-${w}.webp ${w}w`).join(', ');
+  // every current browser takes the WebP source; the single JPEG is only for the rest
+  return `<picture class="ph ${cls}" style="--ar:${p.w}/${p.h};--pc:${p.color}"><source type="image/webp" srcset="${set}" sizes="${sizes}"><img class="dev" src="${p.dir}/${p.base}-${p.fallback}.jpg" width="${p.w}" height="${p.h}" alt="${esc(alt)}" ${eager ? 'loading="eager" fetchpriority="high"' : 'loading="lazy"'} decoding="async"></picture>`;
 }
 
 // splits a Chinese or Japanese line at its punctuation so a phrase never breaks in the middle;
@@ -33,7 +38,7 @@ const pages = {};
 
 for (const L of LANGS) {
   const C = await loadContent(L.code);
-  const { site, contact, socials, series, films, about, homeTeaser, music } = C;
+  const { site, contact, socials, series, films, about, homeTeaser, music, sky } = C;
   const t = UI[L.code];
   const href = (name) => `${name}${L.suffix}.html`;
   const seriesHref = (s) => href(`series-${s.slug}`);
@@ -41,17 +46,29 @@ for (const L of LANGS) {
   const config = {
     lang: L.code,
     music: { on: music.on, file: media.music || '', volume: music.volume },
-    formEndpoint: contact.formEndpoint, email: contact.email,
+    sky: { ...sky, words: t.sky, edgeCode: site.edgeCode },
+    formEndpoint: /^https:\/\//i.test(contact.formEndpoint) ? contact.formEndpoint : '', email: contact.email,
     ui: {
       copied: t.copied, copyFail: t.copyFail, soundOn: t.soundOn, soundOff: t.soundOff, notReady: t.notReady,
       f: { ...t.f, budgets: undefined }, pswp: t.pswp, view: t.cursor.view,
     },
   };
 
-  function head({ key, title, desc = site.description, theme = 'paper' }) {
+  // the address a page is published at; the Chinese home page is the site root
+  const pageUrl = (key, l) => (key === 'index' && !l.suffix ? site.url : `${site.url}${key}${l.suffix}.html`);
+  function head({ key, title, desc = site.description, theme = 'paper', preload = '', image = null, ld = null }) {
     const full = title ? `${title} | ${site.title}` : `${site.title} | ${t.tagline}`;
     const alt = (l) => `${key}${l.suffix}.html`;
     const pageType = key.startsWith('series-') ? 'series' : key === 'index' ? 'home' : key === '404' ? 'nf' : key;
+    const indexable = key !== '404';
+    if (indexable) sitemap.push({ key, lang: L });
+    const og = image ? { url: `${site.url}${image}`, w: 1200, h: 630 } : { url: `${site.url}og.jpg`, w: 1200, h: 630 };
+    const seo = indexable
+      ? `<link rel="canonical" href="${pageUrl(key, L)}">
+${LANGS.map((l) => `<link rel="alternate" hreflang="${l.html}" href="${pageUrl(key, l)}">`).join('\n')}
+<link rel="alternate" hreflang="x-default" href="${pageUrl(key, LANGS[0])}">
+<meta property="og:url" content="${pageUrl(key, L)}">`
+      : '<meta name="robots" content="noindex">';
     return `<!doctype html>
 <html lang="${L.html}" class="no-js" data-page="${pageType}" data-theme-base="${theme}" ${LANGS.map((l) => `data-alt-${l.code}="${alt(l)}"`).join(' ')}>
 <head>
@@ -59,11 +76,11 @@ for (const L of LANGS) {
 <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
 <title>${esc(full)}</title>
 <meta name="description" content="${esc(desc)}">
-<meta name="theme-color" content="${theme === 'room' ? '#1B1612' : '#EFE6D8'}">
+<meta name="theme-color" content="${theme === 'room' ? '#151517' : '#ECE9E2'}">
 <link rel="icon" href="favicon.svg" type="image/svg+xml">
 <link rel="apple-touch-icon" href="apple-touch-icon.png">
 <link rel="manifest" href="manifest.webmanifest">
-${LANGS.map((l) => `<link rel="alternate" hreflang="${l.html}" href="${site.url}${alt(l)}">`).join('\n')}
+${preload ? `<link rel="preload" as="image" href="${esc(preload)}" type="image/webp" fetchpriority="high">\n` : ''}${seo}
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
@@ -72,16 +89,20 @@ ${LANGS.map((l) => `<link rel="alternate" hreflang="${l.html}" href="${site.url}
 <meta property="og:site_name" content="${esc(site.title)}">
 <meta property="og:title" content="${esc(full)}">
 <meta property="og:description" content="${esc(desc)}">
-<meta property="og:image" content="${site.url}og.jpg">
+<meta property="og:locale" content="${OG_LOCALE[L.code] || L.html}">
+${LANGS.filter((l) => l !== L).map((l) => `<meta property="og:locale:alternate" content="${OG_LOCALE[l.code] || l.html}">`).join('\n')}
+<meta property="og:image" content="${og.url}">
+<meta property="og:image:width" content="${og.w}">
+<meta property="og:image:height" content="${og.h}">
 <meta name="twitter:card" content="summary_large_image">
-<script>(function(d){d.classList.replace('no-js','js');try{var s=localStorage.getItem('qt-lang');if(!s&&d.lang==='zh-CN'){var n=(navigator.language||'').toLowerCase();var to=n.indexOf('ja')===0?'ja':(n.indexOf('zh')===0?'':'en');if(to){var a=d.getAttribute('data-alt-'+to);if(a){location.replace(a+location.hash);return}}}if(sessionStorage.getItem('qt-leak'))d.classList.add('leak-in');if(sessionStorage.getItem('qt-pre'))d.classList.add('pre-seen')}catch(e){}})(document.documentElement)</script>
+${ld ? `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>` : ''}
+<script>(function(d){d.classList.replace('no-js','js');try{var s=localStorage.getItem('qt-lang');if(!s&&d.lang==='zh-CN'&&!/bot|crawl|spider|slurp|preview|facebookexternalhit/i.test(navigator.userAgent)){var n=(navigator.language||'').toLowerCase();var to=n.indexOf('zh')===0?'':'en';if(to){var a=d.getAttribute('data-alt-'+to);if(a){location.replace(a+location.hash);return}}}if(sessionStorage.getItem('qt-pre'))d.classList.add('pre-seen')}catch(e){}})(document.documentElement)</script>
 <script type="application/json" id="qt-config">${JSON.stringify(config).replace(/</g, '\\u003c')}</script>
 <script type="module" src="./src/main.js"></script>
 </head>
 <body>
 <a class="skip" href="#main">${esc(t.skip)}</a>
 <div class="grain" aria-hidden="true"></div>
-<div class="leak" aria-hidden="true"><i></i><i></i></div>
 ${header(key)}`;
   }
 
@@ -119,14 +140,14 @@ ${sound}
   }
 
   function footer() {
-    const soc = socials.filter((s) => s.url);
+    const soc = socials.filter((s) => safeUrl(s.url));
     return `<footer class="ftr" data-ftr>
 <div class="ftr-edge" aria-hidden="true"><span class="edge">${esc(site.edgeCode)}<i>▸ END</i></span></div>
 <div class="ftr-inner">
 <p class="ftr-word"><span class="fw-en">${esc(site.name)}</span><span class="fw-zh">${esc(site.nameZh)}</span></p>
 <div class="ftr-contact">
 ${contactLines()}
-${soc.length ? `<p class="ftr-soc">${soc.map((s) => `<a href="${esc(s.url)}" target="_blank" rel="noopener">${esc(s.label)}</a>`).join('')}</p>` : ''}
+${soc.length ? `<p class="ftr-soc">${soc.map((s) => `<a href="${esc(safeUrl(s.url))}" target="_blank" rel="noopener">${esc(s.label)}</a>`).join('')}</p>` : ''}
 </div>
 <div class="ftr-legal"><p class="ftr-copy">${esc(contact.copyright)}</p>
 ${site.samples && site.sampleCredit ? `<p class="ftr-credit">${esc(site.sampleCredit)}</p>` : ''}</div>
@@ -170,6 +191,8 @@ ${rest.length ? `<ol class="film-rows">${rest.map((f) => `<li><button type="butt
   const sceneJSON = (o) => `<script type="application/json" id="qt-scene">${JSON.stringify(o).replace(/</g, '\\u003c')}</script>`;
   const framesOf = (s) => s.frames.map((f) => ({ f, p: P(f.src) })).filter((x) => x.p);
   const capBar = `<div class="cap" data-cap aria-hidden="true"><p class="k" data-cap-k></p><p class="t" data-cap-t></p><p class="s" data-cap-s></p></div>`;
+  // a way past a long scroll scene, and the point it lands on
+  const skip = (label) => `<button type="button" class="run-skip" data-run-skip>${esc(label)}</button><span id="after-run" tabindex="-1"></span>`;
   const darkSlates = {
     head: [`${site.edgeCode} ▸ 0`, site.name, site.nameZh, 'DARKROOM · ONE TAKE'],
     end: [`${site.edgeCode} ▸ END`, t.endRoll, t.scene.writeUs, contact.email || ''],
@@ -178,11 +201,13 @@ ${rest.length ? `<ol class="film-rows">${rest.map((f) => `<li><button type="butt
     head: [`${site.edgeCode} ▸ 0`, t.scene.darkroom, t.scene.darkroomSub],
     end: [`${site.edgeCode} ▸ END`, t.endRoll, contact.email || ''],
   };
-  const darkSeries = (s, i) => {
-    const fr = framesOf(s);
+  // `limit` hangs only the first prints of a roll (the works page: a walk past every series, each a short sample;
+  // the series page hangs them all). The slate still gives the whole count.
+  const darkSeries = (s, i, limit = Infinity) => {
+    const all = framesOf(s), fr = all.slice(0, limit);
     return {
       href: seriesHref(s),
-      slate: [`ROLL ${i + 1}`, s.title, s.sub, t.scene.prints(fr.length)],
+      slate: [`ROLL ${i + 1}`, s.title, s.sub, t.scene.prints(all.length)],
       cap: [`ROLL ${i + 1}`, s.title, s.sub],
       frames: fr.map(({ p }) => ({ w: p.w, h: p.h })),
       images: fr.map(({ p }) => texUrl(p)),
@@ -193,21 +218,22 @@ ${rest.length ? `<ol class="film-rows">${rest.map((f) => `<li><button type="butt
   function home() {
     let from = 0;
     const spine = series.map((s, i) => {
-      const fr = framesOf(s);
+      // each roll stops for about one screen of film: its first 8 frames; the whole roll is one click away
+      const all = framesOf(s), fr = all.slice(0, 8);
       // a frame of the film atlas is about 485 px wide, so the 480 px size is enough
-      const o = { n: fr.length, from, cap: [`ROLL ${i + 1}`, s.title, `${s.sub} · ${t.frames(fr.length)}`], images: fr.map(({ p }) => texUrl(p, 480)) };
+      const o = { n: fr.length, from, cap: [`ROLL ${i + 1}`, s.title, `${s.sub} · ${t.frames(all.length)}`], images: fr.map(({ p }) => texUrl(p, 480)), sizes: fr.map(({ p }) => [p.w, p.h]) };
       from += fr.length;
       return o;
     });
-    const first = framesOf(series[0] || { frames: [] })[0];
     const data = {
       edge: site.edgeCode,
       // the letters of the title are cut out of this picture: a landscape set in the admin, else the first frame
-      heroPhoto: P(site.heroImage) ? texUrl(P(site.heroImage), 1600) : first ? texUrl(first.p, 1600) : '',
       capHead: [`${site.edgeCode} ▸ 0`, t.scene.head, t.scene.headSub],
       capEnd: [`${site.edgeCode} ▸ END`, t.endRoll, contact.email || ''],
+      // the pictures' shapes come with the page, so the strip is laid out before any picture has loaded
       images: spine.flatMap((x) => x.images),
-      series: spine.map(({ images, ...rest }) => rest),
+      sizes: spine.flatMap((x) => x.sizes),
+      series: spine.map(({ images, sizes, ...rest }) => rest),
     };
     // without WebGL (or with reduced motion) the run holds a plain strip: a slate and the first frames of each series
     const cells = [];
@@ -225,12 +251,19 @@ ${rest.length ? `<ol class="film-rows">${rest.map((f) => `<li><button type="butt
       });
     });
     const title = (site.name || 'Quietime').toUpperCase();
-    return `${head({ key: 'index', title: '' })}
+    const ld = {
+      '@context': 'https://schema.org', '@type': 'ProfessionalService', additionalType: 'https://schema.org/Photograph',
+      name: site.title, alternateName: [site.name, site.nameZh], description: site.description, url: site.url,
+      logo: `${site.url}icon-512.png`, image: `${site.url}og.jpg`, inLanguage: L.html,
+      ...(contact.email ? { email: contact.email } : {}),
+      ...(socials.some((x) => /^https?:/i.test(safeUrl(x.url))) ? { sameAs: socials.map((x) => safeUrl(x.url)).filter((u) => /^https?:/i.test(u)) } : {}),
+    };
+    return `${head({ key: 'index', title: '', ld })}
 <main id="main" class="home">
 <section class="hero" data-hero aria-label="${esc(site.title)}">
-<p class="h-edge">${esc(site.edgeCode)} ▸ 0 · 36 EXP</p>
+<p class="h-edge" data-hero-edge>${esc(site.edgeCode)} ▸ 0${sky.city ? ` · ${esc(sky.city)}` : ''}</p>
 <h1 class="h-title" data-hero-title aria-label="${esc(site.name)} ${esc(site.nameZh)}">${esc(title)}</h1>
-<div class="h-row"><p class="h-zh" data-hero-zh aria-hidden="true">${esc(site.nameZh)}</p><p class="h-en">${esc(t.scene.heroEn)}</p></div>
+<div class="h-row"><p class="h-zh" data-hero-zh aria-hidden="true"><span class="h-seal" data-hero-seal><i>静</i><i>夜</i></span>${esc(site.nameZh)}</p><p class="h-en">${esc(t.scene.heroEn)}</p></div>
 <p class="h-st">${site.statement.map((l) => esc(l)).join('<br>')}</p>
 <p class="h-hint" aria-hidden="true">${esc(t.scene.scroll)} ↓</p>
 </section>
@@ -238,11 +271,12 @@ ${rest.length ? `<ol class="film-rows">${rest.map((f) => `<li><button type="butt
 <section class="roll" aria-label="${esc(t.nav.works)}"><div class="roll-cam"><div class="roll-track">${cells.join('\n')}</div></div></section>
 </div>
 ${capBar}
-<section class="h-sec h-films" aria-labelledby="h-films-t">
+${skip(t.skipFilm)}
+${films.some(ready) ? `<section class="h-sec h-films" aria-labelledby="h-films-t">
 <div class="h-sec-head"><h2 id="h-films-t">${esc(t.nav.films)}</h2><p>${esc(t.filmsSub)}</p></div>
 ${filmGrid()}
 <p class="more-wrap"><a class="more" href="${href('films')}">${esc(t.allFilms)}</a></p>
-</section>
+</section>` : ''}
 <section class="h-sec h-about">
 <p class="about-q">${esc(homeTeaser || about.intro[0] || '')}</p>
 <p class="h-about-links"><a class="more" href="${href('about')}">${esc(t.aboutLink)}</a><a class="more" href="${href('contact')}">${esc(t.book)}</a></p>
@@ -263,13 +297,14 @@ ${footer()}`;
       const p = P(f.src);
       return `<a class="sc" href="${seriesHref(s)}#f${i + 1}" data-cursor="hide" data-full="${p ? largest(p) : ''}" aria-label="${esc(s.title)} ${esc(t.frameN(i + 1))}">${picture(f.src, { sizes: '(max-width: 860px) 45vw, 18vw', alt: f.caption })}<span class="sc-n">${i + 1}</span></a>`;
     }).join('')}</div></section>`).join('');
-    const dark = series.map(darkSeries);
-    const data = { slates: darkSlates, caps: darkCaps, images: dark.flatMap((x) => x.images), series: dark.map(({ images, ...rest }) => rest) };
-    return `${head({ key: 'works', title: t.nav.works, desc: `${site.title}：${series.map((s) => s.title).join('、')}`, theme: 'room' })}
+    const dark = series.map((s, i) => darkSeries(s, i, 6));
+    const data = { slates: darkSlates, caps: darkCaps, narrowLimit: 4, images: dark.flatMap((x) => x.images), series: dark.map(({ images, ...rest }) => rest) };
+    return `${head({ key: 'works', title: t.nav.works, desc: `${site.title}：${series.map((s) => s.title).join('、')}`, theme: 'room', image: P(series[0]?.frames[0]?.src)?.og })}
 <main id="main" class="works">
 <header class="page-head dr-head"><p class="dr-edge">${esc(site.edgeCode)} ▸ 0</p><h1 data-split><span class="line"><span>${esc(t.nav.works)}</span></span></h1><p class="dr-lede">${esc(t.scene.darkroomSub)}</p></header>
 <div class="run" data-run></div>
 ${capBar}
+${skip(t.skipRoom)}
 ${sceneJSON(data)}
 <header class="page-head w-index-head">
 <div class="toggle" role="group" aria-label="${esc(t.views.label)}"><button type="button" aria-pressed="true" data-view="list">${esc(t.views.list)}</button><button type="button" aria-pressed="false" data-view="sheet">${esc(t.views.sheet)}</button></div>
@@ -310,7 +345,14 @@ ${footer()}`;
       caps: { head: darkCaps.head, end: next && next !== s ? [`${site.edgeCode} ▸ END`, t.next, next.title] : darkCaps.end },
       images: dk.images, series: [{ ...dk, images: undefined }],
     };
-    return `${head({ key: `series-${s.slug}`, title: s.title, desc: s.statement || site.description, theme: 'room' })}
+    const cover = P(fr[0]?.src);
+    const ld = {
+      '@context': 'https://schema.org', '@type': 'ImageGallery', name: s.title, alternateName: s.sub || undefined,
+      description: s.statement || undefined, url: pageUrl(`series-${s.slug}`, L), inLanguage: L.html,
+      image: cover?.og ? `${site.url}${cover.og}` : undefined, numberOfItems: fr.length,
+      author: { '@type': 'Organization', name: site.title, url: site.url },
+    };
+    return `${head({ key: `series-${s.slug}`, title: s.title, desc: s.statement || site.description, theme: 'room', image: cover?.og, ld })}
 <div class="rail" aria-hidden="true"></div>
 <main id="main" class="series">
 <header class="s-head">
@@ -321,6 +363,7 @@ ${footer()}`;
 ${s.statement ? `<div class="s-statement"><p class="zh" data-words>${esc(s.statement)}</p></div>` : '<div class="s-gap"></div>'}
 <div class="run" data-run></div>
 ${capBar}
+${skip(t.skipRoom)}
 ${sceneJSON(data)}
 <div class="frames" data-gallery>${body}</div>
 ${series.length > 1 ? `<nav class="s-next" aria-label="${esc(t.next)}"><a href="${seriesHref(next)}" data-cursor="${esc(t.cursor.next)}"><span class="k">${esc(t.next)}</span><span class="s-next-txt"><span class="t">${esc(next.title)}</span><span class="e">${esc(next.sub)}</span></span>${picture(next.frames[0].src, { sizes: '(max-width: 860px) 92vw, 40vw' })}</a></nav>` : ''}
@@ -402,7 +445,7 @@ ${footer()}`;
 <aside class="ct-side">
 <div class="ct-ways">${contactLines(true)}</div>
 ${qr ? `<div class="ct-qr">${picture(contact.qr, { sizes: '180px', alt: t.f.qr })}<p>${esc(t.f.qr)}</p></div>` : ''}
-${socials.filter((x) => x.url).length ? `<p class="ct-soc">${socials.filter((x) => x.url).map((x) => `<a href="${esc(x.url)}" target="_blank" rel="noopener">${esc(x.label)}</a>`).join('')}</p>` : ''}
+${socials.filter((x) => safeUrl(x.url)).length ? `<p class="ct-soc">${socials.filter((x) => safeUrl(x.url)).map((x) => `<a href="${esc(safeUrl(x.url))}" target="_blank" rel="noopener">${esc(x.label)}</a>`).join('')}</p>` : ''}
 </aside>
 </div>
 ${contact.process.length ? `<section class="ct-process" aria-labelledby="h-proc"><h2 id="h-proc">${esc(t.f.process)}</h2><ol>${contact.process.map((p) => `<li><h3>${esc(p.title)}</h3><p>${esc(p.text)}</p></li>`).join('')}</ol></section>` : ''}
@@ -434,7 +477,7 @@ ${footer()}`;
   if (L.code === 'zh') {
     await fs.writeFile(path.join(out, 'public/manifest.webmanifest'), JSON.stringify({
       name: site.title, short_name: site.name, description: site.description, lang: 'zh-CN',
-      start_url: './', scope: './', display: 'standalone', background_color: '#1B1612', theme_color: '#1B1612',
+      start_url: './', scope: './', display: 'standalone', background_color: '#151517', theme_color: '#151517',
       icons: [
         { src: 'icon-192.png', sizes: '192x192', type: 'image/png' },
         { src: 'icon-512.png', sizes: '512x512', type: 'image/png' },
@@ -444,6 +487,42 @@ ${footer()}`;
   }
 }
 
+// sitemap with every language version of each page, and robots.txt pointing at it
+{
+  const { site } = await loadContent('zh');
+  const url = (key, l) => (key === 'index' && !l.suffix ? site.url : `${site.url}${key}${l.suffix}.html`);
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9" xmlns:xhtml="http://www.w3.org/1999/xhtml">
+${sitemap.map(({ key, lang }) => `<url><loc>${url(key, lang)}</loc>${LANGS.map((l) => `<xhtml:link rel="alternate" hreflang="${l.html}" href="${url(key, l)}"/>`).join('')}<xhtml:link rel="alternate" hreflang="x-default" href="${url(key, LANGS[0])}"/></url>`).join('\n')}
+</urlset>
+`;
+  await fs.writeFile(path.join(out, 'public/sitemap.xml'), xml);
+  await fs.writeFile(path.join(out, 'public/robots.txt'), `User-agent: *\nAllow: /\nDisallow: /admin/\n\nSitemap: ${site.url}sitemap.xml\n`);
+}
+
+// The site used to have Japanese pages (*.ja.html). Each old address now forwards to its English page, so links that
+// people saved or shared keep working; the stubs are not indexed and the sitemap does not list them.
+{
+  const { site } = await loadContent('en');
+  for (const f of Object.keys(pages).filter((k) => k.endsWith('.en.html'))) {
+    const to = f, old = f.replace(/\.en\.html$/, '.ja.html');
+    pages[old] = `<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>${esc(site.title)}</title>
+<meta name="description" content="${esc(site.description)}">
+<meta name="robots" content="noindex">
+<link rel="canonical" href="${site.url}${to}">
+<meta http-equiv="refresh" content="0; url=${to}">
+<script>location.replace(${JSON.stringify(to)} + location.hash)</script>
+</head>
+<body><p><a href="${to}">${esc(site.title)}</a></p></body>
+</html>
+`;
+  }
+}
+
 for (const f of (await fs.readdir(out)).filter((f) => f.endsWith('.html'))) await fs.unlink(path.join(out, f));
 for (const [f, html] of Object.entries(pages)) await fs.writeFile(path.join(out, f), html);
-console.log(`pages: ${Object.keys(pages).length} (${LANGS.map((l) => l.code).join(', ')})`);
+console.log(`pages: ${Object.keys(pages).filter((k) => !k.endsWith('.ja.html')).length} (${LANGS.map((l) => l.code).join(', ')}), plus redirects from the old Japanese addresses`);

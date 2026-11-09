@@ -1,0 +1,1 @@
+gsap-react comes from https://github.com/greensock/gsap-skills (commit aed9cfd), the official GSAP skills published by GreenSock under the MIT License (LICENSE in this folder). SKILL.md is unmodified.

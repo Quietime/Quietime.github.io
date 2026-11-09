@@ -1,7 +1,8 @@
-// Background music. Browsers only allow sound after the visitor interacts with the page, so the
-// music fades in on the first click, tap or key press, and the header switch remembers the choice.
+// Background music. It is off until the visitor switches it on in the header; the choice is remembered, and once on,
+// it carries on from page to page (browsers allow sound only after an interaction, so on a new page it resumes at
+// the first click, tap or key press).
 // With an uploaded file it plays that file in a loop; otherwise Tone.js plays a slow generative
-// ambient piece: a soft pad, a few bell notes, and the faint hiss of a projector.
+// ambient piece (ambient.js, loaded only then): a soft pad, a few bell notes, and the faint hiss of a projector.
 
 const KEY = 'qt-sound';
 const store = {
@@ -29,65 +30,11 @@ function filePlayer(src, volume) {
   };
 }
 
-async function ambientPlayer(volume) {
-  const Tone = await import('tone');
-  await Tone.start();
-  const out = new Tone.Volume(-60).toDestination();
-  const reverb = new Tone.Reverb({ decay: 9, wet: 0.55 }).connect(out);
-  const lowpass = new Tone.Filter(1400, 'lowpass').connect(reverb);
-  const chorus = new Tone.Chorus(0.3, 3.5, 0.4).connect(lowpass).start();
-
-  const pad = new Tone.PolySynth(Tone.Synth, {
-    oscillator: { type: 'fatsine', count: 3, spread: 18 },
-    envelope: { attack: 4, decay: 2, sustain: 0.7, release: 7 },
-  }).connect(chorus);
-  pad.volume.value = -14;
-
-  const bell = new Tone.FMSynth({
-    harmonicity: 3.01, modulationIndex: 6,
-    envelope: { attack: 0.005, decay: 2.4, sustain: 0, release: 3 },
-    modulationEnvelope: { attack: 0.002, decay: 0.8, sustain: 0, release: 1 },
-  }).connect(reverb);
-  bell.volume.value = -24;
-
-  const hiss = new Tone.Noise('pink');
-  const hissFilter = new Tone.Filter(3200, 'bandpass').connect(out);
-  hiss.connect(hissFilter);
-  hiss.volume.value = -44;
-
-  // D major pentatonic colours, voiced low and open
-  const chords = [['D3', 'A3', 'E4', 'F#4'], ['B2', 'F#3', 'D4', 'A4'], ['G2', 'D3', 'B3', 'F#4'], ['A2', 'E3', 'C#4', 'E4']];
-  const notes = ['F#5', 'A5', 'B5', 'D6', 'E5', 'A4'];
-  let i = 0;
-  const padLoop = new Tone.Loop((time) => { pad.triggerAttackRelease(chords[i++ % chords.length], 7.5, time); }, 8);
-  const bellLoop = new Tone.Loop((time) => {
-    if (Math.random() < 0.55) bell.triggerAttackRelease(notes[Math.floor(Math.random() * notes.length)], 2, time + Math.random() * 1.5);
-  }, 3.2);
-
-  Tone.getTransport().bpm.value = 60;
-  const target = -30 + volume * 24; // 0.4 -> about -20 dB
-  let started = false, pauseTimer = 0;
-  return {
-    async start() {
-      await Tone.start();
-      clearTimeout(pauseTimer);
-      if (!started) { started = true; hiss.start(); padLoop.start(0); bellLoop.start(1.6); }
-      Tone.getTransport().start();
-      out.volume.cancelScheduledValues(Tone.now());
-      out.volume.rampTo(target, 3);
-    },
-    stop() {
-      out.volume.rampTo(-60, 1.2);
-      pauseTimer = setTimeout(() => Tone.getTransport().pause(), 1300);
-    },
-  };
-}
-
 export default function sound(config, ui = {}) {
   const btn = document.querySelector('[data-sound]');
   if (!btn || !config?.on) return;
   let player = null, playing = false, busy = false;
-  const want = () => store.get() !== 'off';
+  const want = () => store.get() === 'on';
 
   const show = () => {
     btn.setAttribute('aria-pressed', String(playing));
@@ -107,7 +54,7 @@ export default function sound(config, ui = {}) {
     if (playing || busy) return false;
     busy = true;
     try {
-      player ??= config.file ? filePlayer(config.file, config.volume) : await ambientPlayer(config.volume);
+      player ??= config.file ? filePlayer(config.file, config.volume) : await (await import('./ambient.js')).default(config.volume);
       await within(player.start(), 1500);
       playing = true;
     } catch { playing = false; } finally { busy = false; show(); }
@@ -121,7 +68,7 @@ export default function sound(config, ui = {}) {
     if (playing) { stop(); store.set('off'); } else { store.set('on'); play(); }
   });
 
-  // start on the first interaction, unless the visitor switched it off before
+  // resume on the first interaction, if the visitor switched it on before
   const events = ['pointerdown', 'keydown', 'touchend'];
   const first = (e) => {
     if (e.target instanceof Element && e.target.closest('[data-sound]')) return;

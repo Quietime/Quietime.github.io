@@ -4,30 +4,24 @@
       "bvid": "",
       "title_zh": "一卷胶片的一天",
       "title_en": "One Roll, One Day",
-      "title_ja": "フィルム一本の一日",
       "kind_zh": "短片",
       "kind_en": "Short",
-      "kind_ja": "ショート",
       "cover": "/content/films/a-day-with-one-roll.jpg"
     },
     {
       "bvid": "",
       "title_zh": "暗房笔记",
       "title_en": "Notes from the Darkroom",
-      "title_ja": "暗室ノート",
       "kind_zh": "幕后",
       "kind_en": "Behind the scenes",
-      "kind_ja": "メイキング",
       "cover": "/content/films/darkroom-notes.jpg"
     },
     {
       "bvid": "",
       "title_zh": "等灯亮起来",
       "title_en": "Until the Lamps Come On",
-      "title_ja": "灯がともるまで",
       "kind_zh": "Vlog",
       "kind_en": "Vlog",
-      "kind_ja": "Vlog",
       "cover": "/content/films/waiting-for-the-lamp.jpg"
     }
   ]

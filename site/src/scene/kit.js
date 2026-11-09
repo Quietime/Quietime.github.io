@@ -1,24 +1,38 @@
 // Shared pieces for the two WebGL scenes (home: the film spine, works and series: the darkroom).
-import * as THREE from 'three';
+import { Spring, substeps, STEP, frameTime } from '../physics/spring.js';
+import {
+  BoxGeometry, BufferAttribute, BufferGeometry, CanvasTexture, CatmullRomCurve3, Color,
+  DataTexture, DoubleSide, Float32BufferAttribute, FloatType, Fog, Group,
+  Line, LineBasicMaterial, LineSegments, LinearMipmapLinearFilter, LinearSRGBColorSpace, MathUtils,
+  Mesh, MeshBasicMaterial, NearestFilter, NoColorSpace, PerspectiveCamera, PlaneGeometry,
+  Quaternion, RGBAFormat, Raycaster, RepeatWrapping, Scene, ShaderMaterial,
+  Texture, TubeGeometry, Vector2, Vector3, WebGLRenderer,
+} from 'three';
 
-export { THREE };
+// only what the scenes use, by name, so the bundler leaves the rest of three.js out
+export const THREE = {
+  BoxGeometry, BufferAttribute, BufferGeometry, CanvasTexture, CatmullRomCurve3, Color,
+  DataTexture, DoubleSide, Float32BufferAttribute, FloatType, Fog, Group,
+  Line, LineBasicMaterial, LineSegments, LinearMipmapLinearFilter, LinearSRGBColorSpace, MathUtils,
+  Mesh, MeshBasicMaterial, NearestFilter, NoColorSpace, PerspectiveCamera, PlaneGeometry,
+  Quaternion, RGBAFormat, Raycaster, RepeatWrapping, Scene, ShaderMaterial,
+  Texture, TubeGeometry, Vector2, Vector3, WebGLRenderer,
+};
 export const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
 export const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
 export const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+export { substeps, STEP, frameTime };
 
+// three.js draws with WebGL 2 only (and the film shader samples with textureGrad, a GLSL ES 3.0 call)
 export function webglOK() {
-  try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch { return false; }
+  try { return !!document.createElement('canvas').getContext('webgl2'); } catch { return false; }
 }
 
-/** A damped spring driven towards a moving target:  x'' = -ω² (x - x*) - 2ζω x', fixed 1/240 s sub-steps. */
+/** A spring that follows a moving target (the shared Spring of physics/spring.js); reduced motion jumps straight there. */
 export class Follow {
-  constructor(f, z, x = 0) { this.w = 2 * Math.PI * f; this.z = z; this.x = x; this.v = 0; }
-  step(target, dt) {
-    if (reduce) { this.x = target; this.v = 0; return this.x; }
-    const n = Math.max(1, Math.round(dt / (1 / 240))), h = dt / n;
-    for (let i = 0; i < n; i++) { this.v += (-this.w * this.w * (this.x - target) - 2 * this.z * this.w * this.v) * h; this.x += this.v * h; }
-    return this.x;
-  }
+  constructor(f, z, x = 0) { this.s = new Spring({ freq: f, zeta: z, value: x }); }
+  get x() { return this.s.x; }
+  step(target, dt) { this.s.target = target; return reduce ? this.s.snap() : this.s.step(dt); }
 }
 
 export function makeRenderer(canvas) {
@@ -40,10 +54,34 @@ export function cssColor(name, el = document.body) {
   return new THREE.Color().setRGB(r / 255, g / 255, b / 255, THREE.LinearSRGBColorSpace);
 }
 
-export function loadImages(urls) {
-  return Promise.all(urls.map((src) => new Promise((ok) => {
-    const i = new Image(); i.decoding = 'async'; i.onload = () => ok(i); i.onerror = () => ok(null); i.src = src;
-  })));
+/**
+ * Starts loading every picture at once and reports each one as it arrives, so a scene can show itself straight
+ * away and fill in. The first `first` pictures ask the browser for priority. Loaded once per page: a scene rebuilt
+ * on resize subscribes again and gets the pictures already in hand.
+ */
+export function streamImages(urls, first = 8) {
+  const list = urls.map(() => null), subs = new Set();
+  let left = urls.length;
+  urls.forEach((src, i) => {
+    const im = new Image();
+    im.decoding = 'async';
+    if ('fetchPriority' in im) im.fetchPriority = i < first ? 'high' : 'low';
+    const done = (ok) => { left -= 1; if (ok) list[i] = im; subs.forEach((f) => f(i, ok ? im : null)); };
+    im.onload = () => done(true); im.onerror = () => done(false);
+    im.src = src;
+  });
+  return {
+    list,
+    get pending() { return left; },
+    onLoad(f) { subs.add(f); return () => subs.delete(f); },
+  };
+}
+
+/** Waits for the faces a canvas will draw with (the text drawn into slates and the film's edge codes), at most `ms`. */
+export function canvasFonts(specs, ms = 2000) {
+  if (!document.fonts?.load) return Promise.resolve();
+  const all = Promise.all(specs.filter(([, text]) => text).map(([font, text]) => document.fonts.load(font, text).catch(() => {})));
+  return Promise.race([all, new Promise((ok) => { setTimeout(ok, ms); })]);
 }
 
 export function imageTexture(img, renderer) {
@@ -120,11 +158,11 @@ export function printSize(w, h, long) {
 export function slateTexture(lines, renderer, fonts) {
   const c = document.createElement('canvas'); c.width = 1024; c.height = 600;
   const g = c.getContext('2d');
-  g.fillStyle = '#F3ECE0'; g.fillRect(0, 0, c.width, c.height);
+  g.fillStyle = '#ECE9E2'; g.fillRect(0, 0, c.width, c.height);
   const fit = (text, font, size, max) => { let s = size; g.font = font.replace('{s}', s); while (g.measureText(text).width > max && s > 20) { s -= 4; g.font = font.replace('{s}', s); } };
   g.fillStyle = '#A85E1C'; g.font = `500 54px ${fonts.edge}`; g.fillText(lines[0] || '', 80, 150);
-  g.fillStyle = '#33281F'; fit(lines[1] || '', `400 {s}px ${fonts.display}`, 150, 860); g.fillText(lines[1] || '', 72, 336);
-  g.fillStyle = '#6B5A49'; fit(lines[2] || '', `400 {s}px ${fonts.serif}`, 46, 860); g.fillText(lines[2] || '', 80, 440);
+  g.fillStyle = '#1F1E1C'; fit(lines[1] || '', `500 {s}px ${fonts.display}`, 150, 860); g.fillText(lines[1] || '', 72, 336);
+  g.fillStyle = '#57534D'; fit(lines[2] || '', `400 {s}px ${fonts.serif}`, 46, 860); g.fillText(lines[2] || '', 80, 440);
   g.font = `500 40px ${fonts.edge}`; g.fillText(lines[3] || '', 80, 530);
   const t = new THREE.CanvasTexture(c); t.colorSpace = THREE.NoColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy();
   return t;
@@ -132,6 +170,6 @@ export function slateTexture(lines, renderer, fonts) {
 
 export const FONTS = {
   edge: '"Barlow Condensed", "Arial Narrow", sans-serif',
-  display: '"Smiley Sans Oblique", "Noto Sans SC", sans-serif',
-  serif: '"Newsreader", "Noto Serif SC", serif',
+  display: '"Noto Serif SC", "Songti SC", serif',
+  serif: '"Noto Serif SC", "Songti SC", serif',
 };
