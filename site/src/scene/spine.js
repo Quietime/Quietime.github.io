@@ -63,7 +63,8 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
   const W = 1, PITCH = (W * MM.pitch) / MM.width, R = 0.8, D = 2.5;
   const stops = [
     { kind: 'head', n: 3, cap: data.capHead },
-    ...data.series.map((se, si) => ({ kind: 'series', si, n: se.n, cap: se.cap })),
+    // a phone's view holds less film, so each roll stops for five frames instead of eight
+    ...data.series.map((se, si) => ({ kind: 'series', si, n: camera.aspect < 0.8 ? Math.min(se.n, 5) : se.n, cap: se.cap })),
     { kind: 'end', n: 3, cap: data.capEnd },
   ];
   // a stretch is as long as its pictures laid end to end, plus one frame of leader at each end

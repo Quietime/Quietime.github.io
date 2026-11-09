@@ -91,16 +91,13 @@ html.in-room .grain, html[data-theme-base="room"] .grain { opacity: .07; }
   60% { transform: translate(-4%, -1%); } 80% { transform: translate(3%, 3%); } 100% { transform: translate(0, 0); }
 }
 
-/* ── light-leak transition ── */
-.leak { position: fixed; inset: 0; z-index: 150; pointer-events: none; opacity: 0; overflow: hidden; }
-.leak::before { content: ""; position: absolute; inset: 0; background: #FFF1DC; opacity: var(--flash, 0); }
-.leak i { position: absolute; border-radius: 50%; }
-.leak i:nth-child(1) { width: 140vmax; height: 110vmax; left: -70vmax; top: -30vmax;
-  background: radial-gradient(closest-side, rgba(255, 214, 150, .95), rgba(242, 166, 74, .85) 35%, rgba(217, 84, 43, .55) 62%, rgba(217, 84, 43, 0)); }
-.leak i:nth-child(2) { width: 90vmax; height: 90vmax; left: -40vmax; top: 35vmax;
-  background: radial-gradient(closest-side, rgba(255, 235, 200, .9), rgba(217, 84, 43, .45) 55%, rgba(217, 84, 43, 0)); }
-html.leak-in .leak { opacity: 1; --flash: 1; animation: failsafe 0s 2.6s forwards; }
-@keyframes failsafe { to { opacity: 0; visibility: hidden; } }
+/* ── page transitions: a short warm flash between pages where the browser supports cross-document View Transitions ── */
+@view-transition { navigation: auto; }
+::view-transition-old(root) { animation: vt-out .26s cubic-bezier(.7, 0, .84, 0) both; }
+::view-transition-new(root) { animation: vt-in .5s var(--e-out) both; }
+@keyframes vt-out { to { opacity: 0; filter: brightness(1.18) sepia(.2); } }
+@keyframes vt-in { from { opacity: 0; filter: brightness(1.22) sepia(.2); } }
+@media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
 
 /* ── header ── */
 .hdr {

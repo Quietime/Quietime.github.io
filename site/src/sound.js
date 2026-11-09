@@ -1,5 +1,6 @@
-// Background music. Browsers only allow sound after the visitor interacts with the page, so the
-// music fades in on the first click, tap or key press, and the header switch remembers the choice.
+// Background music. It is off until the visitor switches it on in the header; the choice is remembered, and once on,
+// it carries on from page to page (browsers allow sound only after an interaction, so on a new page it resumes at
+// the first click, tap or key press).
 // With an uploaded file it plays that file in a loop; otherwise Tone.js plays a slow generative
 // ambient piece (ambient.js, loaded only then): a soft pad, a few bell notes, and the faint hiss of a projector.
 
@@ -33,7 +34,7 @@ export default function sound(config, ui = {}) {
   const btn = document.querySelector('[data-sound]');
   if (!btn || !config?.on) return;
   let player = null, playing = false, busy = false;
-  const want = () => store.get() !== 'off';
+  const want = () => store.get() === 'on';
 
   const show = () => {
     btn.setAttribute('aria-pressed', String(playing));
@@ -67,7 +68,7 @@ export default function sound(config, ui = {}) {
     if (playing) { stop(); store.set('off'); } else { store.set('on'); play(); }
   });
 
-  // start on the first interaction, unless the visitor switched it off before
+  // resume on the first interaction, if the visitor switched it on before
   const events = ['pointerdown', 'keydown', 'touchend'];
   const first = (e) => {
     if (e.target instanceof Element && e.target.closest('[data-sound]')) return;

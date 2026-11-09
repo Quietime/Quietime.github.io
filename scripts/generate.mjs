@@ -95,14 +95,13 @@ ${LANGS.filter((l) => l !== L).map((l) => `<meta property="og:locale:alternate" 
 <meta property="og:image:height" content="${og.h}">
 <meta name="twitter:card" content="summary_large_image">
 ${ld ? `<script type="application/ld+json">${JSON.stringify(ld).replace(/</g, '\\u003c')}</script>` : ''}
-<script>(function(d){d.classList.replace('no-js','js');try{var s=localStorage.getItem('qt-lang');if(!s&&d.lang==='zh-CN'&&!/bot|crawl|spider|slurp|preview|facebookexternalhit/i.test(navigator.userAgent)){var n=(navigator.language||'').toLowerCase();var to=n.indexOf('zh')===0?'':'en';if(to){var a=d.getAttribute('data-alt-'+to);if(a){location.replace(a+location.hash);return}}}if(sessionStorage.getItem('qt-leak'))d.classList.add('leak-in');if(sessionStorage.getItem('qt-pre'))d.classList.add('pre-seen')}catch(e){}})(document.documentElement)</script>
+<script>(function(d){d.classList.replace('no-js','js');try{var s=localStorage.getItem('qt-lang');if(!s&&d.lang==='zh-CN'&&!/bot|crawl|spider|slurp|preview|facebookexternalhit/i.test(navigator.userAgent)){var n=(navigator.language||'').toLowerCase();var to=n.indexOf('zh')===0?'':'en';if(to){var a=d.getAttribute('data-alt-'+to);if(a){location.replace(a+location.hash);return}}}if(sessionStorage.getItem('qt-pre'))d.classList.add('pre-seen')}catch(e){}})(document.documentElement)</script>
 <script type="application/json" id="qt-config">${JSON.stringify(config).replace(/</g, '\\u003c')}</script>
 <script type="module" src="./src/main.js"></script>
 </head>
 <body>
 <a class="skip" href="#main">${esc(t.skip)}</a>
 <div class="grain" aria-hidden="true"></div>
-<div class="leak" aria-hidden="true"><i></i><i></i></div>
 ${header(key)}`;
   }
 
@@ -201,11 +200,13 @@ ${rest.length ? `<ol class="film-rows">${rest.map((f) => `<li><button type="butt
     head: [`${site.edgeCode} ▸ 0`, t.scene.darkroom, t.scene.darkroomSub],
     end: [`${site.edgeCode} ▸ END`, t.endRoll, contact.email || ''],
   };
-  const darkSeries = (s, i) => {
-    const fr = framesOf(s);
+  // `limit` hangs only the first prints of a roll (the works page: a walk past every series, each a short sample;
+  // the series page hangs them all). The slate still gives the whole count.
+  const darkSeries = (s, i, limit = Infinity) => {
+    const all = framesOf(s), fr = all.slice(0, limit);
     return {
       href: seriesHref(s),
-      slate: [`ROLL ${i + 1}`, s.title, s.sub, t.scene.prints(fr.length)],
+      slate: [`ROLL ${i + 1}`, s.title, s.sub, t.scene.prints(all.length)],
       cap: [`ROLL ${i + 1}`, s.title, s.sub],
       frames: fr.map(({ p }) => ({ w: p.w, h: p.h })),
       images: fr.map(({ p }) => texUrl(p)),
@@ -216,9 +217,10 @@ ${rest.length ? `<ol class="film-rows">${rest.map((f) => `<li><button type="butt
   function home() {
     let from = 0;
     const spine = series.map((s, i) => {
-      const fr = framesOf(s);
+      // each roll stops for about one screen of film: its first 8 frames; the whole roll is one click away
+      const all = framesOf(s), fr = all.slice(0, 8);
       // a frame of the film atlas is about 485 px wide, so the 480 px size is enough
-      const o = { n: fr.length, from, cap: [`ROLL ${i + 1}`, s.title, `${s.sub} · ${t.frames(fr.length)}`], images: fr.map(({ p }) => texUrl(p, 480)), sizes: fr.map(({ p }) => [p.w, p.h]) };
+      const o = { n: fr.length, from, cap: [`ROLL ${i + 1}`, s.title, `${s.sub} · ${t.frames(all.length)}`], images: fr.map(({ p }) => texUrl(p, 480)), sizes: fr.map(({ p }) => [p.w, p.h]) };
       from += fr.length;
       return o;
     });
@@ -296,8 +298,8 @@ ${footer()}`;
       const p = P(f.src);
       return `<a class="sc" href="${seriesHref(s)}#f${i + 1}" data-cursor="hide" data-full="${p ? largest(p) : ''}" aria-label="${esc(s.title)} ${esc(t.frameN(i + 1))}">${picture(f.src, { sizes: '(max-width: 860px) 45vw, 18vw', alt: f.caption })}<span class="sc-n">${i + 1}</span></a>`;
     }).join('')}</div></section>`).join('');
-    const dark = series.map(darkSeries);
-    const data = { slates: darkSlates, caps: darkCaps, images: dark.flatMap((x) => x.images), series: dark.map(({ images, ...rest }) => rest) };
+    const dark = series.map((s, i) => darkSeries(s, i, 6));
+    const data = { slates: darkSlates, caps: darkCaps, narrowLimit: 4, images: dark.flatMap((x) => x.images), series: dark.map(({ images, ...rest }) => rest) };
     return `${head({ key: 'works', title: t.nav.works, desc: `${site.title}：${series.map((s) => s.title).join('、')}`, theme: 'room', image: P(series[0]?.frames[0]?.src)?.og })}
 <main id="main" class="works">
 <header class="page-head dr-head"><p class="dr-edge">${esc(site.edgeCode)} ▸ 0</p><h1 data-split><span class="line"><span>${esc(t.nav.works)}</span></span></h1><p class="dr-lede">${esc(t.scene.darkroomSub)}</p></header>

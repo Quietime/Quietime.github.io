@@ -1,4 +1,4 @@
-// What every page shares: smooth scroll, the light-leak transition, the header, photographs developing into view,
+// What every page shares: smooth scroll, the header, photographs developing into view,
 // headings rising, copy buttons, the phone menu and the WebGL stage. Pages import what they need from here.
 import gsap from 'gsap';
 import { ScrollTrigger } from 'gsap/ScrollTrigger';
@@ -73,41 +73,10 @@ const scrollToEl = (el, offset = -90) => (lenis
   root.style.setProperty('--grain', `url(${c.toDataURL('image/png')})`);
 })();
 
-/* ── light-leak page transition ────────────────────────────── */
-const leak = $('.leak');
-const blobs = $$('.leak i');
-function leakOut() {
-  if (!root.classList.contains('leak-in')) return;
-  store.del('qt-leak');
-  if (reduce) { root.classList.remove('leak-in'); return; }
-  gsap.set(leak, { opacity: 1 });
-  gsap.timeline({ onComplete: () => { root.classList.remove('leak-in'); gsap.set(leak, { clearProps: 'all' }); } })
-    .fromTo(leak, { '--flash': 0.9 }, { '--flash': 0, duration: 0.5, ease: 'springCrit' }, 0)
-    .fromTo(blobs, { xPercent: 20 }, { xPercent: 110, duration: 0.7, ease: 'springCrit', stagger: 0.04 }, 0)
-    .to(leak, { opacity: 0, duration: 0.35, ease: 'springCrit' }, 0.35);
-}
-function leakTo(href) {
-  store.set('qt-leak', '1');
-  if (reduce) { location.href = href; return; }
-  gsap.timeline({ onComplete: () => { location.href = href; } })
-    .set(leak, { opacity: 1, '--flash': 0 })
-    .fromTo(blobs, { xPercent: -60, scale: 0.7 }, { xPercent: 20, scale: 1, duration: 0.4, ease: 'power2.in', stagger: 0.04 }, 0)
-    .to(leak, { '--flash': 0.9, duration: 0.18, ease: 'power2.in' }, 0.26);
-}
-document.addEventListener('click', (e) => {
-  const a = e.target.closest('a[href]');
-  if (!a || e.defaultPrevented || e.button !== 0 || e.metaKey || e.ctrlKey || e.shiftKey || e.altKey) return;
-  if (a.target === '_blank' || a.hasAttribute('download') || a.hasAttribute('data-pswp-width')) return;
-  const url = new URL(a.href, location.href);
-  if (url.origin !== location.origin) return;
-  if (url.pathname === location.pathname && url.hash) return;
-  if (!/(\.html|\/)$/.test(url.pathname)) return;
-  e.preventDefault();
-  leakTo(url.href);
-});
-addEventListener('pageshow', (e) => {
-  if (e.persisted) { gsap.set(leak, { clearProps: 'all' }); root.classList.remove('leak-in'); store.del('qt-leak'); }
-});
+/* ── page transitions ──────────────────────────────────────
+   Links are never held back. Browsers that support cross-document View Transitions fade from page to page with a
+   warm flash (styles.css, @view-transition); the others simply navigate. */
+const go = (href) => { location.href = href; };
 
 /* ── header ────────────────────────────────────────────────── */
 const hdr = $('[data-hdr]');
@@ -238,4 +207,4 @@ function menu() {
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && root.classList.contains('menu-open')) { set(false); btn.focus(); } });
 }
 
-export { root, page, reduce, fine, $, $$, store, DIGITS, CFG, U, F, fontsReady, lenis, scrollToEl, leakOut, leakTo, devIO, splitReveal, live, copyText, scrubRise, sceneData, mountScene, menu };
+export { root, page, reduce, fine, $, $$, store, DIGITS, CFG, U, F, fontsReady, lenis, scrollToEl, go, devIO, splitReveal, live, copyText, scrubRise, sceneData, mountScene, menu };

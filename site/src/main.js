@@ -6,7 +6,7 @@ import 'lenis/dist/lenis.css';
 import 'photoswipe/style.css';
 import './styles.css';
 
-import { ScrollTrigger, page, fine, CFG, U, leakOut, menu } from './core.js';
+import { ScrollTrigger, page, fine, CFG, U, menu } from './core.js';
 import cursor from './cursor.js';
 import sound from './sound.js';
 
@@ -30,10 +30,8 @@ sound(CFG.music, U);
     const mod = await PAGES[page]?.();
     await mod?.default();
   } catch (e) {
-    // a page that fails to start still shows its plain HTML; the light leak must not stay over it
+    // a page that fails to start still shows its plain HTML
     console.error(e);
-  } finally {
-    leakOut();
   }
 })();
 addEventListener('load', () => ScrollTrigger.refresh());

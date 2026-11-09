@@ -145,9 +145,11 @@ export function darkroomScene({ renderer, scene, camera, data, imgs, fog, onPick
   // so a roll of a hundred prints never holds more than a dozen textures (a phone keeps its memory)
   const blank = new THREE.DataTexture(new Uint8Array([60, 52, 44, 255]), 1, 1, THREE.RGBAFormat); blank.needsUpdate = true;
   disposables.push(blank);
-  let order = 0, img = 0;
+  let order = 0;
+  // where each roll's pictures start in imgs, so a roll can hang fewer prints than it has
+  const offs = []; data.series.reduce((a, se, si) => { offs[si] = a; return a + se.frames.length; }, 0);
   const print = (si, fi, slot, row) => {
-    const fr = data.series[si].frames[fi], url = imgs[img++];
+    const fr = data.series[si].frames[fi], url = imgs[offs[si] + fi];
     if (!url) return;
     const [w, h] = printSize(fr.w, fr.h, slot === 0 ? 1.2 : 1.25);
     let style = STYLES[(order++ * 3 + Math.floor(rand() * 5)) % STYLES.length];
@@ -185,8 +187,10 @@ export function darkroomScene({ renderer, scene, camera, data, imgs, fog, onPick
   data.series.forEach((se, si) => {
     const ids = se.frames.map((_, fi) => fi);
     if (narrow) {
+      // a phone hangs one print per row; where the page asks for it (the works page: a sample of each roll, the
+      // series page hangs every print) it hangs only the first few, and the slate gives the whole count
       slate(se.slate, se.cap, rope(z)); z -= ROW;
-      for (const fi of ids) { print(si, fi, 0, rope(z)); z -= ROW; }
+      for (const fi of ids.slice(0, data.narrowLimit || Infinity)) { print(si, fi, 0, rope(z)); z -= ROW; }
       return;
     }
     // first row: a print, the slate of the roll in the middle, a print; then rows of three
@@ -230,7 +234,7 @@ export function darkroomScene({ renderer, scene, camera, data, imgs, fog, onPick
   addEventListener('pointermove', onMove, { passive: true });
 
   // rough page length: the walk takes about one screen of scrolling per row
-  const pages = Math.max(3, (zStart - zEnd) / ROW) * (narrow ? 0.4 : 0.62) + 1;
+  const pages = Math.max(3, (zStart - zEnd) / ROW) * (narrow ? 0.34 : 0.62) + 1;
   return {
     pages,
     update(dt, pr) {

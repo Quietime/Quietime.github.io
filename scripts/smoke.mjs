@@ -1,5 +1,6 @@
 // Opens every page of the built site (dist/) in a real browser, at desktop and phone size, and fails on:
-//   a script error or console error; a page whose light-leak transition never lifts; a footer that cannot be reached;
+//   a script error or console error; a footer that cannot be reached; a link that does not navigate at once;
+//   music that starts without being switched on;
 //   the contact form accepting an empty submission; an old Japanese address or the first-visit language rule not
 //   landing on the right page.
 // Run after `npm run build`. CI installs Chromium first: npx playwright install --with-deps chromium
@@ -35,7 +36,6 @@ for (const [size, opts] of [['desktop', { viewport: { width: 1440, height: 900 }
     try {
       await page.goto(base + f, { waitUntil: 'load', timeout: 30000 });
       await page.waitForTimeout(1500);
-      if (await page.evaluate(() => document.documentElement.classList.contains('leak-in'))) bad(where, 'the page transition never lifted');
       if (!(await page.locator('h1').first().count())) bad(where, 'no h1');
       await page.evaluate(() => window.scrollTo(0, document.documentElement.scrollHeight));
       await page.waitForTimeout(800);
@@ -52,6 +52,19 @@ for (const [size, opts] of [['desktop', { viewport: { width: 1440, height: 900 }
   }
 }
 
+// a first-time visitor: clicking anywhere does not start the music, and an internal link navigates within a second
+{
+  const ctx = await browser.newContext({ viewport: { width: 1440, height: 900 }, locale: 'zh-CN' }), page = await ctx.newPage();
+  await page.goto(`${base}about.html`); await page.waitForTimeout(1200);
+  await page.mouse.click(700, 500); await page.waitForTimeout(1500);
+  const playing = await page.evaluate(() => document.querySelector('[data-sound]')?.getAttribute('aria-pressed'));
+  if (playing === 'true') bad('music', 'started on the first click without being switched on');
+  const t0 = Date.now();
+  await Promise.all([page.waitForURL(/contact\.html$/, { timeout: 5000 }).catch(() => {}), page.locator('.nav a[href="contact.html"]').click()]);
+  if (!page.url().endsWith('contact.html')) bad('navigation', 'clicking a header link did not navigate');
+  else if (Date.now() - t0 > 1000) bad('navigation', `a header link took ${Date.now() - t0} ms to navigate`);
+  await ctx.close();
+}
 // old Japanese addresses forward to the English page, keeping the hash
 {
   const ctx = await browser.newContext(), page = await ctx.newPage();

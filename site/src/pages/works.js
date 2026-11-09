@@ -1,11 +1,11 @@
 // The works page.
-import { gsap, ScrollTrigger, reduce, fine, $, $$, leakTo, devIO, splitReveal, sceneData, mountScene } from '../core.js';
+import { gsap, ScrollTrigger, reduce, fine, $, $$, go, devIO, splitReveal, sceneData, mountScene } from '../core.js';
 
 export default function works() {
   splitReveal(document, 0.05);
   // the darkroom walk through every series; a print leads to its frame on the series page
   const data = sceneData();
-  mountScene('darkroom', data, (si, fi) => { const s = data.series[si]; if (s?.href) leakTo(`${s.href}#f${fi + 1}`); });
+  mountScene('darkroom', data, (si, fi) => { const s = data.series[si]; if (s?.href) go(`${s.href}#f${fi + 1}`); });
   if (!reduce) {
     $$('.ws').forEach((ws) => {
       gsap.fromTo($('.ws-img img', ws), { scale: 1.14 }, { scale: 1, ease: 'none', scrollTrigger: { trigger: ws, start: 'top bottom', end: 'center 55%', scrub: true } });
