@@ -4,9 +4,9 @@
   "url": "https://quietime.github.io/",
   "edge_code": "QUIETIME 400",
   "description_zh": "Quietime 静夜工作室，摄影作品、影像与委托拍摄。",
-  "description_en": "Quietime is a small photography studio. Personal series, short films and commissions, made slowly.",
+  "description_en": "Quietime is a small photography studio. We make personal series, short films and commissioned work, and we take our time over them.",
   "statement_zh": "夜色替我们收起喧哗，\n剩下的光，才肯慢慢落进底片里。",
-  "statement_en": "After the noise of the day has gone home,\nthe light stays a little longer. Long enough for the film.",
+  "statement_en": "Night puts the noise of the day away for us,\nand the light that is left settles slowly onto the film.",
   "wechat": "",
   "email": "quietime@foxmail.com",
   "copyright": "Copyright © Quietime Photography. All rights reserved.",
@@ -35,8 +35,8 @@
   ],
   "home_teaser_zh": "我们拍人，也拍人离开之后留下的光。委托拍摄、商业合作与作品授权，都可以从一封邮件开始。",
   "home_teaser_en": "We photograph people, and the light they leave behind when they go. Commissions, brand work and licensing can all begin with a short letter.",
-  "about_intro_zh": "Quietime 静夜工作室相信，好的照片多半不是抓住的，而是等来的。我们习惯在人声退去之后才开始工作，给光一点时间，也给被拍的人一点时间。\n\n工作室承接人像、空间与品牌委托，也持续进行自己的长期系列。每一次拍摄，我们都希望留下的不只是好看的画面，还有那一刻真实的温度。",
-  "about_intro_en": "Quietime believes good photographs are rarely caught. Mostly they are waited for. We tend to start once the voices have drifted off, giving the light some time, and the people in front of the camera some time as well.\n\nThe studio takes on portraits, places and brand commissions, and keeps working on long series of its own. Each time we hope to bring back more than a good-looking picture. We want the warmth that was really in the room.",
+  "about_intro_zh": "Quietime 静夜工作室相信，好的照片多半不是抓住的，而是等来的。我们习惯在人声退去之后才开始工作，给光一点时间，也给被拍的人一点时间。\n\n工作室承接人像、空间与品牌委托，也持续进行自己的长期系列。每一次拍摄，我们都希望把那一刻真实的温度一起带回来。",
+  "about_intro_en": "Quietime believes good photographs are rarely caught. Mostly they are waited for. We tend to start once the voices have drifted off, giving the light some time, and the people in front of the camera some time as well.\n\nThe studio takes on portraits, places and brand commissions, and keeps working on long series of its own. Each time, we hope to bring back the warmth that was really in the room.",
   "services": [
     {
       "title_zh": "人像与家庭",
@@ -54,7 +54,7 @@
       "title_zh": "品牌与商业",
       "title_en": "Brands and commerce",
       "text_zh": "为产品和团队拍摄有呼吸感的画面。",
-      "text_en": "Pictures of products and teams that still breathe."
+      "text_en": "Products and teams, photographed with room to breathe."
     },
     {
       "title_zh": "授权与展览",
@@ -64,7 +64,7 @@
     }
   ],
   "contact_lede_zh": "告诉我们想拍什么、在哪里、大概什么时候。我们会在两天内回复，先聊想法，再谈方案。",
-  "contact_lede_en": "Tell us what you have in mind, where, and roughly when. We reply within two days, and we would rather hear about the idea before we talk about the plan.",
+  "contact_lede_en": "Tell us what you have in mind, where, and roughly when. We reply within two days. We start with the idea and come to the plan after.",
   "form_endpoint": "",
   "process": [
     {
