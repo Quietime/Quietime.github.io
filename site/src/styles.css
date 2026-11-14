@@ -303,7 +303,6 @@ html.gl .series .counter { display: none; }
 .ftr-soc a:hover { color: var(--seal-lit); }
 .ftr-legal { grid-column: 1 / -1; }
 .ftr-copy { margin: 24px 0 0; font-size: 13px; letter-spacing: .04em; color: var(--room-ink-2); }
-.ftr-credit { margin: 10px 0 0; max-width: 52em; font-size: 13px; line-height: 1.7; color: var(--room-ink-2); }
 html[data-theme-base="room"] .ftr { background: transparent; }
 
 /* ── page heads ── */
@@ -638,6 +637,16 @@ html.in-room, html[data-theme-base="room"] { --err: #F08A74; }
 :lang(en) .page-head h1 { letter-spacing: -.02em; }
 
 @media (max-width: 600px) {
+  /* the works index on a phone: one compact row per series, a 4:5 thumbnail beside its title and four lines of the
+     statement, so the four series take about one and a half screens instead of four and a half */
+  .w-list { gap: 32px; }
+  .ws, .ws-r { grid-template-columns: 38% minmax(0, 1fr); gap: 0 16px; align-items: start; }
+  .ws-img, .ws-r .ws-img { grid-column: 1; order: 0; aspect-ratio: 4 / 5; }
+  .ws-img picture, .ws-img img { display: block; width: 100%; height: 100%; object-fit: cover; }
+  .ws-text, .ws-r .ws-text { grid-column: 2; order: 0; }
+  .ws h2 { font-size: 26px; }
+  .ws-en { margin: 4px 0 10px; font-size: 13px; }
+  .ws-st { margin: 0 0 8px; font-size: 14px; line-height: 1.7; display: -webkit-box; -webkit-line-clamp: 4; -webkit-box-orient: vertical; overflow: hidden; }
   .hero { padding-top: 96px; gap: 10px; }
   .h-hint { display: none; }
   .h-sec-head h2, .h-sec-head p { grid-column: 1 / -1; }

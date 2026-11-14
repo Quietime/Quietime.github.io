@@ -216,12 +216,16 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
   // the take: at each stop the camera travels along the stretch, then pulls back and drops to the next one.
   // A stop lasts as long as its stretch is wider than the view, so twenty pictures take longer than six
   const reach = stops.map((stp) => Math.max(0, stp.len / 2 - visW * 0.42));
-  const hold = reach.map((r) => 0.55 + ((2 * r) / visW) * 0.5);   // half a screen of scrolling per view width of film
+  // On a phone a screen of scrolling is a short thumb flick, so the take moves faster there: the drop between two
+  // rolls takes 0.65 of a screen instead of a whole one, and each roll is held a little shorter.
+  const phone = camera.aspect < 0.8;
+  const MOVE = phone ? 0.65 : 1, HOLD0 = phone ? 0.4 : 0.55;
+  const hold = reach.map((r) => HOLD0 + ((2 * r) / visW) * 0.5);   // half a screen of scrolling per view width of film
   const segs = [];
   let tot = 0;
   stops.forEach((_, k) => {
     segs.push({ k, kind: 'hold', a: tot, b: tot + hold[k] }); tot += hold[k];
-    if (k < STOPS - 1) { segs.push({ k, kind: 'move', a: tot, b: tot + 1 }); tot += 1; }
+    if (k < STOPS - 1) { segs.push({ k, kind: 'move', a: tot, b: tot + MOVE }); tot += MOVE; }
   });
   const station = new Follow(0.8, 1, 0), panS = new Follow(0.9, 1, -reach[0]);
   return {
