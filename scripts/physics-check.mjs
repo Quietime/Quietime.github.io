@@ -143,10 +143,10 @@ log('6. Sky over the title card');
   log(`   sunlight at the horizon rgb(${s0.map(Math.round).join(', ')}), overhead rgb(${s90.map(Math.round).join(', ')})`);
   expect(s0[0] > s0[1] && s0[1] > s0[2] && s0[2] < 40, 'the low sun is not red-orange');
   expect(s90[2] / s90[0] > 0.85, 'the high sun is not near white');
-  // equinox noon: the sun stands at 90° − latitude (Shanghai, 31.23° N, 2026-03-20)
-  let top = -90; for (let m = 0; m < 1440; m += 1) top = Math.max(top, astro(Date.UTC(2026, 2, 20, 0, m), 31.2304, 121.4737).sun.alt);
-  log(`   equinox noon altitude in Shanghai ${top.toFixed(2)}° (90° − 31.23° = 58.77°)`);
-  expect(near(top, 58.77, 0.6), 'the noon sun at the equinox is not at 90° − latitude');
+  // equinox noon: the sun stands at 90° − latitude (Suzhou, 31.30° N, 2026-03-20)
+  let top = -90; for (let m = 0; m < 1440; m += 1) top = Math.max(top, astro(Date.UTC(2026, 2, 20, 0, m), 31.299, 120.5853).sun.alt);
+  log(`   equinox noon altitude in Suzhou ${top.toFixed(2)}° (90° − 31.30° = 58.70°)`);
+  expect(near(top, 58.70, 0.6), 'the noon sun at the equinox is not at 90° − latitude');
   // moon phases against the published tables for November 2026: new moon 9 Nov, full moon 24 Nov
   const fNew = astro(Date.UTC(2026, 10, 9, 7), 31.2, 121.5).frac, fFull = astro(Date.UTC(2026, 10, 24, 15), 31.2, 121.5).frac;
   log(`   moon lit ${(fNew * 100).toFixed(1)}% on 9 Nov 2026, ${(fFull * 100).toFixed(1)}% on 24 Nov 2026 (tables: new, full)`);

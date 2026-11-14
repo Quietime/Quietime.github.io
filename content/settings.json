@@ -122,8 +122,8 @@
   "music_file": "",
   "music_volume": 40,
   "samples": false,
-  "studio_city_zh": "上海",
-  "studio_city_en": "Shanghai",
-  "studio_lat": 31.2304,
-  "studio_lon": 121.4737
+  "studio_city_zh": "苏州",
+  "studio_city_en": "Suzhou",
+  "studio_lat": 31.299,
+  "studio_lon": 120.5853
 }

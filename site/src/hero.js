@@ -30,7 +30,7 @@ export default async function hero(root, { reduce, sky = {}, words = {}, edgeCod
   // the weather outside the studio, if it answers within 1.5 s; otherwise the time of day alone
   const weather = reduce ? null : await studioWeather({ lat: sky.lat, lon: sky.lon }, 1500);
   const kind = weather?.kind || 'clear';
-  const lat = Number.isFinite(sky.lat) ? sky.lat : 31.2304, lon = Number.isFinite(sky.lon) ? sky.lon : 121.4737;
+  const lat = Number.isFinite(sky.lat) ? sky.lat : 31.299, lon = Number.isFinite(sky.lon) ? sky.lon : 120.5853;
   const offsetSec = weather?.utcOffset ?? sky.utcOffset ?? Math.round(lon / 15) * 3600;
 
   const canvas = document.createElement('canvas');

@@ -126,8 +126,8 @@ collections:
           - { name: statement_en, label: Opening line (English), widget: text, required: false }
           - { name: studio_city_zh, label: 工作室所在城市（中文）, widget: string, required: false, hint: 首页的 QUIETIME 按这里此刻的日出日落、月相和天气入场，并写在胶片边码上，例如 上海 }
           - { name: studio_city_en, label: Studio city (English), widget: string, required: false }
-          - { name: studio_lat, label: 纬度, widget: number, value_type: float, required: false, hint: 北纬为正，例如上海 31.2304；可在地图软件里查到 }
-          - { name: studio_lon, label: 经度, widget: number, value_type: float, required: false, hint: 东经为正，例如上海 121.4737 }
+          - { name: studio_lat, label: 纬度, widget: number, value_type: float, required: false, hint: 北纬为正，例如苏州 31.299；可在地图软件里查到 }
+          - { name: studio_lon, label: 经度, widget: number, value_type: float, required: false, hint: 东经为正，例如苏州 120.5853 }
           - { name: edge_code, label: 胶片边码文字, widget: string, hint: 印在每一格下方，例如 QUIETIME 400 }
           - { name: wechat, label: 微信号, widget: string, required: false }
           - { name: email, label: 邮箱, widget: string, required: false }
