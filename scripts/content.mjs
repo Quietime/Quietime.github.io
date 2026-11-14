@@ -72,7 +72,6 @@ export async function loadContent(lang = 'zh') {
       statement: pick(S, 'statement', lang).split('\n').filter(Boolean),
       edgeCode: S.edge_code || 'QUIETIME 400',
       samples: Boolean(S.samples),
-      sampleCredit: pick(S, 'sample_credit', lang),
     },
     // where the studio is: the title card shows the sky and weather there (sky/, hero.js)
     sky: {

@@ -150,7 +150,7 @@ ${contactLines()}
 ${soc.length ? `<p class="ftr-soc">${soc.map((s) => `<a href="${esc(safeUrl(s.url))}" target="_blank" rel="noopener">${esc(s.label)}</a>`).join('')}</p>` : ''}
 </div>
 <div class="ftr-legal"><p class="ftr-copy">${esc(contact.copyright)}</p>
-${site.samples && site.sampleCredit ? `<p class="ftr-credit">${esc(site.sampleCredit)}</p>` : ''}</div>
+</div>
 </div>
 <p class="sr-only" aria-live="polite" data-live></p>
 </footer>

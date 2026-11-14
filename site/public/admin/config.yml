@@ -185,5 +185,3 @@ collections:
           - { name: music_file, label: 背景音乐文件, widget: file, required: false, media_folder: /content/uploads, public_folder: /content/uploads, hint: 可选，建议 MP3、5MB 以内、可以循环的曲子。留空则播放网站自带的氛围音乐。 }
           - { name: music_volume, label: 音量, widget: number, value_type: int, min: 5, max: 100, default: 40, required: false }
           - { name: samples, label: 目前使用示例照片, widget: boolean, required: false, hint: 换成自己的作品后关掉，示例说明就会消失 }
-          - { name: sample_credit_zh, label: 示例照片来源（中文）, widget: text, required: false }
-          - { name: sample_credit_en, label: Sample credit (English), widget: text, required: false }
