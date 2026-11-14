@@ -106,9 +106,10 @@ const PRINT_FS = `
   uniform float uMirror; uniform float uDim; uniform float uFloor; uniform float uFade;
   varying vec2 vUv; varying vec3 vN; varying vec3 vW;
   void main() {
-    // a print about to reach the camera breaks into grain: 2 × 2 px cells drop out in a fixed random order
+    // a print about to reach the camera breaks into grain: cells drop out in a fixed random order. The cells start at
+    // 2 × 2 px and grow to 8 × 8 as the print goes, so the last of it reads as flakes blown off rather than static
     if (uFade < 0.999) {
-      vec2 cell = floor(gl_FragCoord.xy / 2.0);
+      vec2 cell = floor(gl_FragCoord.xy / mix(8.0, 2.0, uFade));
       if (fract(sin(dot(cell, vec2(12.9898, 78.233))) * 43758.5453) > uFade) discard;
     }
     bool front = uMirror > 0.5 ? !gl_FrontFacing : gl_FrontFacing;

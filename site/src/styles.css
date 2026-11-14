@@ -164,6 +164,10 @@ html.gl .run > * { display: none; }
 .cap { position: fixed; z-index: 3; left: var(--gut); bottom: calc(26px + env(safe-area-inset-bottom, 0px)); max-width: min(460px, calc(100% - 2 * var(--gut)));
   display: grid; gap: 4px; pointer-events: none; opacity: 0; transition: opacity .5s; }
 html:not(.gl) .cap { display: none; }
+/* the roll's name sits on a small pane of its own ground, so film bending past behind it never runs through the
+   words */
+.cap[data-cap] { margin-left: -16px; padding: 12px 20px 14px 16px; background: color-mix(in srgb, var(--bg) 80%, transparent);
+  -webkit-backdrop-filter: blur(8px); backdrop-filter: blur(8px); }
 .cap p { margin: 0; }
 .cap .k { min-width: 0; font-family: var(--f-edge); font-weight: 500; font-size: 13px; letter-spacing: .2em; color: var(--accent); }
 .cap .t { font-family: var(--f-display); font-size: clamp(30px, 4vw, 54px); line-height: 1.1; letter-spacing: .04em; color: var(--fg); text-shadow: 0 0 18px var(--bg), 0 0 6px var(--bg); }

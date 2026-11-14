@@ -68,6 +68,10 @@ export async function mountStage({ kind, data, run, cap, onPick, onFail }) {
     const live = r.bottom > 0 && r.top < innerHeight - 2;
     canvas.style.visibility = live ? '' : 'hidden';
     if (!live) { if (cap) cap.style.opacity = '0'; return; }
+    // the page head (title, statement) sits above the run on a transparent ground; keep the scene dark while the
+    // head still holds the screen and let it come up as the head scrolls away, so no print is drawn behind the title
+    const lead = Math.min(1, Math.max(0, 1 - r.top / (innerHeight * 0.55)));
+    canvas.style.opacity = lead < 1 ? lead.toFixed(3) : '';
     const out = cur.update(dt, progress(r));
     if (cap && out.cap) {
       const k = out.cap.join('|');

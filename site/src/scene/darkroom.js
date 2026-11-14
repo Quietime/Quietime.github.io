@@ -243,10 +243,10 @@ export function darkroomScene({ renderer, scene, camera, data, imgs, fog, onPick
       stream(zc);
       const vc = (zc - lastZ) / Math.max(dt, 1e-3); lastZ = zc;
       const V = -vc, acc = clamp((V - lastV) / Math.max(dt, 1e-3), -60, 60); lastV = V;
-      // a row breaks into grain as it reaches you: fully there 2.3 units ahead, gone at 0.9. Rows further off than
+      // a row breaks into grain as it reaches you: fully there 2.35 units ahead, gone at 1.55, before it fills the view. Rows further off than
       // the fog's far end are only fog colour, so they are neither drawn nor simulated
       for (const row of rows) {
-        const ahead = zc - row.z, fade = smooth(0.9, 2.3, ahead), seen = fade > 0.01 && ahead < FAR;
+        const ahead = zc - row.z, fade = smooth(1.55, 2.35, ahead), seen = fade > 0.01 && ahead < FAR;
         row.mats[0].opacity = fade; row.mats[1].opacity = 0.75 * fade;
         row.mats[0].visible = row.mats[1].visible = seen;
         for (const it of row.items) {
