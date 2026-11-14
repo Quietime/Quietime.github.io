@@ -1,28 +1,22 @@
 {
   "title_zh": "林深处",
   "title_en": "Deeper into the Trees",
-  "title_ja": "木立の奥へ",
   "order": 20,
   "draft": false,
   "statement_zh": "再往里走，光就只剩下缝隙。人影退进枝叶之间，像一句没说完的话，留在林子深处。",
   "statement_en": "Further in, the light is only what slips between the branches. She steps back into the leaves like a sentence left unfinished, somewhere deep among the trees.",
-  "statement_ja": "奥へ進むほど、光は枝のすきまにしか残らない。人影は葉のあいだへ退き、言いかけた言葉のように、木立の奥にとどまる。",
   "meta": [
     {
       "k_zh": "类型",
       "k_en": "Kind",
-      "k_ja": "種類",
       "v_zh": "旗袍人像",
-      "v_en": "Portraits in qipao",
-      "v_ja": "旗袍のポートレート"
+      "v_en": "Portraits in qipao"
     },
     {
       "k_zh": "摄影",
       "k_en": "Photographs",
-      "k_ja": "撮影",
       "v_zh": "Quietime 静夜",
-      "v_en": "Quietime",
-      "v_ja": "Quietime"
+      "v_en": "Quietime"
     }
   ],
   "frames": [
@@ -30,112 +24,96 @@
       "image": "01.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     },
     {
       "image": "02.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "left"
     },
     {
       "image": "03.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     },
     {
       "image": "04.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "left"
     },
     {
       "image": "05.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     },
     {
       "image": "06.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "left"
     },
     {
       "image": "07.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "wide"
     },
     {
       "image": "08.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     },
     {
       "image": "09.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "left"
     },
     {
       "image": "10.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     },
     {
       "image": "11.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "left"
     },
     {
       "image": "12.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     },
     {
       "image": "13.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "left"
     },
     {
       "image": "14.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     },
     {
       "image": "15.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "left"
     },
     {
       "image": "16.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     }
   ]

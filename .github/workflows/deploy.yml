@@ -24,7 +24,16 @@ jobs:
           node-version: 22
           cache: npm
       - run: npm ci
+      # photos already encoded by an earlier run are reused; images.mjs re-encodes only files whose bytes changed
+      - uses: actions/cache@v4
+        with:
+          path: |
+            site/public/photos
+            .cache/photos.json
+          key: photos-${{ hashFiles('content/**', 'scripts/images.mjs') }}
+          restore-keys: photos-
       - run: npm run build
+      - run: npm run check
       - uses: actions/configure-pages@v5
       - uses: actions/upload-pages-artifact@v3
         with:

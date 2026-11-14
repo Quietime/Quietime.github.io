@@ -6,7 +6,7 @@
 //   they have settled, as a camera confirms focus. A click is a shutter press: a kick to the ring's scale.
 // Elements can ask for a label with data-cursor="查看"; data-cursor="hide" hides it (the loupe takes over).
 // A canvas with the class is-hot (a print under the pointer in the darkroom) shows its data-hot label.
-import { Spring } from './physics/spring.js';
+import { Spring, frameTime } from './physics/spring.js';
 
 const S = (freq, zeta, value = 0) => new Spring({ freq, zeta, value });
 
@@ -30,9 +30,15 @@ export default function cursor() {
     mode = next; wrap.dataset.mode = next; label.textContent = text;
   };
 
+  // the loop sleeps once every spring has settled; moving, clicking or scrolling (which moves the target) wakes it
+  let raf = 0, last = 0;
+  const springs = [dx, dy, rx, ry, st, sc, fx, fy, fw, fh];
+  const wake = () => { if (!raf) { last = performance.now(); raf = requestAnimationFrame(tick); } };
+
   addEventListener('pointermove', (e) => {
     if (e.pointerType !== 'mouse') return;
     mx = e.clientX; my = e.clientY;
+    wake();
     if (!started) { for (const s of [dx, rx, fx]) s.x = mx; for (const s of [dy, ry, fy]) s.x = my; started = true; }
     wrap.classList.add('on');
     const t = e.target instanceof Element ? e.target : null;
@@ -51,15 +57,15 @@ export default function cursor() {
     setMode('');
   }, { passive: true });
 
-  addEventListener('pointerdown', () => { sc.v -= 9; });
+  addEventListener('pointerdown', () => { sc.v -= 9; wake(); });
+  addEventListener('scroll', wake, { passive: true });
   document.addEventListener('pointerleave', () => wrap.classList.remove('on'));
   // leaving into an iframe (the Bilibili player) or out of the window
   document.addEventListener('mouseout', (e) => { if (!e.relatedTarget) wrap.classList.remove('on'); });
   addEventListener('blur', () => wrap.classList.remove('on'));
 
-  let last = performance.now();
-  const tick = (now) => {
-    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  function tick(now) {
+    const dt = frameTime(now, last); last = now;
     if (started) {
       for (const [s, v] of [[dx, mx], [dy, my], [rx, mx], [ry, my]]) s.target = v;
       const x0 = dx.step(dt), y0 = dy.step(dt);
@@ -80,7 +86,6 @@ export default function cursor() {
       wrap.classList.toggle('lock', locked);
       wrap.classList.toggle('sharp', locked && Math.abs(ax - tx) + Math.abs(aw - tw) < 1.5);
     }
-    requestAnimationFrame(tick);
-  };
-  requestAnimationFrame(tick);
+    raf = !started || springs.every((x) => x.atRest(0.05)) ? 0 : requestAnimationFrame(tick);
+  }
 }

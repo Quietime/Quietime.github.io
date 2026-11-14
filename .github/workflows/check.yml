@@ -1,0 +1,35 @@
+name: Check
+
+# Every pull request is built and checked the same way as a deploy, then opened in a real browser.
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: check-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - uses: actions/cache@v4
+        with:
+          path: |
+            site/public/photos
+            .cache/photos.json
+          key: photos-${{ hashFiles('content/**', 'scripts/images.mjs') }}
+          restore-keys: photos-
+      - run: npm run build
+      - run: npm run check
+      - run: npx playwright install --with-deps chromium
+      - run: npm run smoke

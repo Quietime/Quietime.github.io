@@ -1,13 +1,27 @@
 // Puts a scene on the page: a fixed canvas behind the content, a run element whose height is the length of the
 // take, and a caption in the lower left. Progress through the run drives the scene; the hero above it is a leader
 // that lifts away to reveal the canvas.
-import { THREE, makeRenderer, cssColor, loadImages } from './kit.js';
+// The scene draws only while its run is on or near the screen; past it the loop stops until the run comes back.
+import { THREE, makeRenderer, cssColor, streamImages, canvasFonts, FONTS, frameTime } from './kit.js';
 import { spineScene } from './spine.js';
 import { darkroomScene } from './darkroom.js';
 
 const SCENES = { spine: spineScene, darkroom: darkroomScene };
 
-export async function mountStage({ kind, data, run, cap, onPick }) {
+// the words a scene paints onto canvases, so their faces can be loaded before the canvases are drawn
+function canvasText(kind, data) {
+  if (kind === 'spine') return [[`500 40px ${FONTS.edge}`, `0123456789A▸ ${data.edge || ''}`]];
+  const slates = [data.slates?.head, data.slates?.end, ...(data.series || []).map((s) => s.slate)].filter(Boolean);
+  const at = (k) => slates.map((l) => l[k] || '').join('');
+  return [[`500 54px ${FONTS.edge}`, `${at(0)}${at(3)}`], [`500 150px ${FONTS.display}`, at(1)], [`400 46px ${FONTS.serif}`, at(2)]];
+}
+
+export async function mountStage({ kind, data, run, cap, onPick, onFail, scrollTo: goY }) {
+  // the spine paints every picture into one atlas, and starts with whatever has arrived; the darkroom streams
+  // the pictures for the rows ahead of the camera itself
+  const imgs = kind === 'spine' ? streamImages(data.images) : data.images;
+  await canvasFonts(canvasText(kind, data));
+
   const canvas = document.createElement('canvas');
   canvas.className = 'stage';
   canvas.setAttribute('aria-hidden', 'true');
@@ -15,9 +29,29 @@ export async function mountStage({ kind, data, run, cap, onPick }) {
   const renderer = makeRenderer(canvas);
   const scene = new THREE.Scene();
   const camera = new THREE.PerspectiveCamera(30, 1, 0.05, 200);
-  // the spine draws every picture into one atlas, so it loads them all; the darkroom streams them itself
-  const imgs = kind === 'darkroom' ? data.images : await loadImages(data.images);
   const capK = cap?.querySelector('[data-cap-k]'), capT = cap?.querySelector('[data-cap-t]'), capS = cap?.querySelector('[data-cap-s]');
+
+  // the roll rail: one short bar per roll on the right edge, the current roll lit; a bar takes you to its roll
+  const rail = document.createElement('nav');
+  rail.className = 'rolls';
+  rail.setAttribute('aria-label', data.railLabel || 'Rolls');
+  document.body.append(rail);
+  let marks = [];
+  const runY = (at) => run.getBoundingClientRect().top + scrollY + at * (run.offsetHeight - innerHeight);
+  const fillRail = () => {
+    marks = cur.marks || [];
+    rail.replaceChildren(...marks.map((m, i) => {
+      const b = document.createElement('button');
+      b.type = 'button'; b.className = 'roll-mark'; b.setAttribute('aria-label', m.label); b.title = m.label;
+      b.innerHTML = '<i aria-hidden="true"></i><span aria-hidden="true"></span>';
+      b.querySelector('span').textContent = m.label;
+      // land a little inside the roll, so its name is already up
+      b.addEventListener('click', () => (goY || ((y) => window.scrollTo({ top: y })))(runY(Math.min(1, m.at + 0.004))));
+      return b;
+    }));
+    rail.hidden = marks.length < 2;
+  };
+  let lit = -1;
 
   let cur = null, lastW = 0, lastNarrow = null;
   const build = () => {
@@ -27,6 +61,7 @@ export async function mountStage({ kind, data, run, cap, onPick }) {
     cur = SCENES[kind]({ renderer, scene, camera, data, imgs, fog: cssColor('--bg'), onPick, host: run });
     run.style.height = `${Math.round(cur.pages * 100)}svh`;
     lastW = innerWidth; lastNarrow = camera.aspect < 0.8;
+    fillRail(); lit = -1;
   };
   build();
   document.documentElement.classList.add('gl');
@@ -35,36 +70,76 @@ export async function mountStage({ kind, data, run, cap, onPick }) {
   let t = 0;
   addEventListener('resize', () => {
     clearTimeout(t);
-    t = setTimeout(() => {
+    t = setTimeout(() => { if (failed || lost) return; try {
       const narrow = innerWidth / innerHeight < 0.8;
       if (innerWidth !== lastW || narrow !== lastNarrow) build();
       else { renderer.setSize(innerWidth, innerHeight, false); camera.aspect = innerWidth / innerHeight; camera.updateProjectionMatrix(); }
-    }, 180);
+      if (!running) draw(performance.now());
+    } catch (e) { fail(e); } }, 180);
   });
 
-  const progress = () => {
-    const r = run.getBoundingClientRect();
+  const progress = (r) => {
     const span = r.height - innerHeight;
     return span > 0 ? Math.min(1, Math.max(0, -r.top / span)) : 0;
   };
-  let last = performance.now(), key = '';
-  const frame = (now) => {
-    const dt = Math.min(0.05, (now - last) / 1000); last = now;
+  let last = performance.now(), key = '', raf = 0, running = false;
+  const draw = (now) => {
+    const dt = frameTime(now, last); last = now;
     const r = run.getBoundingClientRect();
-    // past the end of the run the page covers the canvas: stop drawing
-    const live = r.bottom > 0 && r.top < innerHeight * 1.5;
+    // draw only while the run is on screen: before it (the home page's opaque title card) and past its end the page
+    // covers the canvas
+    const live = r.bottom > 0 && r.top < innerHeight - 2;
     canvas.style.visibility = live ? '' : 'hidden';
-    if (live) {
-      const out = cur.update(dt, progress());
-      if (cap && out.cap) {
-        const k = out.cap.join('|');
-        if (k !== key) { key = k; capK.textContent = out.cap[0] || ''; capT.textContent = out.cap[1] || ''; capS.textContent = out.cap[2] || ''; }
-        const onStage = r.top < innerHeight * 0.3 && r.bottom > innerHeight * 0.7;
-        cap.style.opacity = onStage ? out.show.toFixed(3) : '0';
-      }
-      renderer.render(scene, camera);
+    if (!live) { if (cap) cap.style.opacity = '0'; rail.classList.remove('is-on'); return; }
+    // the page head (title, statement) sits above the run on a transparent ground; keep the scene dark while the
+    // head still holds the screen and let it come up as the head scrolls away, so no print is drawn behind the title
+    const lead = Math.min(1, Math.max(0, 1 - r.top / (innerHeight * 0.55)));
+    canvas.style.opacity = lead < 1 ? lead.toFixed(3) : '';
+    const pr = progress(r);
+    const out = cur.update(dt, pr);
+    rail.classList.toggle('is-on', r.top < innerHeight * 0.3 && r.bottom > innerHeight * 0.7);
+    let k = -1; marks.forEach((m, i) => { if (pr >= m.at - 0.002) k = i; });
+    if (k !== lit) {
+      lit = k;
+      [...rail.children].forEach((b, i) => { b.classList.toggle('is-past', i < k); b.classList.toggle('is-here', i === k); b.toggleAttribute('aria-current', i === k); });
     }
-    requestAnimationFrame(frame);
+    if (cap && out.cap) {
+      const k = out.cap.join('|');
+      if (k !== key) { key = k; capK.textContent = out.cap[0] || ''; capT.textContent = out.cap[1] || ''; capS.textContent = out.cap[2] || ''; }
+      const onStage = r.top < innerHeight * 0.3 && r.bottom > innerHeight * 0.7;
+      cap.style.opacity = onStage ? out.show.toFixed(3) : '0';
+    }
+    renderer.render(scene, camera);
   };
-  requestAnimationFrame(frame);
+  let failed = false;
+  const fail = (e) => { if (failed) return; failed = true; running = false; cancelAnimationFrame(raf); rail.remove(); onFail?.(e); };
+  const frame = (now) => {
+    try { draw(now); } catch (e) { fail(e); return; }
+    if (running) raf = requestAnimationFrame(frame);
+  };
+  // a phone that backgrounds the tab may take the WebGL context away. Keep it restorable; if it is not back within
+  // two seconds, show the plain page. When it returns, rebuild the scene (three.js re-creates its own GL state).
+  let lostTimer = 0, lost = false;
+  canvas.addEventListener('webglcontextlost', (e) => {
+    e.preventDefault(); lost = true; cancelAnimationFrame(raf); raf = 0;
+    lostTimer = setTimeout(() => fail(new Error('WebGL context lost')), 2000);
+  });
+  canvas.addEventListener('webglcontextrestored', () => {
+    clearTimeout(lostTimer); lost = false;
+    if (failed) return;
+    try { build(); if (running) raf = requestAnimationFrame(frame); else draw(performance.now()); } catch (e) { fail(e); }
+  });
+  const setRunning = (on) => {
+    if (on === running || failed || lost) return;
+    running = on;
+    cancelAnimationFrame(raf);
+    if (on) { last = performance.now(); raf = requestAnimationFrame(frame); } else {
+      canvas.style.visibility = 'hidden';
+      if (cap) cap.style.opacity = '0';
+      rail.classList.remove('is-on');
+    }
+  };
+  // the same reach as `live` above, with a screen of margin so the scene is already moving when it appears
+  new IntersectionObserver(([en]) => setRunning(en.isIntersecting), { rootMargin: '100% 0px 100% 0px' }).observe(run);
+  try { draw(performance.now()); } catch (e) { fail(e); }
 }

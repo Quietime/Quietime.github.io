@@ -1,28 +1,22 @@
 {
   "title_zh": "旧园昼长",
   "title_en": "Long Afternoon in the Old Garden",
-  "title_ja": "古い庭の長い午後",
   "order": 10,
   "draft": false,
   "statement_zh": "日头在回廊上走得很慢。她倚着旧墙，扇面替她挡去一半的光，另一半留给绿荫。旗袍上的花，和园子里的叶子，一起把午后拖得很长。",
   "statement_en": "The sun moves slowly along the veranda. She leans on the old wall and lets the fan take half of the light, leaving the other half to the leaves. The flowers on the qipao and the green of the garden keep the afternoon from ending.",
-  "statement_ja": "回廊の上を、日はゆっくりと歩いていく。古い壁にもたれた彼女は、扇で光を半分だけさえぎり、残りを木陰にゆずる。旗袍の花と庭の葉が、午後をいつまでも引きのばしていた。",
   "meta": [
     {
       "k_zh": "类型",
       "k_en": "Kind",
-      "k_ja": "種類",
       "v_zh": "旗袍人像",
-      "v_en": "Portraits in qipao",
-      "v_ja": "旗袍のポートレート"
+      "v_en": "Portraits in qipao"
     },
     {
       "k_zh": "摄影",
       "k_en": "Photographs",
-      "k_ja": "撮影",
       "v_zh": "Quietime 静夜",
-      "v_en": "Quietime",
-      "v_ja": "Quietime"
+      "v_en": "Quietime"
     }
   ],
   "frames": [
@@ -30,329 +24,282 @@
       "image": "01.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "wide"
     },
     {
       "image": "02.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     },
     {
       "image": "03.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "left"
     },
     {
       "image": "04.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     },
     {
       "image": "05.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "left"
     },
     {
       "image": "06.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     },
     {
       "image": "07.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "wide"
     },
     {
       "image": "08.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "left"
     },
     {
       "image": "09.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     },
     {
       "image": "10.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "left"
     },
     {
       "image": "11.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     },
     {
       "image": "12.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "left"
     },
     {
       "image": "13.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "wide"
     },
     {
       "image": "14.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     },
     {
       "image": "15.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "left"
     },
     {
       "image": "16.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     },
     {
       "image": "17.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "left"
     },
     {
       "image": "18.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     },
     {
       "image": "19.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "left"
     },
     {
       "image": "20.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     },
     {
       "image": "21.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "left"
     },
     {
       "image": "22.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "wide"
     },
     {
       "image": "23.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     },
     {
       "image": "24.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "left"
     },
     {
       "image": "25.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "wide"
     },
     {
       "image": "26.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     },
     {
       "image": "27.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "left"
     },
     {
       "image": "28.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     },
     {
       "image": "29.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "left"
     },
     {
       "image": "30.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     },
     {
       "image": "31.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "left"
     },
     {
       "image": "32.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     },
     {
       "image": "33.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "left"
     },
     {
       "image": "34.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     },
     {
       "image": "35.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "left"
     },
     {
       "image": "36.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     },
     {
       "image": "37.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "wide"
     },
     {
       "image": "38.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "left"
     },
     {
       "image": "39.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     },
     {
       "image": "40.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "wide"
     },
     {
       "image": "41.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "left"
     },
     {
       "image": "42.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     },
     {
       "image": "43.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "left"
     },
     {
       "image": "44.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     },
     {
       "image": "45.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "left"
     },
     {
       "image": "46.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "right"
     },
     {
       "image": "47.jpg",
       "caption_zh": "",
       "caption_en": "",
-      "caption_ja": "",
       "layout": "left"
     }
   ]

@@ -1,0 +1,16 @@
+{
+  "mcpServers": {
+    "regards": {
+      "type": "http",
+      "url": "https://mcp.regards.design/mcp"
+    },
+    "lottiefiles": {
+      "type": "http",
+      "url": "https://mcp.lottiefiles.com/mcp"
+    },
+    "mobbin": {
+      "type": "http",
+      "url": "https://api.mobbin.com/mcp"
+    }
+  }
+}
