@@ -41,7 +41,7 @@ export default function series() {
   });
 
   const lb = photoLightbox('[data-gallery]', 'a.fr-open');
-  mountScene('darkroom', sceneData(), (si, fi) => lb.loadAndOpen(fi, { gallery: $('[data-gallery]') }));
+  mountScene('darkroom', sceneData(), (si, fi, box) => lb.openFrom(fi, box, { gallery: $('[data-gallery]') }));
 
   const rail = $('.rail');
   if (rail && !reduce) ScrollTrigger.create({ start: 0, end: 'max', onUpdate: (self) => rail.style.setProperty('--rail', `${-self.scroll() * 0.6}px`) });

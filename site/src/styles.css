@@ -100,6 +100,8 @@ html.in-room .grain, html[data-theme-base="room"] .grain { opacity: .07; }
 ::view-transition-new(root) { animation: vt-in .5s var(--e-out) both; }
 @keyframes vt-out { to { opacity: 0; filter: brightness(1.18) sepia(.2); } }
 @keyframes vt-in { from { opacity: 0; filter: brightness(1.22) sepia(.2); } }
+/* a series title moving between the works index, its page and the next-roll link (generate.mjs vtName) */
+::view-transition-group(*) { animation-duration: .55s; animation-timing-function: cubic-bezier(.22, 1, .36, 1); }
 @media (prefers-reduced-motion: reduce) { @view-transition { navigation: none; } }
 
 /* ── header ── */
@@ -641,6 +643,15 @@ html.in-room, html[data-theme-base="room"] { --err: #F08A74; }
 :lang(en) .page-head h1 { letter-spacing: -.02em; }
 
 @media (max-width: 600px) {
+  /* the gallery filters on a phone: one row of pills that scrolls sideways, each a full 44 px tall, running out to the
+     screen edge so the cut-off pill tells you there is more */
+  .gl-filter { display: flex; flex-wrap: nowrap; gap: 8px; overflow-x: auto; overscroll-behavior-x: contain; scroll-snap-type: x proximity;
+    margin-right: calc(-1 * var(--gut)); padding: 2px var(--gut) 6px 0; scrollbar-width: none; -webkit-overflow-scrolling: touch; }
+  .gl-filter::-webkit-scrollbar { display: none; }
+  .gl-filter button { flex: none; min-height: 44px; padding: 0 16px; border: 1px solid color-mix(in srgb, var(--fg-2) 40%, transparent); border-radius: 999px;
+    background-image: none; color: var(--fg); font-size: 14px; white-space: nowrap; scroll-snap-align: start; }
+  .gl-filter button[aria-pressed="true"] { border-color: var(--fg); background: var(--fg); color: var(--bg); }
+  .gl-filter button::before { display: none; }
   /* the works index on a phone: one compact row per series, a 4:5 thumbnail beside its title and four lines of the
      statement, so the four series take about one and a half screens instead of four and a half */
   .w-list { gap: 32px; }
@@ -662,6 +673,22 @@ html.in-room, html[data-theme-base="room"] { --err: #F08A74; }
 .brand::before, .nav a::before, .lang a::before, .more::before, .copy::before, .toggle button::before, .sound::before, .menu-btn::before {
   content: ""; position: absolute; left: 50%; top: 50%; width: max(100%, 44px); height: max(100%, 44px); transform: translate(-50%, -50%); }
 .lang a::before { width: calc(100% + 22px); }
+
+/* the roll rail (scene/stage.js): a short bar per roll on the right edge; read rolls are darker, the current one is
+   vermilion; a bar's name shows beside it on hover and focus */
+.rolls { position: fixed; z-index: 30; right: calc(6px + env(safe-area-inset-right, 0px)); top: 50%; transform: translate(8px, -50%);
+  display: flex; flex-direction: column; opacity: 0; pointer-events: none; transition: opacity .4s var(--e-out), transform .4s var(--e-out); }
+.rolls.is-on { opacity: 1; transform: translate(0, -50%); pointer-events: auto; }
+.rolls[hidden], html:not(.gl) .rolls { display: none; }
+.roll-mark { position: relative; display: grid; place-items: center; width: 44px; height: 44px; padding: 0; border: 0; background: none; cursor: pointer; }
+.roll-mark i { display: block; width: 3px; height: 26px; border-radius: 2px; background: var(--fg-2); opacity: .35; transition: opacity .3s, background-color .3s, height .3s var(--e-out); }
+.roll-mark.is-past i { opacity: .7; }
+.roll-mark.is-here i { opacity: 1; height: 34px; background: var(--accent); }
+.roll-mark span { position: absolute; right: 40px; top: 50%; transform: translate(6px, -50%); white-space: nowrap; padding: 4px 10px;
+  font-size: 13px; letter-spacing: .06em; color: var(--fg); background: color-mix(in srgb, var(--bg) 86%, transparent);
+  opacity: 0; pointer-events: none; transition: opacity .25s, transform .25s var(--e-out); }
+.roll-mark:hover span, .roll-mark:focus-visible span { opacity: 1; transform: translate(0, -50%); }
+@media (hover: none) { .roll-mark span { display: none; } }
 
 /* skip past a long scroll scene (the film strip on the home page, the darkroom) */
 .run-skip { position: fixed; z-index: 30; right: calc(var(--gut) + env(safe-area-inset-right, 0px)); bottom: calc(22px + env(safe-area-inset-bottom, 0px));

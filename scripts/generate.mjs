@@ -42,6 +42,10 @@ for (const L of LANGS) {
   const t = UI[L.code];
   const href = (name) => `${name}${L.suffix}.html`;
   const seriesHref = (s) => href(`series-${s.slug}`);
+  // a series title moves from the works index (or the "next roll" link) to the top of its own page. The page title
+  // carries the view-transition name; on the page being left only the clicked title gets it, at the click (core.js),
+  // because a page that names several elements at once loses the whole transition in Chromium
+  const vtId = (s) => `st-${s.slug.replace(/[^a-z0-9-]/gi, '-')}`;
   const edge = (n, code = site.edgeCode) => `<span class="edge" data-edge>${esc(code)}<i>▸ ${n}</i><i>${n}A</i></span>`;
   const config = {
     lang: L.code,
@@ -226,6 +230,7 @@ ${rest.length ? `<ol class="film-rows">${rest.map((f) => `<li><button type="butt
       return o;
     });
     const data = {
+      railLabel: t.rolls,
       edge: site.edgeCode,
       // the letters of the title are cut out of this picture: a landscape set in the admin, else the first frame
       capHead: [`${site.edgeCode} ▸ 0`, t.scene.head, t.scene.headSub],
@@ -291,14 +296,14 @@ ${footer()}`;
   function works() {
     const list = series.map((s, i) => `<article class="ws ${i % 2 ? 'ws-r' : ''}">
 <a class="ws-img" href="${seriesHref(s)}" data-cursor="${esc(t.cursor.open)}" aria-label="${esc(t.openSeries)} ${esc(s.title)}">${picture(s.frames[0].src, { sizes: '(max-width: 860px) 92vw, 52vw', alt: s.frames[0].caption })}</a>
-<div class="ws-text"><h2><a href="${seriesHref(s)}">${esc(s.title)}</a></h2><p class="ws-en">${esc(s.sub)}</p><p class="ws-st">${esc(s.statement)}</p><p class="ws-n">${esc(t.frames(s.frames.length))}</p></div>
+<div class="ws-text"><h2 data-vt="${vtId(s)}"><a href="${seriesHref(s)}">${esc(s.title)}</a></h2><p class="ws-en">${esc(s.sub)}</p><p class="ws-st">${esc(s.statement)}</p><p class="ws-n">${esc(t.frames(s.frames.length))}</p></div>
 </article>`).join('');
     const sheets = series.map((s) => `<section class="sheet"><h2>${esc(s.title)}<span>${esc(s.sub)}</span></h2><div class="sheet-grid">${s.frames.map((f, i) => {
       const p = P(f.src);
       return `<a class="sc" href="${seriesHref(s)}#f${i + 1}" data-cursor="hide" data-full="${p ? largest(p) : ''}" aria-label="${esc(s.title)} ${esc(t.frameN(i + 1))}">${picture(f.src, { sizes: '(max-width: 860px) 45vw, 18vw', alt: f.caption })}<span class="sc-n">${i + 1}</span></a>`;
     }).join('')}</div></section>`).join('');
     const dark = series.map((s, i) => darkSeries(s, i, 6));
-    const data = { slates: darkSlates, caps: darkCaps, narrowLimit: 4, images: dark.flatMap((x) => x.images), series: dark.map(({ images, ...rest }) => rest) };
+    const data = { railLabel: t.rolls, slates: darkSlates, caps: darkCaps, narrowLimit: 4, images: dark.flatMap((x) => x.images), series: dark.map(({ images, ...rest }) => rest) };
     return `${head({ key: 'works', title: t.nav.works, desc: `${site.title}：${series.map((s) => s.title).join('、')}`, theme: 'room', image: P(series[0]?.frames[0]?.src)?.og })}
 <main id="main" class="works">
 <header class="page-head dr-head"><p class="dr-edge">${esc(site.edgeCode)} ▸ 0</p><h1 data-split><span class="line"><span>${esc(t.nav.works)}</span></span></h1><p class="dr-lede">${esc(t.scene.darkroomSub)}</p></header>
@@ -356,7 +361,7 @@ ${footer()}`;
 <div class="rail" aria-hidden="true"></div>
 <main id="main" class="series">
 <header class="s-head">
-<h1 class="s-title" data-split><span class="line"><span>${esc(s.title)}</span></span></h1>
+<h1 class="s-title" data-split style="view-transition-name: ${vtId(s)}"><span class="line"><span>${esc(s.title)}</span></span></h1>
 <p class="s-en">${esc(s.sub)}</p>
 <dl class="s-meta">${meta.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
 </header>
@@ -366,7 +371,7 @@ ${capBar}
 ${skip(t.skipRoom)}
 ${sceneJSON(data)}
 <div class="frames" data-gallery>${body}</div>
-${series.length > 1 ? `<nav class="s-next" aria-label="${esc(t.next)}"><a href="${seriesHref(next)}" data-cursor="${esc(t.cursor.next)}"><span class="k">${esc(t.next)}</span><span class="s-next-txt"><span class="t">${esc(next.title)}</span><span class="e">${esc(next.sub)}</span></span>${picture(next.frames[0].src, { sizes: '(max-width: 860px) 92vw, 40vw' })}</a></nav>` : ''}
+${series.length > 1 ? `<nav class="s-next" aria-label="${esc(t.next)}"><a href="${seriesHref(next)}" data-cursor="${esc(t.cursor.next)}"><span class="k">${esc(t.next)}</span><span class="s-next-txt"><span class="t" data-vt="${vtId(next)}">${esc(next.title)}</span><span class="e">${esc(next.sub)}</span></span>${picture(next.frames[0].src, { sizes: '(max-width: 860px) 92vw, 40vw' })}</a></nav>` : ''}
 <p class="counter" aria-hidden="true" data-counter><span data-cur>1</span><span class="of">/ ${fr.length}</span></p>
 </main>
 ${footer()}`;

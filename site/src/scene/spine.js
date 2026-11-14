@@ -228,8 +228,12 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
     if (k < STOPS - 1) { segs.push({ k, kind: 'move', a: tot, b: tot + MOVE }); tot += MOVE; }
   });
   const station = new Follow(0.8, 1, 0), panS = new Follow(0.9, 1, -reach[0]);
+  // where each roll begins on the scroll, for the roll marks of the progress rail
+  const marks = segs.filter((sg) => sg.kind === 'hold' && stops[sg.k].kind === 'series')
+    .map((sg) => ({ label: stops[sg.k].cap?.[1] || '', at: sg.a / tot }));
   return {
     pages: tot + 0.4,
+    marks,
     update(dt, pr) {
       atlas.flush(performance.now());
       const t = pr * tot;

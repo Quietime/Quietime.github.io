@@ -42,7 +42,7 @@ function ropeTexture(renderer) {
  * data: { slates: { head: [4 lines], end: [4 lines] }, caps: { head: [k, t, s], end: [...] },
  *         series: [{ slate: [4 lines], cap: [k, t, s], frames: [{ w, h }] }] }
  * imgs: the picture URLs in the same order as the frames, series after series (loaded as the camera nears them).
- * onPick(seriesIndex, frameIndex) is called when a print is clicked.
+ * onPick(seriesIndex, frameIndex, box) is called when a print is clicked; box is where the print sits on screen.
  */
 export function darkroomScene({ renderer, scene, camera, data, imgs, fog, onPick, host }) {
   const FAR = 16;
@@ -184,8 +184,10 @@ export function darkroomScene({ renderer, scene, camera, data, imgs, fog, onPick
 
   const z0 = z;
   slate(data.slates.head, data.caps.head, rope(z)); z -= ROW;
+  const rollAt = []; // the z of each roll's slate row, for the roll marks of the progress rail
   data.series.forEach((se, si) => {
     const ids = se.frames.map((_, fi) => fi);
+    rollAt.push({ z, label: se.cap?.[1] || '' });
     if (narrow) {
       // a phone hangs one print per row; where the page asks for it (the works page: a sample of each roll, the
       // series page hangs every print) it hangs only the first few, and the slate gives the whole count
@@ -226,27 +228,45 @@ export function darkroomScene({ renderer, scene, camera, data, imgs, fog, onPick
     ndc.set((e.clientX / innerWidth) * 2 - 1, -(e.clientY / innerHeight) * 2 + 1);
     ray.setFromCamera(ndc, camera);
     const h = ray.intersectObjects(pickable.filter((m) => m.parent.visible), false)[0];
-    return h ? h.object.userData.pick : null;
+    return h ? h.object : null;
   };
-  const onClick = (e) => { const p = hit(e); if (p && onPick) onPick(p.si, p.fi); };
+  // where a print sits on screen: its four corners projected, as the box around them in CSS pixels. The viewer
+  // opens from this box, so the photograph grows out of the print that was clicked
+  const v3 = new THREE.Vector3();
+  const screenBox = (m) => {
+    m.geometry.computeBoundingBox();
+    const bb = m.geometry.boundingBox;
+    let x0 = Infinity, y0 = Infinity, x1 = -Infinity, y1 = -Infinity;
+    for (const [x, y] of [[bb.min.x, bb.min.y], [bb.max.x, bb.min.y], [bb.min.x, bb.max.y], [bb.max.x, bb.max.y]]) {
+      v3.set(x, y, 0).applyMatrix4(m.matrixWorld).project(camera);
+      const sx = (v3.x + 1) / 2 * innerWidth, sy = (1 - v3.y) / 2 * innerHeight;
+      x0 = Math.min(x0, sx); x1 = Math.max(x1, sx); y0 = Math.min(y0, sy); y1 = Math.max(y1, sy);
+    }
+    return { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+  };
+  const onClick = (e) => { const m = hit(e); if (m && onPick) onPick(m.userData.pick.si, m.userData.pick.fi, screenBox(m)); };
   const onMove = (e) => { host?.classList.toggle('is-hot', !!hit(e)); };
   addEventListener('click', onClick);
   addEventListener('pointermove', onMove, { passive: true });
 
   // rough page length: the walk takes about one screen of scrolling per row
   const pages = Math.max(3, (zStart - zEnd) / ROW) * (narrow ? 0.34 : 0.62) + 1;
+  // where each roll begins on the scroll: the camera has its slate in full view 2.6 units ahead
+  const marks = rollAt.map(({ z: rz, label }) => ({ label, at: Math.min(1, Math.max(0, (zStart - (rz + 2.6)) / (zStart - zEnd))) }));
   return {
     pages,
+    marks,
     update(dt, pr) {
       clock += dt;
       const zc = cam.step(zStart + pr * (zEnd - zStart), dt);
       stream(zc);
       const vc = (zc - lastZ) / Math.max(dt, 1e-3); lastZ = zc;
       const V = -vc, acc = clamp((V - lastV) / Math.max(dt, 1e-3), -60, 60); lastV = V;
-      // a row breaks into grain as it reaches you: fully there 2.35 units ahead, gone at 1.55, before it fills the view. Rows further off than
+      // a row breaks into grain as it reaches you: fully there 2.35 units ahead, gone at 1.55, before it fills the view
+      // (on a phone, whose narrow view a print fills from further off, 3.2 to 2.4). Rows further off than
       // the fog's far end are only fog colour, so they are neither drawn nor simulated
       for (const row of rows) {
-        const ahead = zc - row.z, fade = smooth(1.55, 2.35, ahead), seen = fade > 0.01 && ahead < FAR;
+        const ahead = zc - row.z, fade = narrow ? smooth(2.4, 3.2, ahead) : smooth(1.55, 2.35, ahead), seen = fade > 0.01 && ahead < FAR;
         row.mats[0].opacity = fade; row.mats[1].opacity = 0.75 * fade;
         row.mats[0].visible = row.mats[1].visible = seen;
         for (const it of row.items) {

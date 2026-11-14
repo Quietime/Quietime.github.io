@@ -39,6 +39,18 @@ export default function photoLightbox(gallery, children) {
       },
     });
   });
+  // opened from a print in the darkroom: zoom out of the print's box on screen instead of the hidden HTML thumbnail.
+  // The box stands for the whole print, so the photograph is fitted into it at its own aspect ratio
+  let from = null;
+  lightbox.addFilter('thumbBounds', (tb, itemData, index) => {
+    if (!from || index !== from.index) return tb;
+    const ar = (itemData.w && itemData.h) ? itemData.w / itemData.h : from.w / from.h;
+    let w = from.w, h = w / ar;
+    if (h > from.h) { h = from.h; w = h * ar; }
+    return { x: from.x + (from.w - w) / 2, y: from.y + (from.h - h) / 2, w };
+  });
+  lightbox.openFrom = (index, box, opts) => { from = box ? { ...box, index } : null; return lightbox.loadAndOpen(index, opts); };
+  lightbox.on('destroy', () => { from = null; });
   lightbox.on('beforeOpen', () => { lenis?.stop(); root.classList.add('pswp-open'); });
   lightbox.on('afterInit', () => {
     const el = lightbox.pswp?.element;

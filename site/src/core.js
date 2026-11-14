@@ -45,6 +45,15 @@ document.addEventListener('click', (e) => {
   if (a) { try { localStorage.setItem('qt-lang', a.dataset.lang); } catch { /* private mode */ } }
 }, true);
 
+// going to a series from the works index or the next-roll link: only the clicked title takes the view-transition
+// name (see generate.mjs vtId), so it moves to the top of the series page. Coming back from the cache clears it.
+document.addEventListener('click', (e) => {
+  const a = e.target.closest('a[href]');
+  const vt = a?.closest('.ws, .s-next')?.querySelector('[data-vt]');
+  if (vt) vt.style.viewTransitionName = vt.dataset.vt;
+}, true);
+addEventListener('pageshow', () => document.querySelectorAll('[data-vt]').forEach((el) => { el.style.viewTransitionName = ''; }));
+
 /* ── smooth scroll (Lenis) ─────────────────────────────────── */
 let lenis = null;
 if (!reduce) {
@@ -167,7 +176,7 @@ async function mountScene(kind, data, onPick) {
   };
   try {
     const [{ mountStage }] = await Promise.all([import('./scene/stage.js'), fontsReady]);
-    await mountStage({ kind, data, run, cap: $('[data-cap]'), onPick, onFail: fallBack });
+    await mountStage({ kind, data, run, cap: $('[data-cap]'), onPick, onFail: fallBack, scrollTo: (y) => (lenis ? lenis.scrollTo(y, { duration: 1.4 }) : scrollTo({ top: y })) });
     run.dataset.hot = U.view || '';
     const skip = $('[data-run-skip]'), after = $('#after-run');
     if (skip && after) {

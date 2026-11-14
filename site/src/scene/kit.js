@@ -131,6 +131,8 @@ const PRINT_FS = `
     float d = clamp((distance(cameraPosition, vW) - uNear) / (uFar - uNear), 0.0, 1.0);
     col = mix(col, uFog, d);
     if (uDim < 0.999) col = mix(col * uDim, uFog, clamp((uFloor - vW.y) / 1.5, 0.0, 1.0));
+    // the flakes still there fade into the room as the print goes, so the dissolve reads soft, never as hard static
+    col = mix(col, uFog, 1.0 - uFade);
     gl_FragColor = vec4(col, outer);
   }`;
 
