@@ -16,7 +16,8 @@
 | gsap-core、gsap-timeline、gsap-scrolltrigger、gsap-plugins、gsap-utils、gsap-performance、gsap-react、gsap-frameworks | greensock/gsap-skills（GSAP 官方，原样收录） | GSAP 的写法、ScrollTrigger、插件与性能 |
 | lenis | darkroomengineering/lenis（官方 README 与 lenis.css，SKILL.md 为本项目所写） | 平滑滚动的配置、与 ScrollTrigger 同步、弹窗时暂停 |
 | react-bits | DavidHDev/react-bits（官方 llms.txt 与组件库接口，SKILL.md 为本项目所写） | 400 多个现成动效的检索与源码查看，改写成原生 JS 用在本站 |
+| collage-design | polgarp/collage-design（6789c93，Apache-2.0，含 LICENSE.txt 与 NOTICE.md） | 用开放授权图片剪贴拼成 SVG/PNG，记录图片出处 |
 
 Lenis 和 React Bits 官方没有发布 Skill，所以这两个是根据官方文档写的。React Bits 的组件是 React 写的，本站不用 React，Skill 里约定把需要的效果改写成原生 JS 和 GSAP，不引入 React。它的许可证（MIT + Commons Clause）允许在网站里使用，但不允许转发组件本身，所以 Skill 里不存组件源码，需要时用 `node .claude/skills/react-bits/scripts/rb.mjs get <组件名>` 现场读取。
 
-video-shotcraft（制作网站宣传片）体积太大，没有放进仓库，改由云端环境的启动脚本装进全局 Skill 目录，与 humanizer、学术写作等其他全局 Skill 一起，清单见 `docs/toolbox.md`。
+video-shotcraft（制作网站宣传片）来自账号同步的插件，不放进仓库。humanizer、学术写作等全局 Skill 由 `scripts/install-skills.sh` 装进 `~/.claude/skills`，云端环境的启动脚本会自动调用，清单见 `docs/toolbox.md`。

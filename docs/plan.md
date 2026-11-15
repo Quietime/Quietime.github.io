@@ -27,7 +27,7 @@
 - [x] **工作室所在城市**（2026-11-14）：苏州（31.299, 120.5853）。已写入 `content/settings.json`，代码里的缺省值、后台提示、物理验算也一并改成苏州。以后在后台「网站设置」里可以再改。
 - [x] **背景音乐「寻」（2026 伴奏）**（2026-11-14）：作曲和录音都是工作室主人本人（与歌手华晨宇同名，不是同一人），有权使用。已转成 112kbps、约 4.9MB 的 MP3，响度调到适合作背景，放在 `content/uploads/xun-2026.mp3`，并在 `settings.json` 的 `music_file` 里指向它。访客打开右上角的声音开关才会播放，默认关闭。
 - [x] **合并 PR #1**（2026-11-14）：已合并，部署成功，线上已核对首页（苏州）、作品页和背景音乐。
-- [ ] 工具清单里待确认的几项（详见 `docs/toolbox.md`）：collage-design 是 polgarp 还是 chanchanpin-official 的；audit-apa-references 没找到同名 Skill；RedSkill 指的是什么；「DREL」是不是 @react-three/drei（本站不用 React，暂未安装）。
+- [x] **工具清单里待确认的几项**（2026-11-15，主人让我自己定，详见 `docs/toolbox.md`）：collage-design 选 polgarp 版，已放进 `.claude/skills/collage-design`；audit-apa-references 和 RedSkill 只在主人自己电脑上用，云端不装；「DREL」判断是 @react-three/drei，本站不用 React，不装。
 
 ## 还可以做（没有开工）
 
@@ -35,7 +35,7 @@
 - [x] **示例照片换成工作室作品**（2026-11-05 完成，2026-11-14 收尾）：四个系列都是工作室自己的作品，`samples` 关闭。已删除 `settings.json` 和后台里的 `sample_credit_*`（Kodak 来源说明）以及页脚显示它的代码；`README.md` 的说明改为「示例照片开关」。
 - [ ] **B站影片**：`content/films.json` 里三部影片的 `bvid` 都是空的，首页影像区因此不显示。在后台填 BV 号即可。
 - [ ] **包体积**：`kit`（three.js）约 540KB（gzip 137KB），只在有 3D 场景的页面加载；如需再小可以考虑按场景拆分。
-- [ ] **全局 Skill**：由云端环境 Default 的启动脚本安装。还没在一个全新容器里重新验证过；新开会话时看一下 `~/.claude/skills` 是否齐全。
+- [ ] **全局 Skill**（2026-11-15）：核对发现 Default 和 QUIETIME WEB 两个环境原本都没有启动脚本，之前的说法有误。已写 `scripts/install-skills.sh`（8 个 Skill 锁定提交号，重复运行会跳过），并给 QUIETIME WEB 环境加了启动脚本：调用它，再跑 `npm ci`。在当前容器从头实跑通过。剩下：合并进 main 后新开一个会话，看 `~/.claude/skills` 是否齐全。
 - [ ] **MCP 登录**：regards、lottiefiles、mobbin 需要在 claude.ai 连接器里用 OAuth 登录后才能用。
 
 ## 动画和界面优化（2026-11-14 提出，主人同意全部做）
