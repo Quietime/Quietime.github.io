@@ -1,13 +1,13 @@
 # 修改计划与进度
 
 这份文件记录网站改版做到了哪里、还差什么，方便在新的对话里接着做。每做完一项就更新这里。
-最后更新：2026-11-14。
+最后更新：2026-11-15。
 
 ## 现在的状态
 
-- 全部改动在分支 `ccr-1e852513-cctdnw`，对应草稿 PR #1（https://github.com/Quietime/Quietime.github.io/pull/1）。CI 通过，**还没合并到 `main`**，所以线上网站还是旧版。
+- PR #1（https://github.com/Quietime/Quietime.github.io/pull/1）已于 2026-11-14 合并到 `main` 并自动发布，线上网站就是新版。
 - 设计稿（只有仓库主人能打开）：https://claude.ai/artifact/3D7ZkJUdLvvA8jgw5fHqB1
-- 新对话开始时：如果 PR 还没合并，先切到这个分支（`git fetch origin ccr-1e852513-cctdnw && git checkout ccr-1e852513-cctdnw`）。合并以后在 `main` 上新开分支即可。
+- 新对话开始时：从最新的 `main` 新开分支改动，做完开 PR，检查通过后合并。
 
 ## 已完成（PR #1）
 
@@ -26,7 +26,7 @@
 
 - [x] **工作室所在城市**（2026-11-14）：苏州（31.299, 120.5853）。已写入 `content/settings.json`，代码里的缺省值、后台提示、物理验算也一并改成苏州。以后在后台「网站设置」里可以再改。
 - [x] **背景音乐「寻」（2026 伴奏）**（2026-11-14）：作曲和录音都是工作室主人本人（与歌手华晨宇同名，不是同一人），有权使用。已转成 112kbps、约 4.9MB 的 MP3，响度调到适合作背景，放在 `content/uploads/xun-2026.mp3`，并在 `settings.json` 的 `music_file` 里指向它。访客打开右上角的声音开关才会播放，默认关闭。
-- [ ] **合并 PR #1**：确认没问题后把草稿 PR 标为 Ready 并合并，网站会自动发布。
+- [x] **合并 PR #1**（2026-11-14）：已合并，部署成功，线上已核对首页（苏州）、作品页和背景音乐。
 - [ ] 工具清单里待确认的几项（详见 `docs/toolbox.md`）：collage-design 是 polgarp 还是 chanchanpin-official 的；audit-apa-references 没找到同名 Skill；RedSkill 指的是什么；「DREL」是不是 @react-three/drei（本站不用 React，暂未安装）。
 
 ## 还可以做（没有开工）
