@@ -7,6 +7,7 @@ import { ScrambleTextPlugin } from 'gsap/ScrambleTextPlugin';
 import { Flip } from 'gsap/Flip';
 import Lenis from 'lenis';
 import { springEase } from './physics/spring.js';
+import { canvasText, canvasFonts } from './scene/text.js';
 
 gsap.registerPlugin(ScrollTrigger, SplitText, ScrambleTextPlugin, Flip);
 // every eased motion is the step response of a damped spring (see physics/spring.js);
@@ -160,10 +161,21 @@ function scrubRise(els, { y = 56, from = 0.12, start = 'top 98%', end = 'top 62%
  * otherwise the plain HTML under the run stays visible (html.no-gl).
  */
 const sceneData = () => { try { return JSON.parse($('#qt-scene')?.textContent || 'null'); } catch { return null; } };
+// three.js is most of a scene's weight, and the darkroom's slates wait for their Chinese glyphs: on a page with a
+// scene, ask for both as soon as this file runs, alongside the page's own script, instead of one after the other
+const KIND = page === 'home' ? 'spine' : 'darkroom';
+const early = $('#qt-scene') && !reduce ? {
+  kit: import('./scene/kit.js'),
+  stage: import('./scene/stage.js'),
+  scene: KIND === 'spine' ? import('./scene/spine.js') : import('./scene/darkroom.js'),
+  type: fontsReady.then(() => { const d = sceneData(); return d && canvasFonts(canvasText(KIND, d), 8000); }),
+} : null;
+if (early) Object.values(early).forEach((p) => p?.catch?.(() => {}));
 async function mountScene(kind, data, onPick) {
   const run = $('[data-run]');
   if (!data || !run || reduce) { root.classList.add('no-gl'); return; }
-  const kit = await import('./scene/kit.js');
+  const stage = early?.stage || import('./scene/stage.js');
+  const kit = await (early?.kit || import('./scene/kit.js'));
   if (!kit.webglOK()) { root.classList.add('no-gl'); return; }
   // anything that goes wrong with the scene (a driver error, a lost context that does not come back) falls back to
   // the plain HTML under the run, never to an empty page
@@ -175,7 +187,7 @@ async function mountScene(kind, data, onPick) {
     ScrollTrigger.refresh();
   };
   try {
-    const [{ mountStage }] = await Promise.all([import('./scene/stage.js'), fontsReady]);
+    const [{ mountStage }] = await Promise.all([stage, fontsReady]);
     await mountStage({ kind, data, run, cap: $('[data-cap]'), onPick, onFail: fallBack, scrollTo: (y) => (lenis ? lenis.scrollTo(y, { duration: 1.4 }) : scrollTo({ top: y })) });
     run.dataset.hot = U.view || '';
     const skip = $('[data-run-skip]'), after = $('#after-run');

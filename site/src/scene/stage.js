@@ -2,25 +2,21 @@
 // take, and a caption in the lower left. Progress through the run drives the scene; the hero above it is a leader
 // that lifts away to reveal the canvas.
 // The scene draws only while its run is on or near the screen; past it the loop stops until the run comes back.
-import { THREE, makeRenderer, cssColor, streamImages, canvasFonts, FONTS, frameTime } from './kit.js';
-import { spineScene } from './spine.js';
-import { darkroomScene } from './darkroom.js';
+import { THREE, makeRenderer, cssColor, streamImages, frameTime } from './kit.js';
+import { canvasText, canvasFonts } from './text.js';
 
-const SCENES = { spine: spineScene, darkroom: darkroomScene };
+// each page loads only its own scene: the home page the film spine, the works and series pages the darkroom
+const SCENES = {
+  spine: () => import('./spine.js').then((m) => m.spineScene),
+  darkroom: () => import('./darkroom.js').then((m) => m.darkroomScene),
+};
 
-// the words a scene paints onto canvases, so their faces can be loaded before the canvases are drawn
-function canvasText(kind, data) {
-  if (kind === 'spine') return [[`500 40px ${FONTS.edge}`, `0123456789A▸ ${data.edge || ''}`]];
-  const slates = [data.slates?.head, data.slates?.end, ...(data.series || []).map((s) => s.slate)].filter(Boolean);
-  const at = (k) => slates.map((l) => l[k] || '').join('');
-  return [[`500 54px ${FONTS.edge}`, `${at(0)}${at(3)}`], [`500 150px ${FONTS.display}`, at(1)], [`400 46px ${FONTS.serif}`, at(2)]];
-}
 
 export async function mountStage({ kind, data, run, cap, onPick, onFail, scrollTo: goY }) {
   // the spine paints every picture into one atlas, and starts with whatever has arrived; the darkroom streams
   // the pictures for the rows ahead of the camera itself
   const imgs = kind === 'spine' ? streamImages(data.images) : data.images;
-  await canvasFonts(canvasText(kind, data));
+  const [makeScene] = await Promise.all([SCENES[kind](), canvasFonts(canvasText(kind, data))]);
 
   const canvas = document.createElement('canvas');
   canvas.className = 'stage';
@@ -58,7 +54,7 @@ export async function mountStage({ kind, data, run, cap, onPick, onFail, scrollT
     renderer.setSize(innerWidth, innerHeight, false);
     camera.aspect = innerWidth / innerHeight; camera.fov = 30; camera.updateProjectionMatrix();
     cur?.dispose();
-    cur = SCENES[kind]({ renderer, scene, camera, data, imgs, fog: cssColor('--bg'), onPick, host: run });
+    cur = makeScene({ renderer, scene, camera, data, imgs, fog: cssColor('--bg'), onPick, host: run });
     run.style.height = `${Math.round(cur.pages * 100)}svh`;
     lastW = innerWidth; lastNarrow = camera.aspect < 0.8;
     fillRail(); lit = -1;

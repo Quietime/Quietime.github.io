@@ -77,12 +77,6 @@ export function streamImages(urls, first = 8) {
   };
 }
 
-/** Waits for the faces a canvas will draw with (the text drawn into slates and the film's edge codes), at most `ms`. */
-export function canvasFonts(specs, ms = 2000) {
-  if (!document.fonts?.load) return Promise.resolve();
-  const all = Promise.all(specs.filter(([, text]) => text).map(([font, text]) => document.fonts.load(font, text).catch(() => {})));
-  return Promise.race([all, new Promise((ok) => { setTimeout(ok, ms); })]);
-}
 
 export function imageTexture(img, renderer) {
   const t = new THREE.Texture(img);
@@ -171,8 +165,4 @@ export function slateTexture(lines, renderer, fonts) {
   return t;
 }
 
-export const FONTS = {
-  edge: '"Barlow Condensed", "Arial Narrow", sans-serif',
-  display: '"Noto Serif SC", "Songti SC", serif',
-  serif: '"Noto Serif SC", "Songti SC", serif',
-};
+export { FONTS } from './text.js';
