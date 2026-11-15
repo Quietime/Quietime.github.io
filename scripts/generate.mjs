@@ -176,9 +176,11 @@ ${soc.length ? `<p class="ftr-soc">${soc.map((s) => `<a href="${esc(safeUrl(s.ur
   const filmState = (f) => (ready(f) ? t.play : t.soon);
   const facts = (f) => [dur(f.meta?.duration), f.meta?.views != null ? t.plays(f.meta.views) : '', day(f.meta?.pubdate)].filter(Boolean);
 
-  function filmGrid(h = 'h3') {
-    if (!films.length) return `<p class="empty">${esc(t.filmsEmpty)}</p>`;
-    const [lead, ...rest] = films;
+  // the films page shows every film; the home page the first HOME_FILMS, so a long list does not lengthen it
+  const HOME_FILMS = 4;
+  function filmGrid(h = 'h3', list = films) {
+    if (!list.length) return `<p class="empty">${esc(t.filmsEmpty)}</p>`;
+    const [lead, ...rest] = list;
     return `<div class="screen">
 <button type="button" class="film-btn" ${filmAttrs(lead)} aria-label="${esc(filmState(lead))}：${esc(lead.title)}">${picture(lead.src, { sizes: '(max-width: 860px) 100vw, 84vw' })}<span class="film-state">${esc(filmState(lead))}${lead.meta?.duration ? `<i>${dur(lead.meta.duration)}</i>` : ''}</span></button>
 <div class="screen-cap"><${h}>${esc(lead.title)}</${h}><p>${esc(lead.sub)}<span>${esc(lead.kind)}</span></p>${facts(lead).length ? `<p class="film-facts">${facts(lead).map((x) => `<span>${esc(x)}</span>`).join('')}</p>` : ''}</div>
@@ -279,7 +281,7 @@ ${capBar}
 ${skip(t.skipFilm)}
 ${films.some(ready) ? `<section class="h-sec h-films" aria-labelledby="h-films-t">
 <div class="h-sec-head"><h2 id="h-films-t">${esc(t.nav.films)}</h2><p>${esc(t.filmsSub)}</p></div>
-${filmGrid()}
+${filmGrid('h3', films.slice(0, HOME_FILMS))}
 <p class="more-wrap"><a class="more" href="${href('films')}">${esc(t.allFilms)}</a></p>
 </section>` : ''}
 <section class="h-sec h-about">

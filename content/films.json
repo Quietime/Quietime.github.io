@@ -1,28 +1,100 @@
 {
   "films": [
     {
-      "bvid": "",
-      "title_zh": "一卷胶片的一天",
-      "title_en": "One Roll, One Day",
-      "kind_zh": "短片",
-      "kind_en": "Short",
-      "cover": "/content/films/a-day-with-one-roll.jpg"
+      "bvid": "BV1mQJ86mEeB",
+      "title_zh": "火星演唱会 南京站 27日",
+      "title_en": "Mars Concert, Nanjing, night of the 27th",
+      "kind_zh": "2026 · HDR 全程",
+      "kind_en": "2026 · Full show in HDR",
+      "cover": "/content/films/BV1mQJ86mEeB.jpg"
     },
     {
-      "bvid": "",
-      "title_zh": "暗房笔记",
-      "title_en": "Notes from the Darkroom",
-      "kind_zh": "幕后",
-      "kind_en": "Behind the scenes",
-      "cover": "/content/films/darkroom-notes.jpg"
+      "bvid": "BV1frhYzHEti",
+      "title_zh": "火星演唱会 苏州站 29日",
+      "title_en": "Mars Concert, Suzhou, night of the 29th",
+      "kind_zh": "2025 · HDR 全程",
+      "kind_en": "2025 · Full show in HDR",
+      "cover": "/content/films/BV1frhYzHEti.jpg"
     },
     {
-      "bvid": "",
-      "title_zh": "等灯亮起来",
-      "title_en": "Until the Lamps Come On",
-      "kind_zh": "Vlog",
-      "kind_en": "Vlog",
-      "cover": "/content/films/waiting-for-the-lamp.jpg"
+      "bvid": "BV1SKSeY6Eui",
+      "title_zh": "火星演唱会 杭州站",
+      "title_en": "Mars Concert, Hangzhou",
+      "kind_zh": "2024 · 全程",
+      "kind_en": "2024 · Full show",
+      "cover": "/content/films/BV1SKSeY6Eui.jpg"
+    },
+    {
+      "bvid": "BV14cQJYvETJ",
+      "title_zh": "火星演唱会 福州站 第一天",
+      "title_en": "Mars Concert, Fuzhou, day one",
+      "kind_zh": "2025 · 全程",
+      "kind_en": "2025 · Full show",
+      "cover": "/content/films/BV14cQJYvETJ.jpg"
+    },
+    {
+      "bvid": "BV1HyaFzNEbX",
+      "title_zh": "火星演唱会 苏州站 31日",
+      "title_en": "Mars Concert, Suzhou, night of the 31st",
+      "kind_zh": "2025 · HDR 全程",
+      "kind_en": "2025 · Full show in HDR",
+      "cover": "/content/films/BV1HyaFzNEbX.jpg"
+    },
+    {
+      "bvid": "BV1moh6zsESH",
+      "title_zh": "火星演唱会 苏州站 30日",
+      "title_en": "Mars Concert, Suzhou, night of the 30th",
+      "kind_zh": "2025 · HDR 全程",
+      "kind_en": "2025 · Full show in HDR",
+      "cover": "/content/films/BV1moh6zsESH.jpg"
+    },
+    {
+      "bvid": "BV1jyohYYEQu",
+      "title_zh": "火星演唱会 长沙站 第二天",
+      "title_en": "Mars Concert, Changsha, day two",
+      "kind_zh": "2025 · 全程",
+      "kind_en": "2025 · Full show",
+      "cover": "/content/films/BV1jyohYYEQu.jpg"
+    },
+    {
+      "bvid": "BV1WqovY9EvH",
+      "title_zh": "火星演唱会 长沙站 第一天",
+      "title_en": "Mars Concert, Changsha, day one",
+      "kind_zh": "2025 · 全程",
+      "kind_en": "2025 · Full show",
+      "cover": "/content/films/BV1WqovY9EvH.jpg"
+    },
+    {
+      "bvid": "BV1LyZ2YkEQy",
+      "title_zh": "火星演唱会 长沙站 第一天 直拍",
+      "title_en": "Mars Concert, Changsha, day one, close up",
+      "kind_zh": "2025 · 直拍",
+      "kind_en": "2025 · Single camera, close up",
+      "cover": "/content/films/BV1LyZ2YkEQy.jpg"
+    },
+    {
+      "bvid": "BV1zSQPY2EKk",
+      "title_zh": "火星演唱会 福州站 第一天 双机位",
+      "title_en": "Mars Concert, Fuzhou, day one, two cameras",
+      "kind_zh": "2025 · 双机位混剪",
+      "kind_en": "2025 · Two cameras, intercut",
+      "cover": "/content/films/BV1zSQPY2EKk.jpg"
+    },
+    {
+      "bvid": "BV1ybQuYiEac",
+      "title_zh": "火星演唱会 福州站 第一天 直拍",
+      "title_en": "Mars Concert, Fuzhou, day one, close up",
+      "kind_zh": "2025 · 直拍",
+      "kind_en": "2025 · Single camera, close up",
+      "cover": "/content/films/BV1ybQuYiEac.jpg"
+    },
+    {
+      "bvid": "BV1FDYCeeEzs",
+      "title_zh": "火星演唱会 合肥站 七夕",
+      "title_en": "Mars Concert, Hefei, on Qixi",
+      "kind_zh": "2024 · 全程",
+      "kind_en": "2024 · Full show",
+      "cover": "/content/films/BV1FDYCeeEzs.jpg"
     }
   ]
 }
