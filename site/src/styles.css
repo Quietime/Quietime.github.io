@@ -288,6 +288,25 @@ html.gl .series .counter { display: none; }
 .fr-k { grid-column: 10 / span 2; font-size: 14px; color: var(--fg-2); }
 .fr-s { grid-column: 12; justify-self: end; font-family: var(--f-edge); font-weight: 500; letter-spacing: .14em; color: var(--accent); }
 .film-row:not([aria-disabled]):hover .fr-t { color: var(--accent); }
+/* every other film: a card with its cover, its name and the two ways to watch it */
+.film-cards { list-style: none; margin: clamp(40px, 6vw, 72px) 0 0; padding: 0 var(--gut); display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: clamp(36px, 4vw, 56px) clamp(16px, 2vw, 28px); }
+.film-card { min-width: 0; display: flex; flex-direction: column; }
+.fc-cap { padding-top: 14px; display: flex; flex-direction: column; flex: 1; }
+.fc-t { margin: 0; font-family: var(--f-serif); font-weight: 500; font-size: clamp(17px, 1.3vw, 20px); letter-spacing: .04em; line-height: 1.45; }
+.fc-e, .fc-k { margin: 4px 0 0; font-size: 14px; color: var(--fg-2); }
+.fc-k { font-family: var(--f-edge); letter-spacing: .06em; color: var(--accent); }
+.film-acts { margin: auto 0 0; padding-top: 12px; display: flex; gap: 8px 22px; flex-wrap: wrap; align-items: center; }
+.screen-cap .film-acts { flex-direction: row; gap: 8px 22px; margin-top: 16px; }
+/* the covers carry the city, date and type in their lower left, so the play tag sits on the right */
+.film-cards .film-state, .screen .film-state { left: auto; right: 0; }
+.film-acts > * { min-height: 44px; display: inline-flex; align-items: center; padding: 0; border: 0; background: none; cursor: pointer;
+  font-family: var(--f-edge); font-weight: 500; font-size: 14px; letter-spacing: .14em; color: var(--fg); text-decoration: none; }
+.film-acts .film-play { color: var(--accent); }
+.film-acts a::after { content: ' ↗'; }
+.film-acts > *:hover { color: var(--accent); }
+.film-card .film-btn:not([aria-disabled]):hover img { transform: scale(1.04); }
+@media (max-width: 1100px) { .film-cards { grid-template-columns: repeat(2, minmax(0, 1fr)); } }
+@media (max-width: 600px) { .film-cards { grid-template-columns: minmax(0, 1fr); } }
 
 /* ── home: about teaser ── */
 .big-quote { margin: 0 0 0 calc(var(--gut) + var(--col) * 3); padding-right: var(--gut); max-width: 22em; font-family: var(--f-serif); font-size: clamp(21px, 2.3vw, 34px); line-height: 1.9; letter-spacing: .04em; }

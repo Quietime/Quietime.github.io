@@ -181,11 +181,17 @@ ${soc.length ? `<p class="ftr-soc">${soc.map((s) => `<a href="${esc(safeUrl(s.ur
   function filmGrid(h = 'h3', list = films) {
     if (!list.length) return `<p class="empty">${esc(t.filmsEmpty)}</p>`;
     const [lead, ...rest] = list;
-    return `<div class="screen">
-<button type="button" class="film-btn" ${filmAttrs(lead)} aria-label="${esc(filmState(lead))}：${esc(lead.title)}">${picture(lead.src, { sizes: '(max-width: 860px) 100vw, 84vw' })}<span class="film-state">${esc(filmState(lead))}${lead.meta?.duration ? `<i>${dur(lead.meta.duration)}</i>` : ''}</span></button>
-<div class="screen-cap"><${h}>${esc(lead.title)}</${h}><p>${esc(lead.sub)}<span>${esc(lead.kind)}</span></p>${facts(lead).length ? `<p class="film-facts">${facts(lead).map((x) => `<span>${esc(x)}</span>`).join('')}</p>` : ''}</div>
+    const h2 = h === 'h2' ? 'h3' : 'h4';
+    const biliUrl = (f) => (f.bvid ? `https://www.bilibili.com/video/${encodeURIComponent(f.bvid)}` : f.aid ? `https://www.bilibili.com/video/av${encodeURIComponent(f.aid)}` : '');
+    // every film can be played here (the player opens over the page) or watched on Bilibili
+    const acts = (f) => (ready(f) ? `<p class="film-acts"><button type="button" class="film-play" ${filmAttrs(f)} aria-label="${esc(t.play)}：${esc(f.title)}">${esc(t.play)}</button><a href="${esc(biliUrl(f))}" target="_blank" rel="noopener">${esc(t.openBili)}</a></p>` : '');
+    const cover = (f, sizes) => `<button type="button" class="film-btn" ${filmAttrs(f)} aria-label="${esc(filmState(f))}：${esc(f.title)}">${picture(f.src, { sizes, alt: f.title })}<span class="film-state">${esc(filmState(f))}${f.meta?.duration ? `<i>${dur(f.meta.duration)}</i>` : ''}</span></button>`;
+    return `<div class="screen" data-film>
+${cover(lead, '(max-width: 860px) 100vw, 84vw')}
+<div class="screen-cap"><${h}>${esc(lead.title)}</${h}><p>${esc(lead.sub)}<span>${esc(lead.kind)}</span></p>${facts(lead).length ? `<p class="film-facts">${facts(lead).map((x) => `<span>${esc(x)}</span>`).join('')}</p>` : ''}${acts(lead)}</div>
 </div>
-${rest.length ? `<ol class="film-rows">${rest.map((f) => `<li><button type="button" class="film-row" ${filmAttrs(f)} aria-label="${esc(filmState(f))}：${esc(f.title)}"><span class="fr-t">${esc(f.title)}</span><span class="fr-e">${esc(f.sub)}</span><span class="fr-k">${esc(facts(f)[0] || f.kind)}</span><span class="fr-s">${esc(filmState(f))}</span></button></li>`).join('')}</ol>` : ''}`;
+${rest.length ? `<ol class="film-cards">${rest.map((f) => `<li class="film-card" data-film>${cover(f, '(max-width: 600px) 100vw, (max-width: 1100px) 50vw, 30vw')}
+<div class="fc-cap"><${h2} class="fc-t">${esc(f.title)}</${h2}><p class="fc-e">${esc(f.sub)}</p><p class="fc-k">${esc([f.kind, ...facts(f)].filter(Boolean).join(' · '))}</p>${acts(f)}</div></li>`).join('\n')}</ol>` : ''}`;
   }
 
   // ── Scene data, shared by the home spine and the darkroom ──

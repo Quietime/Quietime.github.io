@@ -110,7 +110,13 @@ collections:
               - { name: title_en, label: Title (English), widget: string, required: false }
               - { name: kind_zh, label: 类型（中文）, widget: string, required: false, hint: 例如 2025 · HDR 全程、直拍、双机位混剪 }
               - { name: kind_en, label: Type (English), widget: string, required: false }
-              - { name: cover, label: 封面, widget: image, required: false, hint: 留空就用 B站 封面。建议 16:9，1920×1080 }
+              - { name: city_zh, label: 城市（中文）, widget: string, required: false, hint: 印在封面上，例如 苏州 }
+              - { name: city_en, label: City (English), widget: string, required: false, hint: 例如 SUZHOU }
+              - { name: date, label: 演出日期, widget: string, required: false, hint: 印在封面上，写成 2025.08.29；只知道月份就写 2025.03 }
+              - { name: show_zh, label: 场次（中文）, widget: string, required: false, hint: 可留空，例如 第一天、七夕 }
+              - { name: show_en, label: Show (English), widget: string, required: false, hint: 例如 Day one }
+              - { name: still, label: 封面底图, widget: image, required: false, media_folder: /content/films/stills, public_folder: /content/films/stills, hint: 影片里的一帧，16:9。封面由它加上城市、日期、场次、类型生成；改了这些之后要重新生成封面（npm run covers），可以让 Claude 来做 }
+              - { name: cover, label: 封面, widget: image, required: false, hint: 生成好的封面。也可以直接上传一张做好的封面，那样就不需要底图。都留空就用 B站 封面 }
 
       - name: settings
         label: 基本信息与联系方式
