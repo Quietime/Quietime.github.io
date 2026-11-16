@@ -18,7 +18,7 @@ export default function films() {
     document.removeEventListener('keydown', esc);
     opener?.focus({ preventScroll: true });
   }
-  $$('.film-btn, .film-row').forEach((b) => b.addEventListener('click', () => {
+  $$('.film-btn, .film-row, .film-play').forEach((b) => b.addEventListener('click', () => {
     if (!b.dataset.bvid && !b.dataset.aid) { if (live) live.textContent = U.notReady || ''; return; }
     opener = b;
     const q = new URLSearchParams({ isOutside: 'true', p: b.dataset.p || '1', autoplay: '1', danmaku: '0', high_quality: '1' });
@@ -35,7 +35,7 @@ export default function films() {
     };
     if (reduce) { load(); } else {
       const state = Flip.getState(box);
-      Flip.fit(box, $('.ph', b) || b, { scale: true });
+      Flip.fit(box, $('.ph', b) || $('.ph', b.closest('[data-film]') || b) || b, { scale: true });
       gsap.fromTo(player, { backgroundColor: 'rgba(14,14,16,0)' }, { backgroundColor: 'rgba(14,14,16,.95)', duration: 0.6 });
       Flip.to(state, { duration: 0.8, ease: 'springCrit', scale: true, onComplete: load });
     }

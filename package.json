@@ -15,7 +15,8 @@
     "bilibili": "node scripts/bilibili.mjs",
     "check": "node scripts/physics-check.mjs && node scripts/check-site.mjs",
     "validate": "node scripts/validate.mjs",
-    "smoke": "node scripts/smoke.mjs"
+    "smoke": "node scripts/smoke.mjs",
+    "covers": "node scripts/film-covers.mjs"
   },
   "devDependencies": {
     "@theatre/studio": "^0.7.2",

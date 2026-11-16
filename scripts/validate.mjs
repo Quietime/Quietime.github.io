@@ -46,6 +46,9 @@ if (FL) {
     if (x.bvid && !parseBili(x.bvid)) warn(f, `films[${i}] "${x.title_zh}": "${x.bvid}" is not a BV id, av number, video link or embed code`);
     const rel = x.cover && resolveImage(x.cover, 'content/films');
     if (rel && !(await exists(rel))) err(f, `films[${i}] cover "${x.cover}" does not exist`);
+    const st = x.still && resolveImage(x.still, 'content/films');
+    if (st && !(await exists(st))) err(f, `films[${i}] still "${x.still}" does not exist`);
+    if (st && !rel) warn(f, `films[${i}] "${x.title_zh}" has a still but no cover: run npm run covers`);
   }
 }
 
