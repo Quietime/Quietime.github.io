@@ -113,6 +113,9 @@ function leaderLabel(g, ox, oy, iw, ih, k, lb) {
   g.restore();
 }
 
+// a fixed pseudo-random number in [0, 1) for stop k and slot i, the same on every visit
+const hash = (k, i) => { const x = Math.sin((k + 3) * 12.9898 + i * 78.233) * 43758.5453; return x - Math.floor(x); };
+
 export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
   const sizes = data.sizes || [];
   const W = 1, PITCH = (W * MM.pitch) / MM.width, R = 0.8, D = 2.5;
@@ -153,11 +156,16 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
     for (let x = -S0; x < S0; x += st) { const [dy, dz] = loose(k, x, S0); push(x, y0 + dy, dz, 0); }
     ends[k] = raw.length - 1;
     if (k === STOPS) break;
-    const Lt = Math.PI * R, Lb = S0 + S1, tot = 2 * Lt + Lb, sg = k % 2 ? 1 : -1;
+    // each run behind has its own character, fixed by its index: one twist or two, either way round, deeper or
+    // shallower, rising or sagging, the twist bunched early or late. Whole turns only, so the film always comes back
+    // face forward; the deepest point stays in front of the plane the shadows fall on
+    const Lt = Math.PI * R, Lb = S0 + S1, tot = 2 * Lt + Lb;
+    const turns = hash(k, 0) < 0.3 ? 2 : 1, dir = hash(k, 1) < 0.5 ? -1 : 1, deep = 0.3 + 0.35 * hash(k, 2), rise = -0.08 + 0.38 * hash(k, 3);
+    const tw0 = 0.12 * hash(k, 4), tw1 = 0.84 + 0.16 * hash(k, 5);
     let acc = 0;
     const yAt = (a) => y0 - D * (0.5 - 0.5 * Math.cos((Math.PI * a) / tot)); // the drop starts and ends level
     for (let a = 0; a < Lt; a += st, acc += st) { const th = a / R; push(S0 + R * Math.sin(th), yAt(acc), -R * (1 - Math.cos(th)), 0); }
-    for (let b = 0; b < Lb; b += st, acc += st) { const f = b / Lb; push(S0 - b, yAt(acc) + 0.22 * Math.sin(Math.PI * f), -2 * R - 0.6 * Math.sin(Math.PI * f), sg * 2 * Math.PI * smooth(0, 1, f)); }
+    for (let b = 0; b < Lb; b += st, acc += st) { const f = b / Lb; push(S0 - b, yAt(acc) + rise * Math.sin(Math.PI * f), -2 * R - deep * Math.sin(Math.PI * f), dir * turns * 2 * Math.PI * smooth(tw0, tw1, f)); }
     for (let a = 0; a < Lt; a += st, acc += st) { const th = a / R; push(-S1 - R * Math.sin(th), yAt(acc), -2 * R + R * (1 - Math.cos(th)), 0); }
   }
   // vertices at equal arc length, the width kept as upright as the path allows, plus the twist. Five vertices across
@@ -253,12 +261,14 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
       map: { value: atlas.tex }, fmap: { value: fmap }, uFW: { value: FW }, uFH: { value: FH },
       uCols: { value: atlas.cols }, uK: { value: atlas.k }, uCell: { value: new THREE.Vector2(atlas.CW, atlas.CH) }, uAtlas: { value: new THREE.Vector2(atlas.AW, atlas.AH) },
       uLight: { value: new THREE.Vector3(-0.45, 0.75, 0.6).normalize() }, uFog: { value: fog }, uNear: { value: 6 }, uFar: { value: 16 },
+      uFocus: { value: new THREE.Vector3() }, uFocusAmt: { value: 0 }, uSigma: { value: 1 },
     },
     vertexShader: PRINT_VS,
     fragmentShader: `
       uniform sampler2D map; uniform sampler2D fmap; uniform float uFW; uniform float uFH;
       uniform float uCols; uniform float uK; uniform vec2 uCell; uniform vec2 uAtlas;
       uniform vec3 uLight; uniform vec3 uFog; uniform float uNear; uniform float uFar;
+      uniform vec3 uFocus; uniform float uFocusAmt; uniform float uSigma;
       varying vec2 vUv; varying vec3 vN; varying vec3 vW;
       const vec3 BASE = vec3(0.165, 0.13, 0.105), RIM = vec3(0.07, 0.055, 0.043);
       void main() {
@@ -297,6 +307,11 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
         if (!gl_FrontFacing) cl *= vec3(0.86, 0.70, 0.52);  // seen through the amber film base
         cl += vec3(1.0, 0.72, 0.42) * pow(max(dot(n, normalize(uLight + V)), 0.0), 48.0) * 0.5;
         float d = clamp((distance(cameraPosition, vW) - uNear) / (uFar - uNear), 0.0, 1.0);
+        // at a stop, the stretch is lit like a loupe over a light table: the frame in the middle a little brighter,
+        // the frames towards the sides a little darker; the runs behind are left as they are
+        float onStretch = (1.0 - smoothstep(0.6, 1.2, abs(vW.y - uFocus.y))) * (1.0 - smoothstep(0.4, 0.9, abs(vW.z - uFocus.z)));
+        float dx = vW.x - uFocus.x;
+        cl *= mix(1.0, 0.8 + 0.26 * exp(-dx * dx / (uSigma * uSigma)), uFocusAmt * onStretch);
         gl_FragColor = vec4(mix(cl, uFog, d * 0.5), alpha);
       }`,
   });
@@ -354,6 +369,9 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
   // changing from roll to roll, and the horizon leans a degree or two the same way. A slow drift, the sum of two
   // incommensurate sines on the clock, keeps it from standing perfectly still (deterministic, a few millimetres)
   const YAW = phone ? 0.11 : 0.17, TILT = 0.09, ROLL = 0.028;
+  // how far the view looks below the film (a share of the visible height), and the loupe's width (about one frame)
+  const LIFT = phone ? 0 : 0.085 * (visW / camera.aspect);
+  mat.uniforms.uSigma.value = phone ? 0.75 : 1.15;
   const sideOf = (k) => (k % 2 ? 1 : -1);
   let clock = 0;
   // where each roll begins on the scroll, for the roll marks of the progress rail
@@ -383,8 +401,10 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
       camera.position.set(pan + dist * Math.sin(yaw) + dx, ty + 0.12 + 1.1 * bump + dist * TILT * (1 - bump) + dy, tz + dist * Math.cos(yaw));
       const roll = -ROLL * lean * (1 - bump) + 0.0015 * Math.sin(clock * 0.9 + 0.4);
       camera.up.set(Math.sin(roll), Math.cos(roll), 0);
-      camera.lookAt(pan, ty, tz);
+      // the roll's caption sits in the lower left; aim a little below the film so the stretch rides above it
+      camera.lookAt(pan, ty - LIFT * (1 - bump), tz);
       mat.uniforms.uNear.value = d0 + 0.6; mat.uniforms.uFar.value = dist + 5;
+      mat.uniforms.uFocus.value.set(pan, ty, tz); mat.uniforms.uFocusAmt.value = (1 - bump) ** 2;
       const near = Math.round(sig);
       return { cap: stops[clamp(near, 0, STOPS - 1)].cap, show: 1 - clamp(Math.abs(sig - near) * 3, 0, 1) };
     },
