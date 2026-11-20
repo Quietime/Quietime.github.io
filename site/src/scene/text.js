@@ -8,7 +8,12 @@ export const FONTS = {
 
 /** [font, text] pairs: the film's edge codes for the spine; the slates' four lines for the darkroom. */
 export function canvasText(kind, data) {
-  if (kind === 'spine') return [[`500 40px ${FONTS.edge}`, `0123456789A▸ ${data.edge || ''}`]];
+  if (kind === 'spine') {
+    // the edge codes, and the roll names written on each roll's leader
+    const caps = (data.series || []).map((s) => s.cap || []);
+    return [[`500 40px ${FONTS.edge}`, `0123456789A▸ END ${data.edge || ''}${caps.map((c) => c[0] || '').join('')}`],
+      [`500 40px ${FONTS.serif}`, caps.map((c) => c[1] || '').join('')], [`400 40px ${FONTS.serif}`, caps.map((c) => String(c[2] || '').split(' · ')[0]).join('')]];
+  }
   const slates = [data.slates?.head, data.slates?.end, ...(data.series || []).map((s) => s.slate)].filter(Boolean);
   const at = (k) => slates.map((l) => l[k] || '').join('');
   return [[`500 54px ${FONTS.edge}`, `${at(0)}${at(3)}`], [`500 150px ${FONTS.display}`, at(1)], [`400 46px ${FONTS.serif}`, at(2)]];

@@ -18,11 +18,12 @@ const frameMM = (sz) => MM.imgH * aspectOf(sz) + 2;
 /**
  * Every picture upright in its own cell of one canvas, the edge code printed under it. The cells are drawn as
  * the pictures arrive; `kMax` (pixels per millimetre of film) is what the screen can actually show, so a phone
- * gets a smaller atlas than a large desktop screen.
+ * gets a smaller atlas than a large desktop screen. After the pictures come the leader labels: the frame of
+ * leader at each end of a roll, written on like a darkroom marks a roll (see `leaderLabel`).
  */
-function filmAtlas(sizes, stream, renderer, edgeCode, kMax) {
+function filmAtlas(sizes, stream, renderer, edgeCode, kMax, labels = []) {
   const max = Math.min(8192, renderer.capabilities.maxTextureSize);
-  const n = Math.max(1, sizes.length);
+  const n = Math.max(1, sizes.length + labels.length);
   const cellW = MM.imgH * ASPECT[1], cellH = MM.imgH + 1.8; // millimetres
   let k = kMax;
   const fits = (kk) => { const cols = Math.floor(max / Math.ceil(cellW * kk)); return cols > 0 && Math.ceil(n / cols) * Math.ceil(cellH * kk) <= max; };
@@ -35,6 +36,12 @@ function filmAtlas(sizes, stream, renderer, edgeCode, kMax) {
   const ih = MM.imgH * k;
   g.fillStyle = '#D99A5B'; g.font = `500 ${Math.round(1.25 * k)}px "Barlow Condensed", sans-serif`; g.textBaseline = 'middle';
   sizes.forEach((_, f) => g.fillText(`${f + 1}A ▸ ${edgeCode}`, (f % cols) * CW + 0.2 * k, Math.floor(f / cols) * CH + ih + 0.9 * k));
+  labels.forEach((lb, j) => {
+    const f = sizes.length + j, ox = (f % cols) * CW, oy = Math.floor(f / cols) * CH;
+    leaderLabel(g, ox, oy, MM.imgH * ASPECT[1] * k, ih, k, lb);
+    g.fillStyle = '#D99A5B'; g.font = `500 ${Math.round(1.25 * k)}px "Barlow Condensed", sans-serif`; g.textBaseline = 'middle';
+    g.fillText(`${lb.roll} ▸ ${edgeCode}`, ox + 0.2 * k, oy + ih + 0.9 * k);
+  });
   const t = new THREE.CanvasTexture(c);
   t.colorSpace = THREE.NoColorSpace; t.anisotropy = renderer.capabilities.getMaxAnisotropy();
   let dirty = false, lastUp = 0;
@@ -58,6 +65,57 @@ function filmAtlas(sizes, stream, renderer, edgeCode, kMax) {
   };
 }
 
+/**
+ * The frame of leader at the head of a roll carries the roll's number and name, as if written on the film in the
+ * darkroom; the frame at the tail says the roll ends. Both are a little light-struck, the warm fog a strip of film
+ * takes at its ends, so they read as leader and not as a picture that failed to load.
+ */
+function leaderLabel(g, ox, oy, iw, ih, k, lb) {
+  g.save(); g.beginPath(); g.rect(ox, oy, iw, ih); g.clip();
+  g.fillStyle = '#2A211B'; g.fillRect(ox, oy, iw, ih);
+  const fog = g.createLinearGradient(lb.tail ? ox + iw : ox, 0, lb.tail ? ox : ox + iw, 0);
+  fog.addColorStop(0, 'rgba(214, 132, 80, 0.34)'); fog.addColorStop(0.4, 'rgba(160, 90, 52, 0.12)'); fog.addColorStop(1, 'rgba(42, 33, 27, 0)');
+  g.fillStyle = fog; g.fillRect(ox, oy, iw, ih);
+  const fit = (text, font, px, w) => { let z = px; g.font = font(z); while (z > 6 && g.measureText(text).width > w) { z -= 1; g.font = font(z); } return z; };
+  const pad = 2.6 * k, w = iw - 2 * pad;
+  g.textBaseline = 'alphabetic';
+  g.fillStyle = '#D99A5B';
+  fit(lb.roll, (z) => `500 ${z}px "Barlow Condensed", sans-serif`, Math.round(2.6 * k), w);
+  g.fillText(lb.roll, ox + pad, oy + 5.4 * k);
+  if (lb.tail) {
+    g.fillStyle = 'rgba(231, 226, 215, 0.62)';
+    fit('END', (z) => `500 ${z}px "Barlow Condensed", sans-serif`, Math.round(3.4 * k), w);
+    g.fillText('END', ox + pad, oy + ih - 3.2 * k);
+  } else {
+    // the name on one line if it fits at a readable size, otherwise on two, broken between words
+    g.fillStyle = '#E7E2D7';
+    const font = (zz) => `500 ${zz}px "Noto Serif SC", serif`;
+    let lines = [lb.title], z = fit(lb.title, font, Math.round(5.4 * k), w);
+    const words = lb.title.split(' ');
+    if (z < 3.6 * k && words.length > 1) {
+      let best = null;
+      for (let i = 1; i < words.length; i++) {
+        const a = words.slice(0, i).join(' '), b = words.slice(i).join(' ');
+        g.font = font(100); const wid = Math.max(g.measureText(a).width, g.measureText(b).width);
+        if (!best || wid < best.wid) best = { a, b, wid };
+      }
+      lines = [best.a, best.b];
+      z = Math.min(fit(best.a, font, Math.round(4.4 * k), w), fit(best.b, font, Math.round(4.4 * k), w));
+      g.font = font(z);
+    }
+    lines.forEach((ln, i) => g.fillText(ln, ox + pad, oy + 8.6 * k + z * (i + 1) * 1.18));
+    if (lb.sub) {
+      g.fillStyle = '#A39D93';
+      fit(lb.sub, (zz) => `400 ${zz}px "Noto Serif SC", serif`, Math.round(2.4 * k), w);
+      g.fillText(lb.sub, ox + pad, oy + ih - 3.2 * k);
+    }
+  }
+  g.restore();
+}
+
+// a fixed pseudo-random number in [0, 1) for stop k and slot i, the same on every visit
+const hash = (k, i) => { const x = Math.sin((k + 3) * 12.9898 + i * 78.233) * 43758.5453; return x - Math.floor(x); };
+
 export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
   const sizes = data.sizes || [];
   const W = 1, PITCH = (W * MM.pitch) / MM.width, R = 0.8, D = 2.5;
@@ -73,33 +131,55 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
     const se = st.kind === 'series' ? data.series[st.si] : null;
     st.frames = se ? Array.from({ length: st.n }, (_, i) => se.from + (i % Math.max(1, se.n))) : [];
     st.len = st.frames.reduce((a, pi) => a + frameMM(sizes[pi]), 0) / MMW; // world units, without leader
-    st.S = Math.max(2.6, st.len / 2 + PITCH);
+    st.S = Math.max(2.6, st.len / 2 + PITCH * (st.kind === 'series' ? 1.7 : 1)); // room for the leader labels on the flat
   });
   const STOPS = stops.length;
   const Sx = (k) => (k < 0 || k >= STOPS ? 3.5 : stops[k].S);
 
   // centre line: a flat stretch at every stop, left to right; then the film bends away behind (right), runs back
   // right to left behind the stretches with one full twist, and bends forward again (left) into the next stop
-  const raw = [], twist = [], start = [];
+  const raw = [], twist = [], start = [], ends = [];
   const push = (x, y, z, t) => { raw.push(new THREE.Vector3(x, y, z)); twist.push(t); };
   const st = 0.02;
-  let s = 0;
+  // a stretch lies loose, the way a strip of film does on a light table: it rises and falls gently in depth along
+  // its length and sags a little between its ends. Each stop has its own wavelength and phase (fixed, from its
+  // index), the waves die out towards the bends so the bends still start level, and the amplitude stays small
+  // enough that a picture never looks bent (over one frame the arc rises less than 2 % of its width)
+  const loose = (k, x, S0) => {
+    const env = smooth(0, 1.6, S0 - Math.abs(x));
+    const lam = 5.5 + 1.7 * ((k * 0.618 + 0.3) % 1), ph = k * 2.39;
+    return [0.045 * Math.sin((2 * Math.PI * x) / (lam * 1.7) + ph * 0.7) * env, 0.12 * Math.sin((2 * Math.PI * x) / lam + ph) * env];
+  };
   for (let k = -1; k <= STOPS; k++) {
     const y0 = -k * D, S0 = Sx(k), S1 = Sx(k + 1);
-    start[k] = s;
-    for (let x = -S0; x < S0; x += st, s += st) push(x, y0, 0, 0);
+    start[k] = raw.length;
+    for (let x = -S0; x < S0; x += st) { const [dy, dz] = loose(k, x, S0); push(x, y0 + dy, dz, 0); }
+    ends[k] = raw.length - 1;
     if (k === STOPS) break;
-    const Lt = Math.PI * R, Lb = S0 + S1, tot = 2 * Lt + Lb, sg = k % 2 ? 1 : -1;
+    // each run behind has its own character, fixed by its index: one twist or two, either way round, deeper or
+    // shallower, rising or sagging, the twist bunched early or late. Whole turns only, so the film always comes back
+    // face forward; the deepest point stays in front of the plane the shadows fall on
+    const Lt = Math.PI * R, Lb = S0 + S1, tot = 2 * Lt + Lb;
+    const turns = hash(k, 0) < 0.3 ? 2 : 1, dir = hash(k, 1) < 0.5 ? -1 : 1, deep = 0.3 + 0.35 * hash(k, 2), rise = -0.08 + 0.38 * hash(k, 3);
+    const tw0 = 0.12 * hash(k, 4), tw1 = 0.84 + 0.16 * hash(k, 5);
     let acc = 0;
     const yAt = (a) => y0 - D * (0.5 - 0.5 * Math.cos((Math.PI * a) / tot)); // the drop starts and ends level
-    for (let a = 0; a < Lt; a += st, acc += st, s += st) { const th = a / R; push(S0 + R * Math.sin(th), yAt(acc), -R * (1 - Math.cos(th)), 0); }
-    for (let b = 0; b < Lb; b += st, acc += st, s += st) { const f = b / Lb; push(S0 - b, yAt(acc) + 0.22 * Math.sin(Math.PI * f), -2 * R - 0.6 * Math.sin(Math.PI * f), sg * 2 * Math.PI * smooth(0, 1, f)); }
-    for (let a = 0; a < Lt; a += st, acc += st, s += st) { const th = a / R; push(-S1 - R * Math.sin(th), yAt(acc), -2 * R + R * (1 - Math.cos(th)), 0); }
+    for (let a = 0; a < Lt; a += st, acc += st) { const th = a / R; push(S0 + R * Math.sin(th), yAt(acc), -R * (1 - Math.cos(th)), 0); }
+    for (let b = 0; b < Lb; b += st, acc += st) { const f = b / Lb; push(S0 - b, yAt(acc) + rise * Math.sin(Math.PI * f), -2 * R - deep * Math.sin(Math.PI * f), dir * turns * 2 * Math.PI * smooth(tw0, tw1, f)); }
+    for (let a = 0; a < Lt; a += st, acc += st) { const th = a / R; push(-S1 - R * Math.sin(th), yAt(acc), -2 * R + R * (1 - Math.cos(th)), 0); }
   }
-  // vertices at equal arc length, the width kept as upright as the path allows, plus the twist
+  // vertices at equal arc length, the width kept as upright as the path allows, plus the twist. Five vertices across
+  // the width: film curls a little across, its edges towards the emulsion (CUP world units, about 1 mm on 35 mm)
   const len = [0]; for (let i = 1; i < raw.length; i++) len.push(len[i - 1] + raw[i].distanceTo(raw[i - 1]));
-  const L = len[len.length - 1], SEG = 0.02, N = Math.floor(L / SEG) + 1;
-  const pos = new Float32Array(N * 6), nor = new Float32Array(N * 6), uvs = new Float32Array(N * 4), idx = [];
+  const L = len[len.length - 1], SEG = 0.02, N = Math.floor(L / SEG) + 1, M = 5, CUP = 0.028;
+  // where each flat stretch begins and ends, measured along the film (the drops between stops are longer than
+  // their plan, so this has to be the true length, or every later roll would sit off the middle of its stretch)
+  const arcA = [], arcB = [];
+  for (let k = -1; k <= STOPS; k++) { arcA[k] = len[start[k]]; arcB[k] = len[ends[k]]; }
+  const pos = new Float32Array(N * M * 3), nor = new Float32Array(N * M * 3), uvs = new Float32Array(N * M * 2), idx = [];
+  // the shadow is cast from the centre line, so each vertex also carries the centre, the across and along directions
+  const cen = new Float32Array(N * M * 3), acr = new Float32Array(N * M * 3), tng = new Float32Array(N * M * 3);
+  const nv = new THREE.Vector3();
   const up = new THREE.Vector3(0, 1, 0), T = new THREE.Vector3(), b = new THREE.Vector3(), nn = new THREE.Vector3(), p = new THREE.Vector3(), q = new THREE.Quaternion();
   let j = 0;
   for (let i = 0; i < N; i++) {
@@ -109,20 +189,33 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
     b.copy(up).addScaledVector(T, -up.dot(T)).normalize();
     b.applyQuaternion(q.setFromAxisAngle(T, twist[j] + (twist[j + 1] - twist[j]) * f));
     nn.crossVectors(T, b).normalize();
-    for (const [kk, sg] of [[0, -1], [1, 1]]) {
-      const o = (2 * i + kk) * 3;
-      pos[o] = p.x + (b.x * sg * W) / 2; pos[o + 1] = p.y + (b.y * sg * W) / 2; pos[o + 2] = p.z + (b.z * sg * W) / 2;
-      nor[o] = nn.x; nor[o + 1] = nn.y; nor[o + 2] = nn.z;
-      uvs[(2 * i + kk) * 2] = ss; uvs[(2 * i + kk) * 2 + 1] = kk;
+    for (let kk = 0; kk < M; kk++) {
+      const z = -1 + (2 * kk) / (M - 1), o = (M * i + kk) * 3, c = CUP * z * z;
+      pos[o] = p.x + (b.x * z * W) / 2 + nn.x * c; pos[o + 1] = p.y + (b.y * z * W) / 2 + nn.y * c; pos[o + 2] = p.z + (b.z * z * W) / 2 + nn.z * c;
+      nv.copy(nn).multiplyScalar(W / 2).addScaledVector(b, 2 * CUP * z).normalize();
+      nor[o] = nv.x; nor[o + 1] = nv.y; nor[o + 2] = nv.z;
+      cen[o] = p.x; cen[o + 1] = p.y; cen[o + 2] = p.z;
+      acr[o] = b.x; acr[o + 1] = b.y; acr[o + 2] = b.z;
+      tng[o] = T.x; tng[o + 1] = T.y; tng[o + 2] = T.z;
+      uvs[(M * i + kk) * 2] = ss; uvs[(M * i + kk) * 2 + 1] = kk / (M - 1);
     }
-    if (i < N - 1) idx.push(2 * i, 2 * i + 2, 2 * i + 1, 2 * i + 1, 2 * i + 2, 2 * i + 3);
+    if (i < N - 1) for (let kk = 0; kk < M - 1; kk++) { const a = M * i + kk; idx.push(a, a + M, a + 1, a + 1, a + M, a + M + 1); }
   }
   const geo = new THREE.BufferGeometry();
   geo.setIndex(idx); geo.setAttribute('position', new THREE.BufferAttribute(pos, 3)); geo.setAttribute('normal', new THREE.BufferAttribute(nor, 3)); geo.setAttribute('uv', new THREE.BufferAttribute(uvs, 2));
+  geo.setAttribute('center', new THREE.BufferAttribute(cen, 3)); geo.setAttribute('across', new THREE.BufferAttribute(acr, 3)); geo.setAttribute('tang', new THREE.BufferAttribute(tng, 3));
 
   // which picture sits where along the film, looked up by the millimetre: each series fills its own stretch in
   // order, with a frame of blank leader at each end; the bends between stops carry all the pictures in turn
   const nImg = Math.max(1, sizes.length);
+  // the leader labels sit in the atlas after the pictures: a head and a tail for every roll
+  const labels = [];
+  stops.forEach((stp) => {
+    if (stp.kind !== 'series') return;
+    const cap = stp.cap || [];
+    stp.head = sizes.length + labels.length; labels.push({ roll: cap[0] || '', title: cap[1] || '', sub: String(cap[2] || '').split(' · ')[0] });
+    stp.tail = sizes.length + labels.length; labels.push({ roll: cap[0] || '', tail: true });
+  });
   const Lmm = L * MMW, frames = [];
   let cur = 0, cyc = 0;
   const put = (photo, len) => { frames.push([photo, cur, len, photo === 65535 ? 0 : len - 2]); cur += len; };
@@ -132,11 +225,16 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
   };
   stops.forEach((stp, k) => {
     if (stp.kind !== 'series') return;
-    const c0 = (start[k] + stp.S) * MMW, a0 = c0 - (stp.len * MMW) / 2;
-    fillTo(a0 - MM.pitch);
-    put(65535, Math.max(0, a0 - cur));
+    const c0 = ((arcA[k] + arcB[k]) / 2) * MMW, a0 = c0 - (stp.len * MMW) / 2;
+    // pictures run on the bends; the flat of a roll starts with plain leader, then its label
+    fillTo(Math.min(arcA[k] * MMW, a0 - MM.pitch));
+    const gap = a0 - cur;
+    if (gap >= MM.pitch - 0.5) { if (gap > MM.pitch) put(65535, gap - MM.pitch); put(stp.head, MM.pitch); } else if (gap > 0) put(65535, gap);
     for (const pi of stp.frames) put(pi, frameMM(sizes[pi]));
-    put(65535, MM.pitch);
+    put(stp.tail, MM.pitch);
+    // plain leader after the tail label, up to where the film bends away
+    const flatEnd = arcB[k] * MMW;
+    if (flatEnd > cur) put(65535, flatEnd - cur);
   });
   fillTo(Lmm + 4);
   const FW = 4096, NB = Math.ceil(Lmm) + 8, FH = Math.ceil(NB / FW);
@@ -155,7 +253,7 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
   const tan = Math.tan(THREE.MathUtils.degToRad(camera.fov / 2));
   const visW = clamp(camera.aspect * 2.9, 2.3, 4.8), d0 = visW / 2 / (tan * camera.aspect);
   const pxPerMM = renderer.getDrawingBufferSize(new THREE.Vector2()).x / (visW * MMW);
-  const atlas = filmAtlas(sizes, imgs, renderer, data.edge, clamp(Math.ceil(pxPerMM * 1.1), 8, 14));
+  const atlas = filmAtlas(sizes, imgs, renderer, data.edge, clamp(Math.ceil(pxPerMM * 1.1), 8, 14), labels);
   const mat = new THREE.ShaderMaterial({
     side: THREE.DoubleSide,
     alphaToCoverage: true,
@@ -163,12 +261,14 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
       map: { value: atlas.tex }, fmap: { value: fmap }, uFW: { value: FW }, uFH: { value: FH },
       uCols: { value: atlas.cols }, uK: { value: atlas.k }, uCell: { value: new THREE.Vector2(atlas.CW, atlas.CH) }, uAtlas: { value: new THREE.Vector2(atlas.AW, atlas.AH) },
       uLight: { value: new THREE.Vector3(-0.45, 0.75, 0.6).normalize() }, uFog: { value: fog }, uNear: { value: 6 }, uFar: { value: 16 },
+      uFocus: { value: new THREE.Vector3() }, uFocusAmt: { value: 0 }, uSigma: { value: 1 },
     },
     vertexShader: PRINT_VS,
     fragmentShader: `
       uniform sampler2D map; uniform sampler2D fmap; uniform float uFW; uniform float uFH;
       uniform float uCols; uniform float uK; uniform vec2 uCell; uniform vec2 uAtlas;
       uniform vec3 uLight; uniform vec3 uFog; uniform float uNear; uniform float uFar;
+      uniform vec3 uFocus; uniform float uFocusAmt; uniform float uSigma;
       varying vec2 vUv; varying vec3 vN; varying vec3 vW;
       const vec3 BASE = vec3(0.165, 0.13, 0.105), RIM = vec3(0.07, 0.055, 0.043);
       void main() {
@@ -207,27 +307,73 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
         if (!gl_FrontFacing) cl *= vec3(0.86, 0.70, 0.52);  // seen through the amber film base
         cl += vec3(1.0, 0.72, 0.42) * pow(max(dot(n, normalize(uLight + V)), 0.0), 48.0) * 0.5;
         float d = clamp((distance(cameraPosition, vW) - uNear) / (uFar - uNear), 0.0, 1.0);
+        // at a stop, the stretch is lit like a loupe over a light table: the frame in the middle a little brighter,
+        // the frames towards the sides a little darker; the runs behind are left as they are
+        float onStretch = (1.0 - smoothstep(0.6, 1.2, abs(vW.y - uFocus.y))) * (1.0 - smoothstep(0.4, 0.9, abs(vW.z - uFocus.z)));
+        float dx = vW.x - uFocus.x;
+        cl *= mix(1.0, 0.8 + 0.26 * exp(-dx * dx / (uSigma * uSigma)), uFocusAmt * onStretch);
         gl_FragColor = vec4(mix(cl, uFog, d * 0.5), alpha);
       }`,
   });
   const mesh = new THREE.Mesh(geo, mat);
   scene.add(mesh);
 
+  // a soft shadow on the page behind: the film is projected along the light onto a plane just behind its deepest
+  // point, and the shadow widens and fades with the distance it falls, sharp where the film runs near the page,
+  // faint and broad under the stretch in front (a penumbra grows with distance, here linearly)
+  const SH = { L: new THREE.Vector3(-0.15, 0.25, 1).normalize(), zp: -2.35 };
+  const shadowMat = new THREE.ShaderMaterial({
+    transparent: true, depthWrite: false,
+    uniforms: { uL: { value: SH.L }, uZp: { value: SH.zp }, uW: { value: W }, uCol: { value: new THREE.Color(0x2a1f17) } },
+    vertexShader: `
+      attribute vec3 center; attribute vec3 across; attribute vec3 tang;
+      uniform vec3 uL; uniform float uZp; uniform float uW;
+      varying float vZ; varying float vCore; varying float vStr;
+      void main() {
+        float zeta = uv.y * 2.0 - 1.0;
+        float tt = max(0.0, (center.z - uZp) / uL.z);
+        vec2 c = center.xy - uL.xy * tt;
+        vec2 t2 = tang.xy - uL.xy * (tang.z / uL.z); float tl = length(t2); t2 = tl > 1e-4 ? t2 / tl : vec2(1.0, 0.0);
+        vec2 perp = vec2(-t2.y, t2.x);
+        vec2 ac = across.xy - uL.xy * (across.z / uL.z);
+        float hw = abs(dot(ac, perp)) * uW * 0.5, blur = 0.05 + 0.32 * tt;
+        vZ = zeta; vCore = hw / (hw + blur); vStr = 0.5 / (1.0 + 0.9 * tt);
+        gl_Position = projectionMatrix * viewMatrix * vec4(c + perp * zeta * (hw + blur), uZp, 1.0);
+      }`,
+    fragmentShader: `
+      uniform vec3 uCol; varying float vZ; varying float vCore; varying float vStr;
+      void main() { gl_FragColor = vec4(uCol, vStr * (1.0 - smoothstep(vCore * 0.3, 1.0, abs(vZ)))); }`,
+  });
+  const shadow = new THREE.Mesh(geo, shadowMat);
+  shadow.renderOrder = -1; shadow.frustumCulled = false;
+  scene.add(shadow);
+
   // the take: at each stop the camera travels along the stretch, then pulls back and drops to the next one.
   // A stop lasts as long as its stretch is wider than the view, so twenty pictures take longer than six
-  const reach = stops.map((stp) => Math.max(0, stp.len / 2 - visW * 0.42));
+  // the travel starts with the head label in view and ends once the tail label is in: from -reachA to +reachB
+  const ext = (stp, e) => Math.max(0, stp.len / 2 + (stp.kind === 'series' ? PITCH * e : 0) - visW * 0.42);
+  const reachA = stops.map((stp) => ext(stp, camera.aspect < 0.8 ? 1.5 : 1.25)), reachB = stops.map((stp) => ext(stp, 0.9));
   // On a phone a screen of scrolling is a short thumb flick, so the take moves faster there: the drop between two
   // rolls takes 0.65 of a screen instead of a whole one, and each roll is held a little shorter.
   const phone = camera.aspect < 0.8;
   const MOVE = phone ? 0.65 : 1, HOLD0 = phone ? 0.4 : 0.55;
-  const hold = reach.map((r) => HOLD0 + ((2 * r) / visW) * 0.5);   // half a screen of scrolling per view width of film
+  const hold = reachA.map((r, k) => HOLD0 + ((r + reachB[k]) / visW) * 0.5);   // half a screen of scrolling per view width of film
   const segs = [];
   let tot = 0;
   stops.forEach((_, k) => {
     segs.push({ k, kind: 'hold', a: tot, b: tot + hold[k] }); tot += hold[k];
     if (k < STOPS - 1) { segs.push({ k, kind: 'move', a: tot, b: tot + MOVE }); tot += MOVE; }
   });
-  const station = new Follow(0.8, 1, 0), panS = new Follow(0.9, 1, -reach[0]);
+  const station = new Follow(0.8, 1, 0), panS = new Follow(0.9, 1, -reachA[0]);
+  // at a stop the camera no longer faces the film square on: it stands a little to one side and above, the side
+  // changing from roll to roll, and the horizon leans a degree or two the same way. A slow drift, the sum of two
+  // incommensurate sines on the clock, keeps it from standing perfectly still (deterministic, a few millimetres)
+  const YAW = phone ? 0.11 : 0.17, TILT = 0.09, ROLL = 0.028;
+  // how far the view looks below the film (a share of the visible height), and the loupe's width (about one frame)
+  const LIFT = phone ? 0 : 0.085 * (visW / camera.aspect);
+  mat.uniforms.uSigma.value = phone ? 0.75 : 1.15;
+  const sideOf = (k) => (k % 2 ? 1 : -1);
+  let clock = 0;
   // where each roll begins on the scroll, for the roll marks of the progress rail
   const marks = segs.filter((sg) => sg.kind === 'hold' && stops[sg.k].kind === 'series')
     .map((sg) => ({ label: stops[sg.k].cap?.[1] || '', at: sg.a / tot }));
@@ -241,17 +387,27 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
       for (const x of segs) if (t <= x.b) { sg = x; break; }
       const f = clamp((t - sg.a) / (sg.b - sg.a || 1), 0, 1);
       let tSig, tPan;
-      if (sg.kind === 'hold') { tSig = sg.k; tPan = -reach[sg.k] + 2 * reach[sg.k] * smooth(0, 1, f); } else { const e = smooth(0, 1, f); tSig = sg.k + e; tPan = reach[sg.k] + (-reach[sg.k + 1] - reach[sg.k]) * e; }
+      // the sideways travel finishes early in a drop and the camera rests a moment at the head of a roll, so the
+      // spring that follows it has caught up and the roll's label is in view before the pan sets off along the frames
+      if (sg.kind === 'hold') { tSig = sg.k; tPan = -reachA[sg.k] + (reachA[sg.k] + reachB[sg.k]) * smooth(0.12, 1, f); } else { const e = smooth(0, 1, f); tSig = sg.k + e; tPan = reachB[sg.k] + (-reachA[sg.k + 1] - reachB[sg.k]) * smooth(0, 0.75, f); }
       const sig = station.step(tSig, dt), pan = panS.step(tPan, dt);
-      const fr = sig - Math.floor(sig), bump = Math.sin(Math.PI * fr) ** 2, side = Math.floor(sig) % 2 ? 1 : -1;
-      const dist = d0 * (1 + 1.1 * bump), yaw = 0.42 * bump * side;
+      const k0 = Math.floor(sig), fr = sig - k0, bump = Math.sin(Math.PI * fr) ** 2, side = k0 % 2 ? 1 : -1;
+      const lean = sideOf(k0) + (sideOf(k0 + 1) - sideOf(k0)) * smooth(0, 1, fr);   // -1 … 1 between two stops
+      clock += dt;
+      const dx = 0.006 * (Math.sin(clock * 0.53) + 0.6 * Math.sin(clock * 1.21 + 1.3));
+      const dy = 0.005 * (Math.sin(clock * 0.71 + 2.1) + 0.6 * Math.sin(clock * 1.37));
+      const dist = d0 * (1 + 1.1 * bump), yaw = 0.42 * bump * side + YAW * lean * (1 - bump);
       const ty = -sig * D - 0.25 * bump, tz = -0.8 * bump;
-      camera.position.set(pan + dist * Math.sin(yaw), ty + 0.12 + 1.1 * bump, tz + dist * Math.cos(yaw));
-      camera.lookAt(pan, ty, tz);
+      camera.position.set(pan + dist * Math.sin(yaw) + dx, ty + 0.12 + 1.1 * bump + dist * TILT * (1 - bump) + dy, tz + dist * Math.cos(yaw));
+      const roll = -ROLL * lean * (1 - bump) + 0.0015 * Math.sin(clock * 0.9 + 0.4);
+      camera.up.set(Math.sin(roll), Math.cos(roll), 0);
+      // the roll's caption sits in the lower left; aim a little below the film so the stretch rides above it
+      camera.lookAt(pan, ty - LIFT * (1 - bump), tz);
       mat.uniforms.uNear.value = d0 + 0.6; mat.uniforms.uFar.value = dist + 5;
+      mat.uniforms.uFocus.value.set(pan, ty, tz); mat.uniforms.uFocusAmt.value = (1 - bump) ** 2;
       const near = Math.round(sig);
       return { cap: stops[clamp(near, 0, STOPS - 1)].cap, show: 1 - clamp(Math.abs(sig - near) * 3, 0, 1) };
     },
-    dispose() { scene.remove(mesh); geo.dispose(); mat.dispose(); fmap.dispose(); atlas.dispose(); },
+    dispose() { scene.remove(mesh, shadow); geo.dispose(); mat.dispose(); shadowMat.dispose(); fmap.dispose(); atlas.dispose(); camera.up.set(0, 1, 0); },
   };
 }
