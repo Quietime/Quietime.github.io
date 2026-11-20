@@ -274,10 +274,9 @@ ${rest.length ? `<ol class="film-cards">${rest.map((f) => `<li class="film-card"
     return `${head({ key: 'index', title: '', ld })}
 <main id="main" class="home">
 <section class="hero" data-hero aria-label="${esc(site.title)}">
-<p class="h-edge" data-hero-edge>${esc(site.edgeCode)} ▸ 0${sky.city ? ` · ${esc(sky.city)}` : ''}</p>
+<p class="h-edge" data-hero-edge>${esc(sky.city || '')}</p>
 <h1 class="h-title" data-hero-title aria-label="${esc(site.name)} ${esc(site.nameZh)}">${esc(title)}</h1>
-<div class="h-row"><p class="h-zh" data-hero-zh aria-hidden="true"><span class="h-seal" data-hero-seal><i>静</i><i>夜</i></span>${esc(site.nameZh)}</p><p class="h-en">${esc(t.scene.heroEn)}</p></div>
-<p class="h-st">${site.statement.map((l) => esc(l)).join('<br>')}</p>
+<div class="h-row"><span class="h-seal" data-hero-seal aria-hidden="true"><i>静</i><i>夜</i></span><p class="h-st">${site.statement.map((l) => esc(l)).join('<br>')}</p></div>
 <p class="h-hint" aria-hidden="true">${esc(t.scene.scroll)} ↓</p>
 </section>
 <div class="run" data-run>

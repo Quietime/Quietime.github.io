@@ -11,7 +11,7 @@ import { studioWeather } from './sky/weather.js';
 
 const TEXT = 'QUIETIME', FONT = (px) => `400 ${px}px Anton, Impact, "Arial Narrow", sans-serif`;
 
-export default async function hero(root, { reduce, sky = {}, words = {}, edgeCode = 'QUIETIME 400' }) {
+export default async function hero(root, { reduce, sky = {}, words = {} }) {
   const title = root.querySelector('[data-hero-title]');
   if (!title) return;
   const edgeEl = root.querySelector('[data-hero-edge]');
@@ -117,7 +117,7 @@ export default async function hero(root, { reduce, sky = {}, words = {}, edgeCod
     const t = (now - t0) / 1000;
     if (now - lastParams > 1000) {
       P = params(); lastParams = now;
-      if (edgeEl) edgeEl.textContent = `${edgeCode} ▸ ${clock()} · ${sky.city ? `${sky.city} · ` : ''}${nameOf(P)}`;
+      if (edgeEl) edgeEl.textContent = `${clock()} · ${sky.city ? `${sky.city} · ` : ''}${nameOf(P)}`;
     }
     if (now - lastBoil > 110) { boilIdx = (boilIdx + 1) % 3; lastBoil = now; }
     if (stepLetters(dt)) pushed = true;

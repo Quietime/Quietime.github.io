@@ -43,8 +43,8 @@ export const UI = {
       cloud: '多云', fog: '雾', rain: '有雨', snow: '落雪', join: '{p} · {w}',
     },
     scene: {
-      heroEn: '摄影与影像', head: '卷头', headSub: '胶片会在每个系列停下来，铺平给你看。',
-      darkroom: '暗房', darkroomSub: '照片还没干，一路往里走。', prints: (n) => `${n} 张`, scroll: '向下滚动', writeUs: '写信约拍',
+      head: '卷头', headSub: '胶片会在每个系列停下来，铺平给你看。',
+      darkroom: '暗房', darkroomSub: '往里走，一卷一卷看。', prints: (n) => `${n} 张`, scroll: '向下滚动', writeUs: '写信约拍',
     },
     nf: { title: '这一格是空的。', text: '你要找的页面不在这卷胶片里。', back: '回到第一格' },
   },
@@ -86,7 +86,7 @@ export const UI = {
       cloud: 'cloudy', fog: 'fog', rain: 'rain', snow: 'snow', join: '{p}, {w}',
     },
     scene: {
-      heroEn: 'photography & moving image', head: 'Leader', headSub: 'The film stops at every series and lies flat for you.',
+      head: 'Leader', headSub: 'The film stops at every series and lies flat for you.',
       darkroom: 'Darkroom', darkroomSub: 'The prints are still wet. Walk on in.', prints: (n) => `${n} prints`, scroll: 'Scroll', writeUs: 'Write to book a shoot',
     },
     nf: { title: 'This frame is blank.', text: 'The page you were looking for never made it onto this roll.', back: 'Back to the first frame' },
