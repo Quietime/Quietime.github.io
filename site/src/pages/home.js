@@ -12,12 +12,12 @@ export default function home() {
   const data = sceneData();
   const card = $('[data-hero]');
   const sky = CFG.sky || {};
-  if (card) heroCard(card, { reduce, sky, words: sky.words || {}, edgeCode: sky.edgeCode });
+  if (card) heroCard(card, { reduce, sky, words: sky.words || {} });
   if (!reduce) {
     gsap.fromTo('.h-edge', { opacity: 0 }, { opacity: 1, duration: 0.6, ease: 'springCrit', delay: 0.2 });
     // the seal is pressed: it lands a little large and settles, then the name and the lines appear
     gsap.fromTo('[data-hero-seal]', { opacity: 0, scale: 1.18 }, { opacity: 1, scale: 1, duration: 0.55, ease: 'springFirm', delay: 2.3 });
-    gsap.fromTo('.h-zh, .h-row .h-en, .h-st', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 1.1, ease: 'springFirm', delay: 2.45, stagger: 0.1 });
+    gsap.fromTo('.h-st', { opacity: 0, y: 10 }, { opacity: 1, y: 0, duration: 1.1, ease: 'springFirm', delay: 2.45, stagger: 0.1 });
     scrubRise($$('.h-sec'));
   }
   films();

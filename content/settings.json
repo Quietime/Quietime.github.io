@@ -5,8 +5,8 @@
   "edge_code": "QUIETIME 400",
   "description_zh": "Quietime 静夜工作室，摄影作品、影像与委托拍摄。",
   "description_en": "Quietime is a small photography studio. We make personal series, short films and commissioned work, and we take our time over them.",
-  "statement_zh": "夜色替我们收起喧哗，\n剩下的光，才肯慢慢落进底片里。",
-  "statement_en": "Night puts the noise of the day away for us,\nand the light that is left settles slowly onto the film.",
+  "statement_zh": "在苏州拍人像，也去演唱会现场录整场。",
+  "statement_en": "Portraits in Suzhou, and whole concerts filmed from the crowd.",
   "wechat": "",
   "email": "quietime@foxmail.com",
   "copyright": "Copyright © Quietime Photography. All rights reserved.",
@@ -33,28 +33,28 @@
       "url": ""
     }
   ],
-  "home_teaser_zh": "我们拍人，也拍人离开之后留下的光。委托拍摄、商业合作与作品授权，都可以从一封邮件开始。",
-  "home_teaser_en": "We photograph people, and the light they leave behind when they go. Commissions, brand work and licensing can all begin with a short letter.",
-  "about_intro_zh": "Quietime 静夜工作室相信，好的照片多半不是抓住的，而是等来的。我们习惯在人声退去之后才开始工作，给光一点时间，也给被拍的人一点时间。\n\n工作室承接人像、空间与品牌委托，也持续进行自己的长期系列。每一次拍摄，我们都希望把那一刻真实的温度一起带回来。",
-  "about_intro_en": "Quietime believes good photographs are rarely caught. Mostly they are waited for. We tend to start once the voices have drifted off, giving the light some time, and the people in front of the camera some time as well.\n\nThe studio takes on portraits, places and brand commissions, and keeps working on long series of its own. Each time, we hope to bring back the warmth that was really in the room.",
+  "home_teaser_zh": "约拍，或者想用这里的照片和录像，都可以写信来。",
+  "home_teaser_en": "For a shoot, or to use a photograph or a film from here, write to us.",
+  "about_intro_zh": "静夜工作室在苏州。\n\n网站上的照片和演唱会录像，都是工作室自己拍的。照片多是人像，拍在旧园里、树林里和夜里；也有一卷是城市的天色。录像是火星演唱会的全程、直拍和双机位混剪。\n\n约拍和作品授权，都可以写信来谈。",
+  "about_intro_en": "Quietime is a studio in Suzhou.\n\nThe photographs and concert films on this site were all made here. Most of the photographs are portraits, taken in an old garden, among trees and at night, and one roll is the city and its weather. The films are whole concerts, single camera close ups and two camera cuts.\n\nWrite to us about a shoot or about using the work.",
   "services": [
     {
       "title_zh": "人像与家庭",
       "title_en": "Portraits and families",
-      "text_zh": "在熟悉的地方慢慢拍，不赶时间。",
-      "text_en": "Slow sessions in a place you already know well."
+      "text_zh": "在你熟悉的地方拍。",
+      "text_en": "In a place you already know."
     },
     {
       "title_zh": "空间与建筑",
       "title_en": "Spaces and architecture",
-      "text_zh": "记录一个地方在不同光线里的样子。",
-      "text_en": "How a place looks as the light moves through its day."
+      "text_zh": "同一个地方，不同时候的光线。",
+      "text_en": "One place, in the light of different hours."
     },
     {
       "title_zh": "品牌与商业",
       "title_en": "Brands and commerce",
-      "text_zh": "为产品和团队拍摄有呼吸感的画面。",
-      "text_en": "Products and teams, photographed with room to breathe."
+      "text_zh": "产品、团队和活动的照片与视频。",
+      "text_en": "Photographs and video of products, teams and events."
     },
     {
       "title_zh": "授权与展览",
@@ -70,8 +70,8 @@
     {
       "title_zh": "聊一聊",
       "title_en": "Talk",
-      "text_zh": "说说你想留下什么样的画面，我们一起看看参考，确定风格与地点。",
-      "text_en": "Tell us what you would like to keep. We look at references together and settle on a mood and a place."
+      "text_zh": "说说想拍什么，一起看参考，定下风格和地点。",
+      "text_en": "Tell us what you want to shoot. We look at references together and settle the style and the place."
     },
     {
       "title_zh": "定方案",
@@ -82,8 +82,8 @@
     {
       "title_zh": "拍摄",
       "title_en": "Shoot",
-      "text_zh": "按约定的时间到场，不赶时间，让光和人都慢下来。",
-      "text_en": "We arrive on time and then take our time, until the light and everyone in it have slowed down."
+      "text_zh": "按约定的时间到场拍摄。",
+      "text_en": "We arrive at the agreed time and shoot."
     },
     {
       "title_zh": "选片与交付",

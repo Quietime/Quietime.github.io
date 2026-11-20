@@ -135,9 +135,16 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
   });
   const STOPS = stops.length;
   const Sx = (k) => (k < 0 || k >= STOPS ? 3.5 : stops[k].S);
+  // the rolls are read back and forth, like a field being ploughed: roll 1 left to right, roll 2 right to left, and so
+  // on. Each stretch is placed so that it ends where the next one starts reading (right ends lined up after a roll
+  // read rightwards, left ends after one read leftwards), so going from one roll to the next is a drop straight down,
+  // never a sweep back across the screen
+  const readDir = (k) => ((((k % 2) + 2) % 2) === 1 ? 1 : -1);
+  const cx = { [-1]: 0 };
+  for (let k = -1; k < STOPS; k++) cx[k + 1] = cx[k] + readDir(k) * (Sx(k) - Sx(k + 1));
 
-  // centre line: a flat stretch at every stop, left to right; then the film bends away behind (right), runs back
-  // right to left behind the stretches with one full twist, and bends forward again (left) into the next stop
+  // centre line: a flat stretch at every stop, the film running left to right; then it bends away behind (right),
+  // runs back right to left behind the stretches with whole twists, and bends forward again (left) into the next stop
   const raw = [], twist = [], start = [], ends = [];
   const push = (x, y, z, t) => { raw.push(new THREE.Vector3(x, y, z)); twist.push(t); };
   const st = 0.02;
@@ -151,22 +158,23 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
     return [0.045 * Math.sin((2 * Math.PI * x) / (lam * 1.7) + ph * 0.7) * env, 0.12 * Math.sin((2 * Math.PI * x) / lam + ph) * env];
   };
   for (let k = -1; k <= STOPS; k++) {
-    const y0 = -k * D, S0 = Sx(k), S1 = Sx(k + 1);
+    const y0 = -k * D, S0 = Sx(k), S1 = Sx(k + 1), c0 = cx[k];
     start[k] = raw.length;
-    for (let x = -S0; x < S0; x += st) { const [dy, dz] = loose(k, x, S0); push(x, y0 + dy, dz, 0); }
+    for (let x = -S0; x < S0; x += st) { const [dy, dz] = loose(k, x, S0); push(c0 + x, y0 + dy, dz, 0); }
     ends[k] = raw.length - 1;
     if (k === STOPS) break;
     // each run behind has its own character, fixed by its index: one twist or two, either way round, deeper or
     // shallower, rising or sagging, the twist bunched early or late. Whole turns only, so the film always comes back
     // face forward; the deepest point stays in front of the plane the shadows fall on
-    const Lt = Math.PI * R, Lb = S0 + S1, tot = 2 * Lt + Lb;
+    const xr = c0 + S0, xl = cx[k + 1] - S1;   // where the film leaves this stretch and where it joins the next
+    const Lt = Math.PI * R, Lb = xr - xl, tot = 2 * Lt + Lb;
     const turns = hash(k, 0) < 0.3 ? 2 : 1, dir = hash(k, 1) < 0.5 ? -1 : 1, deep = 0.3 + 0.35 * hash(k, 2), rise = -0.08 + 0.38 * hash(k, 3);
     const tw0 = 0.12 * hash(k, 4), tw1 = 0.84 + 0.16 * hash(k, 5);
     let acc = 0;
     const yAt = (a) => y0 - D * (0.5 - 0.5 * Math.cos((Math.PI * a) / tot)); // the drop starts and ends level
-    for (let a = 0; a < Lt; a += st, acc += st) { const th = a / R; push(S0 + R * Math.sin(th), yAt(acc), -R * (1 - Math.cos(th)), 0); }
-    for (let b = 0; b < Lb; b += st, acc += st) { const f = b / Lb; push(S0 - b, yAt(acc) + rise * Math.sin(Math.PI * f), -2 * R - deep * Math.sin(Math.PI * f), dir * turns * 2 * Math.PI * smooth(tw0, tw1, f)); }
-    for (let a = 0; a < Lt; a += st, acc += st) { const th = a / R; push(-S1 - R * Math.sin(th), yAt(acc), -2 * R + R * (1 - Math.cos(th)), 0); }
+    for (let a = 0; a < Lt; a += st, acc += st) { const th = a / R; push(xr + R * Math.sin(th), yAt(acc), -R * (1 - Math.cos(th)), 0); }
+    for (let b = 0; b < Lb; b += st, acc += st) { const f = b / Lb; push(xr - b, yAt(acc) + rise * Math.sin(Math.PI * f), -2 * R - deep * Math.sin(Math.PI * f), dir * turns * 2 * Math.PI * smooth(tw0, tw1, f)); }
+    for (let a = 0; a < Lt; a += st, acc += st) { const th = a / R; push(xl - R * Math.sin(th), yAt(acc), -2 * R + R * (1 - Math.cos(th)), 0); }
   }
   // vertices at equal arc length, the width kept as upright as the path allows, plus the twist. Five vertices across
   // the width: film curls a little across, its edges towards the emulsion (CUP world units, about 1 mm on 35 mm)
@@ -227,11 +235,13 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
     if (stp.kind !== 'series') return;
     const c0 = ((arcA[k] + arcB[k]) / 2) * MMW, a0 = c0 - (stp.len * MMW) / 2;
     // pictures run on the bends; the flat of a roll starts with plain leader, then its label
+    // a roll read right to left lies the other way round on the film: tail label, last frame … first frame, head label
+    const rtl = readDir(k) < 0, first = rtl ? stp.tail : stp.head, last = rtl ? stp.head : stp.tail;
     fillTo(Math.min(arcA[k] * MMW, a0 - MM.pitch));
     const gap = a0 - cur;
-    if (gap >= MM.pitch - 0.5) { if (gap > MM.pitch) put(65535, gap - MM.pitch); put(stp.head, MM.pitch); } else if (gap > 0) put(65535, gap);
-    for (const pi of stp.frames) put(pi, frameMM(sizes[pi]));
-    put(stp.tail, MM.pitch);
+    if (gap >= MM.pitch - 0.5) { if (gap > MM.pitch) put(65535, gap - MM.pitch); put(first, MM.pitch); } else if (gap > 0) put(65535, gap);
+    for (const pi of rtl ? [...stp.frames].reverse() : stp.frames) put(pi, frameMM(sizes[pi]));
+    put(last, MM.pitch);
     // plain leader after the tail label, up to where the film bends away
     const flatEnd = arcB[k] * MMW;
     if (flatEnd > cur) put(65535, flatEnd - cur);
@@ -356,7 +366,7 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
   // On a phone a screen of scrolling is a short thumb flick, so the take moves faster there: the drop between two
   // rolls takes 0.65 of a screen instead of a whole one, and each roll is held a little shorter.
   const phone = camera.aspect < 0.8;
-  const MOVE = phone ? 0.65 : 1, HOLD0 = phone ? 0.4 : 0.55;
+  const MOVE = phone ? 0.75 : 1, HOLD0 = phone ? 0.4 : 0.55;
   const hold = reachA.map((r, k) => HOLD0 + ((r + reachB[k]) / visW) * 0.5);   // half a screen of scrolling per view width of film
   const segs = [];
   let tot = 0;
@@ -364,16 +374,15 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
     segs.push({ k, kind: 'hold', a: tot, b: tot + hold[k] }); tot += hold[k];
     if (k < STOPS - 1) { segs.push({ k, kind: 'move', a: tot, b: tot + MOVE }); tot += MOVE; }
   });
-  const station = new Follow(0.8, 1, 0), panS = new Follow(0.9, 1, -reachA[0]);
-  // at a stop the camera no longer faces the film square on: it stands a little to one side and above, the side
-  // changing from roll to roll, and the horizon leans a degree or two the same way. A slow drift, the sum of two
-  // incommensurate sines on the clock, keeps it from standing perfectly still (deterministic, a few millimetres)
-  const YAW = phone ? 0.11 : 0.17, TILT = 0.09, ROLL = 0.028;
+  const panAt = (k, e) => cx[k] + readDir(k) * (-reachA[k] + (reachA[k] + reachB[k]) * e);  // e: 0 head … 1 tail
+  const station = new Follow(0.8, 1, 0), panS = new Follow(0.9, 1, panAt(0, 0));
+  // at a stop the camera stands a little to one side and above the film, always the same side, and the horizon
+  // stays level. Going from one roll to the next it only drops and draws back a little: no turning, no tilting and
+  // no drift of its own, since a camera that rotates while the reader scrolls is what makes people feel sick
+  const YAW = phone ? 0.08 : 0.12, TILT = 0.09;
   // how far the view looks below the film (a share of the visible height), and the loupe's width (about one frame)
   const LIFT = phone ? 0 : 0.085 * (visW / camera.aspect);
   mat.uniforms.uSigma.value = phone ? 0.75 : 1.15;
-  const sideOf = (k) => (k % 2 ? 1 : -1);
-  let clock = 0;
   // where each roll begins on the scroll, for the roll marks of the progress rail
   const marks = segs.filter((sg) => sg.kind === 'hold' && stops[sg.k].kind === 'series')
     .map((sg) => ({ label: stops[sg.k].cap?.[1] || '', at: sg.a / tot }));
@@ -389,18 +398,13 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
       let tSig, tPan;
       // the sideways travel finishes early in a drop and the camera rests a moment at the head of a roll, so the
       // spring that follows it has caught up and the roll's label is in view before the pan sets off along the frames
-      if (sg.kind === 'hold') { tSig = sg.k; tPan = -reachA[sg.k] + (reachA[sg.k] + reachB[sg.k]) * smooth(0.12, 1, f); } else { const e = smooth(0, 1, f); tSig = sg.k + e; tPan = reachB[sg.k] + (-reachA[sg.k + 1] - reachB[sg.k]) * smooth(0, 0.75, f); }
+      if (sg.kind === 'hold') { tSig = sg.k; tPan = panAt(sg.k, smooth(0.12, 1, f)); } else { const e = smooth(0, 1, f); tSig = sg.k + e; tPan = panAt(sg.k, 1) + (panAt(sg.k + 1, 0) - panAt(sg.k, 1)) * smooth(0, 0.75, f); }
       const sig = station.step(tSig, dt), pan = panS.step(tPan, dt);
-      const k0 = Math.floor(sig), fr = sig - k0, bump = Math.sin(Math.PI * fr) ** 2, side = k0 % 2 ? 1 : -1;
-      const lean = sideOf(k0) + (sideOf(k0 + 1) - sideOf(k0)) * smooth(0, 1, fr);   // -1 … 1 between two stops
-      clock += dt;
-      const dx = 0.006 * (Math.sin(clock * 0.53) + 0.6 * Math.sin(clock * 1.21 + 1.3));
-      const dy = 0.005 * (Math.sin(clock * 0.71 + 2.1) + 0.6 * Math.sin(clock * 1.37));
-      const dist = d0 * (1 + 1.1 * bump), yaw = 0.42 * bump * side + YAW * lean * (1 - bump);
-      const ty = -sig * D - 0.25 * bump, tz = -0.8 * bump;
-      camera.position.set(pan + dist * Math.sin(yaw) + dx, ty + 0.12 + 1.1 * bump + dist * TILT * (1 - bump) + dy, tz + dist * Math.cos(yaw));
-      const roll = -ROLL * lean * (1 - bump) + 0.0015 * Math.sin(clock * 0.9 + 0.4);
-      camera.up.set(Math.sin(roll), Math.cos(roll), 0);
+      const fr = sig - Math.floor(sig), bump = Math.sin(Math.PI * fr) ** 2;
+      const dist = d0 * (1 + 0.55 * bump);
+      const ty = -sig * D - 0.25 * bump, tz = -0.5 * bump;
+      camera.position.set(pan + dist * Math.sin(YAW), ty + 0.12 + 0.5 * bump + dist * TILT, tz + dist * Math.cos(YAW));
+      camera.up.set(0, 1, 0);
       // the roll's caption sits in the lower left; aim a little below the film so the stretch rides above it
       camera.lookAt(pan, ty - LIFT * (1 - bump), tz);
       mat.uniforms.uNear.value = d0 + 0.6; mat.uniforms.uFar.value = dist + 5;
