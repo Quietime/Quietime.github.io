@@ -39,28 +39,16 @@
   "about_intro_en": "Quietime is a studio in Suzhou.\n\nThe photographs and concert films on this site were all made here. Most of the photographs are portraits, taken in an old garden, among trees and at night, and one roll is the city and its weather. The films are whole concerts, single camera close ups and two camera cuts.\n\nWrite to us about a shoot or about using the work.",
   "services": [
     {
-      "title_zh": "人像与家庭",
-      "title_en": "Portraits and families",
+      "title_zh": "人像",
+      "title_en": "Portraits",
       "text_zh": "在你熟悉的地方拍。",
       "text_en": "In a place you already know."
     },
     {
-      "title_zh": "空间与建筑",
-      "title_en": "Spaces and architecture",
-      "text_zh": "同一个地方，不同时候的光线。",
-      "text_en": "One place, in the light of different hours."
-    },
-    {
-      "title_zh": "品牌与商业",
-      "title_en": "Brands and commerce",
-      "text_zh": "产品、团队和活动的照片与视频。",
-      "text_en": "Photographs and video of products, teams and events."
-    },
-    {
-      "title_zh": "授权与展览",
-      "title_en": "Licensing and exhibitions",
-      "text_zh": "作品授权、画册与展览合作。",
-      "text_en": "Prints, books, exhibitions and image licensing."
+      "title_zh": "作品授权",
+      "title_en": "Licensing",
+      "text_zh": "网站上的照片和录像，可以授权使用。",
+      "text_en": "The photographs and films on this site can be licensed."
     }
   ],
   "contact_lede_zh": "告诉我们想拍什么、在哪里、大概什么时候。我们会在两天内回复，先聊想法，再谈方案。",
