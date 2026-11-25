@@ -367,7 +367,7 @@ export function spineScene({ renderer, scene, camera, data, imgs, fog }) {
   // rolls takes 0.65 of a screen instead of a whole one, and each roll is held a little shorter.
   const phone = camera.aspect < 0.8;
   const MOVE = phone ? 0.75 : 1, HOLD0 = phone ? 0.4 : 0.55;
-  const hold = reachA.map((r, k) => HOLD0 + ((r + reachB[k]) / visW) * 0.5);   // half a screen of scrolling per view width of film
+  const hold = reachA.map((r, k) => (stops[k].kind === 'head' ? HOLD0 * 0.45 : HOLD0) + ((r + reachB[k]) / visW) * 0.5);   // half a screen of scrolling per view width of film
   const segs = [];
   let tot = 0;
   stops.forEach((_, k) => {

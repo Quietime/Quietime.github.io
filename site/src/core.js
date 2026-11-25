@@ -151,7 +151,7 @@ $$('[data-copy]').forEach((b) => {
 /* Scroll-linked rise: the element moves with the scroll position, forwards and backwards. */
 function scrubRise(els, { y = 56, from = 0.12, start = 'top 98%', end = 'top 62%' } = {}) {
   if (reduce) return;
-  els.forEach((el) => gsap.fromTo(el, { y, opacity: from }, {
+  els.filter((el) => el.getBoundingClientRect().top > innerHeight * 0.92).forEach((el) => gsap.fromTo(el, { y, opacity: from }, {
     y: 0, opacity: 1, ease: 'none', scrollTrigger: { trigger: el, start, end, scrub: true },
   }));
 }
