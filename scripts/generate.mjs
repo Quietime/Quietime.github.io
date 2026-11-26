@@ -313,7 +313,7 @@ ${footer()}`;
     const data = { railLabel: t.rolls, slates: darkSlates, caps: darkCaps, narrowLimit: 4, images: dark.flatMap((x) => x.images), series: dark.map(({ images, ...rest }) => rest) };
     return `${head({ key: 'works', title: t.nav.works, desc: `${site.title}：${series.map((s) => s.title).join('、')}`, theme: 'room', image: P(series[0]?.frames[0]?.src)?.og })}
 <main id="main" class="works">
-<header class="page-head dr-head"><p class="dr-edge">${esc(site.edgeCode)} ▸ 0</p><h1 data-split><span class="line"><span>${esc(t.nav.works)}</span></span></h1><p class="dr-lede">${esc(t.scene.darkroomSub)}</p></header>
+<header class="page-head dr-head"><p class="dr-edge">${esc(t.rollsCount(series.length, series.reduce((a, s) => a + s.frames.length, 0)))}</p><h1 data-split><span class="line"><span>${esc(t.nav.works)}</span></span></h1><p class="dr-lede">${esc(t.scene.darkroomSub)}</p><p class="dr-hint" aria-hidden="true">${esc(t.scene.scroll)} ↓</p></header>
 <div class="run" data-run></div>
 ${capBar}
 ${skip(t.skipRoom)}
@@ -371,6 +371,7 @@ ${footer()}`;
 <h1 class="s-title" data-split style="view-transition-name: ${vtId(s)}"><span class="line"><span>${esc(s.title)}</span></span></h1>
 <p class="s-en">${esc(s.sub)}</p>
 <dl class="s-meta">${meta.map(([k, v]) => `<div><dt>${esc(k)}</dt><dd>${esc(v)}</dd></div>`).join('')}</dl>
+<p class="s-flip"><button type="button" class="more" data-flip>${esc(t.flipAll(fr.length))}</button></p>
 </header>
 ${s.statement ? `<div class="s-statement"><p class="zh" data-words>${esc(s.statement)}</p></div>` : '<div class="s-gap"></div>'}
 <div class="run" data-run></div>

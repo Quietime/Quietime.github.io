@@ -392,6 +392,11 @@ html[data-theme-base="room"] .ftr { background: transparent; }
 .s-meta { grid-column: 8 / span 5; margin: 22px 0 0; display: flex; flex-wrap: wrap; gap: 10px 40px; }
 .s-meta dt { font-size: 13px; letter-spacing: .08em; color: var(--fg-2); }
 .s-meta dd { margin: 0; font-variant-numeric: tabular-nums; }
+.s-flip { grid-column: 8 / span 5; margin: 26px 0 0; }
+.s-flip .more { border: 0; padding: 10px 0; font: inherit; color: inherit; cursor: pointer; min-height: 44px; }
+/* works: under the title, a word that the darkroom is further down (the scene only lights as the title scrolls away) */
+.dr-hint { flex-basis: 100%; margin: 6px 0 0; font-family: var(--f-edge); font-weight: 500; font-size: 13px; letter-spacing: .2em; color: var(--fg-2); }
+html:not(.gl) .dr-hint { display: none; }
 .s-statement { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 24px; padding: clamp(48px, 8vh, 96px) var(--gut) clamp(72px, 12vh, 140px); }
 .s-statement .zh { grid-column: 4 / span 6; margin: 0; font-family: var(--f-serif); font-size: clamp(19px, 1.7vw, 25px); line-height: 2.05; letter-spacing: .04em; }
 .s-statement .en { grid-column: 4 / span 5; margin: 0; font-family: var(--f-brand); font-size: 15px; line-height: 1.75; color: var(--fg-2); }
@@ -503,7 +508,7 @@ html[data-theme-base="room"] .ftr { background: transparent; }
   .ab-services dl dt, .ab-services dl dd { grid-column: 1 / -1; }
   .s-next-txt { grid-column: 1 / -1; }
   .ws-img, .ws-r .ws-img, .ws-text, .ws-r .ws-text { grid-column: 1 / -1; order: 0; }
-  .s-en, .s-meta { grid-column: 1 / -1; }
+  .s-en, .s-meta, .s-flip { grid-column: 1 / -1; }
   .s-statement .zh, .s-statement .en { grid-column: 1 / -1; }
   .fr-wide, .fr-right, .fr-left, .fr-small { width: 100%; margin: 0; align-self: stretch; }
   .fr.is-tall { align-self: center; }
@@ -604,8 +609,8 @@ html.in-room, html[data-theme-base="room"] { --err: #F08A74; }
 .gl-cap b { font-family: var(--f-serif); font-weight: 400; font-size: 15px; letter-spacing: .04em; }
 .gl-cap i { font-style: normal; font-size: 13px; opacity: .8; }
 .gl-tile:hover .gl-cap, .gl-tile:focus-visible .gl-cap { opacity: 1; transform: none; }
-.no-js .gl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: 12px; }
-.no-js .gl-tile { position: relative; aspect-ratio: 3 / 2; }
+.no-js .gl-grid, .gl-grid:not(.is-laid) { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(240px, 40vw), 1fr)); gap: 12px; }
+.no-js .gl-tile, .gl-grid:not(.is-laid) .gl-tile { position: relative; aspect-ratio: 3 / 2; }
 .pc-s { font-family: var(--f-serif); color: var(--room-ink-2); }
 
 /* contact */
@@ -622,6 +627,7 @@ html.in-room, html[data-theme-base="room"] { --err: #F08A74; }
 .fld input, .fld textarea, .fld select { width: 100%; padding: 26px 16px 10px; border: 1px solid transparent; border-radius: 2px; background: var(--surface); color: var(--fg); font: inherit; font-size: 17px; line-height: 1.5; outline: none; transition: border-color .3s, background-color .3s; -webkit-appearance: none; appearance: none; }
 .fld textarea { resize: vertical; min-height: 150px; }
 .fld input:focus, .fld textarea:focus, .fld select:focus { border-color: var(--accent); }
+.fld input:focus-visible, .fld textarea:focus-visible, .fld select:focus-visible { box-shadow: 0 0 0 1px var(--accent); }
 .fld [aria-invalid="true"] { border-color: var(--err); }
 .fld label { position: absolute; left: 17px; top: 18px; color: var(--fg-2); pointer-events: none; transition: top .24s var(--e-out), font-size .24s var(--e-out), color .24s; }
 .fld input:focus + label, .fld input:not(:placeholder-shown) + label, .fld textarea:focus + label, .fld textarea:not(:placeholder-shown) + label,

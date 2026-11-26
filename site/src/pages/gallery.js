@@ -25,6 +25,7 @@ export default function gallery() {
       Object.assign(t.style, { left: `${b.left}px`, top: `${b.top}px`, width: `${b.width}px`, height: `${b.height}px` });
     });
     grid.style.height = `${geo.containerHeight}px`;
+    grid.classList.add('is-laid');
   }
   layout();
   let rt = 0;

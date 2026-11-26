@@ -41,6 +41,7 @@ export default function series() {
   });
 
   const lb = photoLightbox('[data-gallery]', 'a.fr-open');
+  $('[data-flip]')?.addEventListener('click', () => lb.loadAndOpen(0, { gallery: $('[data-gallery]') }));
   mountScene('darkroom', sceneData(), (si, fi, box) => lb.openFrom(fi, box, { gallery: $('[data-gallery]') }));
 
   const rail = $('.rail');
