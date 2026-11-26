@@ -54,7 +54,7 @@ for (const L of LANGS) {
     formEndpoint: /^https:\/\//i.test(contact.formEndpoint) ? contact.formEndpoint : '', email: contact.email,
     ui: {
       copied: t.copied, copyFail: t.copyFail, soundOn: t.soundOn, soundOff: t.soundOff, notReady: t.notReady,
-      f: { ...t.f, budgets: undefined }, pswp: t.pswp, view: t.cursor.view,
+      f: t.f, pswp: t.pswp, view: t.cursor.view,
     },
   };
 
@@ -439,7 +439,6 @@ ${footer()}`;
   function contactPage() {
     const kinds = [...about.services.map(([k]) => k), t.f.other];
     const qr = contact.qr && P(contact.qr);
-    const [none, ...budgets] = t.f.budgets;
     return `${head({ key: 'contact', title: t.nav.contact, desc: contact.lede || site.description })}
 <main id="main" class="contact">
 <header class="page-head"><h1 data-split><span class="line"><span>${esc(t.nav.contact)}</span></span></h1><p class="lede">${esc(contact.lede)}</p></header>
@@ -448,10 +447,7 @@ ${footer()}`;
 <div class="fld"><input id="f-name" aria-describedby="f-name-msg" name="name" type="text" autocomplete="name" placeholder=" " required><label for="f-name">${esc(t.f.name)}</label><p class="fld-msg" id="f-name-msg" data-msg aria-live="polite"></p></div>
 <div class="fld"><input id="f-reach" aria-describedby="f-reach-msg" name="reach" type="text" autocomplete="email" placeholder=" " required><label for="f-reach">${esc(t.f.reach)}</label><p class="fld-msg" id="f-reach-msg" data-msg aria-live="polite"></p></div>
 <fieldset class="chips"><legend>${esc(t.f.kind)}</legend>${kinds.map((k, i) => `<label><input type="radio" name="kind" value="${esc(k)}"${i === 0 ? ' checked' : ''}><span>${esc(k)}</span></label>`).join('')}</fieldset>
-<div class="fld-row">
 <div class="fld"><input id="f-date" name="date" type="date" placeholder=" "><label for="f-date">${esc(t.f.date)}</label></div>
-<div class="fld"><select id="f-budget" name="budget"><option value="">${esc(none)}</option>${budgets.map((b) => `<option>${esc(b)}</option>`).join('')}</select><label for="f-budget" class="is-up">${esc(t.f.budget)}</label></div>
-</div>
 <div class="fld"><textarea id="f-msg" aria-describedby="f-msg-msg" name="message" rows="5" placeholder=" " required></textarea><label for="f-msg">${esc(t.f.msg)}</label><p class="fld-msg" id="f-msg-msg" data-msg aria-live="polite"></p></div>
 <div class="ct-send"><button type="submit" class="send" data-send><span class="send-t">${esc(t.f.send)}</span><span class="send-spin" aria-hidden="true"></span></button><p class="send-note" data-note role="status" aria-live="polite"></p></div>
 </form>

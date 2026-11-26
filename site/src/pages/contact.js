@@ -33,7 +33,7 @@ export default function contact() {
       const d = Object.fromEntries(new FormData(form));
       const B = F.body || {};
       const sep = CFG.lang === 'en' ? ': ' : '：';
-      const body = [[B.name, d.name], [B.reach, d.reach], [B.kind, d.kind], [B.date, d.date || B.none], [B.budget, d.budget || B.none]]
+      const body = [[B.name, d.name], [B.reach, d.reach], [B.kind, d.kind], [B.date, d.date || B.none]]
         .map(([k, v]) => `${k}${sep}${v || ''}`).join('\n') + `\n\n${d.message}`;
       const subject = `${F.subject}${sep}${d.kind || ''}`;
       btn.classList.add('is-busy'); btn.disabled = true; note.textContent = F.sending;
