@@ -35,8 +35,8 @@
   ],
   "home_teaser_zh": "约拍，或者想用这里的照片和录像，都可以写信来。",
   "home_teaser_en": "For a shoot, or to use a photograph or a film from here, write to us.",
-  "about_intro_zh": "静夜工作室在苏州。\n\n网站上的照片和演唱会录像，都是工作室自己拍的。照片多是人像，拍在旧园里、树林里和夜里；也有一卷是城市的天色。录像是火星演唱会的全程、直拍和双机位混剪。\n\n约拍和作品授权，都可以写信来谈。",
-  "about_intro_en": "Quietime is a studio in Suzhou.\n\nThe photographs and concert films on this site were all made here. Most of the photographs are portraits, taken in an old garden, among trees and at night, and one roll is the city and its weather. The films are whole concerts, single camera close ups and two camera cuts.\n\nWrite to us about a shoot or about using the work.",
+  "about_intro_zh": "静夜工作室在苏州。\n\n网站上的照片和演唱会录像，都是工作室自己拍的。照片多是人像，拍在旧园里、树林里和夜里；也有一卷是城市的天色。录像是火星演唱会的全程、直拍和双机位混剪，在看台上拍：杭州那场用的是 DJI Pocket 3 和 DJI Mic 2，福州那场在第一排。\n\n约拍和作品授权，都可以写信来谈。",
+  "about_intro_en": "Quietime is a studio in Suzhou.\n\nThe photographs and concert films on this site were all made here. Most of the photographs are portraits, taken in an old garden, among trees and at night, and one roll is the city and its weather. The films are whole concerts, single camera close ups and two camera cuts, shot from the stands. Hangzhou was filmed on a DJI Pocket 3 with a DJI Mic 2, and Fuzhou from the front row.\n\nWrite to us about a shoot or about using the work.",
   "services": [
     {
       "title_zh": "人像",
@@ -51,8 +51,8 @@
       "text_en": "The photographs and films on this site can be licensed."
     }
   ],
-  "contact_lede_zh": "告诉我们想拍什么、在哪里、大概什么时候。我们会在两天内回复，先聊想法，再谈方案。",
-  "contact_lede_en": "Tell us what you have in mind, where, and roughly when. We reply within two days. We start with the idea and come to the plan after.",
+  "contact_lede_zh": "告诉我们想拍什么、在哪里、大概什么时候。收到后会尽快回复，先聊想法，再谈安排。",
+  "contact_lede_en": "Tell us what you have in mind, where, and roughly when. We will reply as soon as we can, and start with the idea before the plan.",
   "form_endpoint": "",
   "process": [
     {
@@ -76,22 +76,22 @@
     {
       "title_zh": "选片与交付",
       "title_en": "Choose and deliver",
-      "text_zh": "先发初选给你挑，再精修交付；胶片拍摄会附上扫描底片。",
-      "text_en": "You choose from a first edit and we finish the ones you love. Film shoots come with the scanned negatives."
+      "text_zh": "先发初选给你挑，再精修交付。",
+      "text_en": "You choose from a first edit, and we finish the ones you pick."
     }
   ],
   "faq": [
     {
       "q_zh": "多久可以拿到照片？",
       "q_en": "When will the photographs be ready?",
-      "a_zh": "数码拍摄一般在两周内交付精修；胶片需要冲扫，约三到四周。",
-      "a_en": "Digital work is usually delivered within two weeks. Film has to be developed and scanned, so allow three to four."
+      "a_zh": "看拍摄的内容和张数。约拍时会把交付日期写清楚。",
+      "a_en": "It depends on what we shoot and how many pictures. The delivery date is set down when we book."
     },
     {
       "q_zh": "可以去外地拍吗？",
       "q_en": "Will you travel?",
-      "a_zh": "可以。外地拍摄的交通与住宿另计，提前两周预约比较稳妥。",
-      "a_en": "Gladly. Travel and lodging are charged separately, and two weeks of notice makes everything easier."
+      "a_zh": "可以。交通和住宿另算，约拍时一起说清楚。",
+      "a_en": "Yes. Travel and lodging are extra, and we settle them when we book."
     },
     {
       "q_zh": "照片可以商用吗？",
@@ -102,8 +102,8 @@
     {
       "q_zh": "需要提前多久预约？",
       "q_en": "How far ahead should I book?",
-      "a_zh": "建议提前两到三周。节假日与黄金时段的档期紧张，越早越好。",
-      "a_en": "Two or three weeks is comfortable. Holidays and the golden hour go quickly, so earlier is better."
+      "a_zh": "越早越好，节假日的档期会紧一些。",
+      "a_en": "The earlier the better. Holidays fill up first."
     }
   ],
   "music_on": true,
