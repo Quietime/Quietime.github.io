@@ -1,5 +1,5 @@
 // The series page.
-import { gsap, ScrollTrigger, SplitText, reduce, $, $$, DIGITS, scrollToEl, splitReveal, scrubRise, sceneData, mountScene } from '../core.js';
+import { gsap, ScrollTrigger, SplitText, reduce, $, $$, DIGITS, scrollToEl, splitReveal, scrubRise, sceneData, mountScene, lenis } from '../core.js';
 import photoLightbox from '../parts/lightbox.js';
 
 export default function series() {
@@ -42,7 +42,21 @@ export default function series() {
 
   const lb = photoLightbox('[data-gallery]', 'a.fr-open');
   $('[data-flip]')?.addEventListener('click', () => lb.loadAndOpen(0, { gallery: $('[data-gallery]') }));
-  mountScene('darkroom', sceneData(), (si, fi, box) => lb.openFrom(fi, box, { gallery: $('[data-gallery]') }));
+  // a link to one frame (#f12, from a shared link or a print clicked in the works page's darkroom). Without the
+  // darkroom the browser has already jumped to it, but layout may have moved it since: go there again, at once
+  const toFrame = () => {
+    const m = location.hash.match(/^#f(\d+)$/), el = m && document.getElementById(`f${m[1]}`);
+    if (!el) return;
+    // with the darkroom on, every print hangs in the scene and the list of frames is hidden: show that frame in the
+    // viewer instead, so the link opens on the very picture it names
+    if (!el.offsetParent) { lb.loadAndOpen(Number(m[1]) - 1, { gallery: $('[data-gallery]') }); return; }
+    ScrollTrigger.refresh();
+    const y = el.getBoundingClientRect().top + scrollY - Math.max(0, (innerHeight - el.offsetHeight) / 2);
+    if (lenis) lenis.scrollTo(Math.max(0, y), { immediate: true, force: true }); else scrollTo(0, Math.max(0, y));
+  };
+  mountScene('darkroom', sceneData(), (si, fi, box) => lb.openFrom(fi, box, { gallery: $('[data-gallery]') }))
+    .then(() => requestAnimationFrame(toFrame));
+  addEventListener('hashchange', toFrame);
 
   const rail = $('.rail');
   if (rail && !reduce) ScrollTrigger.create({ start: 0, end: 'max', onUpdate: (self) => rail.style.setProperty('--rail', `${-self.scroll() * 0.6}px`) });

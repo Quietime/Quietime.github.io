@@ -311,7 +311,7 @@ ${footer()}`;
     }).join('')}</div></section>`).join('');
     const dark = series.map((s, i) => darkSeries(s, i, 6));
     const data = { railLabel: t.rolls, slates: darkSlates, caps: darkCaps, narrowLimit: 4, images: dark.flatMap((x) => x.images), series: dark.map(({ images, ...rest }) => rest) };
-    return `${head({ key: 'works', title: t.nav.works, desc: `${site.title}：${series.map((s) => s.title).join('、')}`, theme: 'room', image: P(series[0]?.frames[0]?.src)?.og })}
+    return `${head({ key: 'works', title: t.nav.works, desc: L.code === 'en' ? `${series.map((s) => s.title).join(', ')}. Photographs by ${site.name}.` : `${site.nameZh}的${series.length}卷照片：${series.map((s) => s.title).join('、')}。`, theme: 'room', image: P(series[0]?.frames[0]?.src)?.og })}
 <main id="main" class="works">
 <header class="page-head dr-head"><p class="dr-edge">${esc(t.rollsCount(series.length, series.reduce((a, s) => a + s.frames.length, 0)))}</p><h1 data-split><span class="line"><span>${esc(t.nav.works)}</span></span></h1><p class="dr-lede">${esc(t.scene.darkroomSub)}</p><p class="dr-hint" aria-hidden="true">${esc(t.scene.scroll)} ↓</p></header>
 <div class="run" data-run></div>
