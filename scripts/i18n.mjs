@@ -9,7 +9,7 @@ export const LANGS = [
 export const UI = {
   zh: {
     skipFilm: '跳过胶片 ↓', skipRoom: '跳过暗房 ↓', rolls: '分卷',
-    skip: '跳到正文', home: '首页', tagline: '摄影作品与影像', menu: '菜单', language: '语言',
+    skip: '跳到正文', home: '首页', tagline: '苏州的人像与演唱会录像', menu: '菜单', language: '语言',
     nav: { works: '作品', gallery: '图库', films: '影像', about: '关于', contact: '联系' },
     sound: '背景音乐', soundOn: '声音开', soundOff: '声音关',
     wechat: '微信', email: '邮箱', copied: '已复制', copyFail: '复制失败，请手动选择文字',
@@ -50,7 +50,7 @@ export const UI = {
 
   en: {
     skipFilm: 'Skip the film strip ↓', skipRoom: 'Skip the darkroom ↓', rolls: 'Rolls',
-    skip: 'Skip to content', home: 'Home', tagline: 'Photographs and films', menu: 'Menu', language: 'Language',
+    skip: 'Skip to content', home: 'Home', tagline: 'Portraits and concert films from Suzhou', menu: 'Menu', language: 'Language',
     nav: { works: 'Work', gallery: 'Gallery', films: 'Films', about: 'About', contact: 'Contact' },
     sound: 'Background music', soundOn: 'Sound on', soundOff: 'Sound off',
     wechat: 'WeChat', email: 'Email', copied: 'Copied', copyFail: 'Copy failed. Please select the text.',
