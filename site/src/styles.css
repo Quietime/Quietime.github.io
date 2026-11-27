@@ -77,8 +77,8 @@ p { text-wrap: pretty; }
 :focus-visible { outline: 2px solid var(--link); outline-offset: 4px; }
 ::selection { background: var(--accent); color: var(--paper-hi); }
 .sr-only { position: absolute !important; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
-.skip { position: fixed; left: 12px; top: -60px; z-index: 200; background: var(--fg); color: var(--bg); padding: 8px 14px; text-decoration: none; }
-.skip:focus { top: 12px; }
+.skip { position: fixed; left: 12px; top: 0; transform: translateY(-150%); z-index: 200; background: var(--fg); color: var(--bg); padding: 8px 14px; text-decoration: none; }
+.skip:focus { top: 12px; transform: none; }
 
 main, .ftr { position: relative; z-index: 1; }
 
@@ -114,6 +114,13 @@ html.in-room .grain, html[data-theme-base="room"] .grain { opacity: .07; }
 .hdr.is-solid { background: var(--bg); }
 .hdr.is-hidden { transform: translateY(-110%); }
 .brand { display: flex; align-items: center; gap: 11px; text-decoration: none; }
+/* with very large text the header must still fit: the controls on the right keep their size (on a phone the menu
+   button is the only way around the site) and the name on the left gives way, the moon staying */
+.brand { flex: 0 1 auto; min-width: 0; overflow: hidden; }
+.brand-moon { flex: none; }
+.brand-en, .brand-zh { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
+.hdr-r { flex: none; }
+.hdr.tight-1 .hdr-r .lang, .hdr.tight-2 .hdr-r .sound { display: none; }
 .brand-moon { width: 30px; height: 30px; }
 .brand-en { font-family: var(--f-brand); font-size: 20px; letter-spacing: .01em; }
 .brand-zh { font-size: 13px; letter-spacing: .1em; color: var(--fg-2); }
@@ -151,6 +158,7 @@ html.in-room .grain, html[data-theme-base="room"] .grain { opacity: .07; }
 .copy {
   background: linear-gradient(currentColor, currentColor) 0 100% / 0 1px no-repeat; border: 0; padding: 0 0 3px; cursor: pointer;
   font-family: var(--f-brand); font-size: 18px; letter-spacing: .04em; transition: background-size .5s var(--e-out), color .3s; text-align: left;
+  max-width: 100%; overflow-wrap: anywhere;   /* an address has no place to break; with very large text it must not push the page wider */
 }
 .copy:hover, .copy:focus-visible { background-size: 100% 1px; }
 .copy.is-done { color: var(--accent); }
@@ -335,6 +343,7 @@ html.gl .series .counter { display: none; }
 .ftr-edge .edge { color: var(--tungsten); }
 .ftr-inner { display: grid; grid-template-columns: repeat(12, minmax(0, 1fr)); gap: 32px 24px; padding-top: clamp(64px, 11vh, 120px); align-items: end; }
 .ftr-word { grid-column: 1 / span 6; margin: 0; display: flex; flex-wrap: wrap; align-items: baseline; gap: .1em .45em; font-family: var(--f-brand); font-size: clamp(44px, 6.4vw, 104px); line-height: 1; }
+.ftr-word .fw-en { max-width: 100%; font-size: min(1em, 20vw); }   /* the word mark stays within the screen whatever the text size */
 .fw-zh { font-family: var(--f-ui); font-size: max(13px, .26em); letter-spacing: .12em; color: var(--room-ink-2); }
 .ftr-contact { grid-column: 8 / span 5; min-width: 0; }
 .ftr-contact p { margin: 8px 0; display: flex; align-items: baseline; gap: 18px; flex-wrap: wrap; }
