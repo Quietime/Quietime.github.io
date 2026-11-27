@@ -90,6 +90,19 @@ const go = (href) => { location.href = href; };
 /* ── header ────────────────────────────────────────────────── */
 const hdr = $('[data-hdr]');
 let lastY = 0;
+// a reader with very large text: if the header's controls run off the screen, the language links step back into the
+// menu (they are there too), then the sound switch, so the menu button stays in reach
+const hdrR = $('.hdr-r', hdr);
+function fitHeader() {
+  if (!hdrR) return;
+  hdr.classList.remove('tight-1', 'tight-2');
+  const over = () => hdrR.getBoundingClientRect().right > document.documentElement.clientWidth + 1;
+  if (over()) hdr.classList.add('tight-1');
+  if (over()) hdr.classList.add('tight-2');
+}
+fitHeader();
+fontsReady.then(fitHeader);
+addEventListener('resize', fitHeader);
 ScrollTrigger.create({
   start: 0, end: 'max',
   onUpdate: (self) => {
