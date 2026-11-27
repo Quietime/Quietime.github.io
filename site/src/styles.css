@@ -120,7 +120,9 @@ html.in-room .grain, html[data-theme-base="room"] .grain { opacity: .07; }
 .brand-moon { flex: none; }
 .brand-en, .brand-zh { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; min-width: 0; }
 .hdr-r { flex: none; }
-.hdr.tight-1 .hdr-r .lang, .hdr.tight-2 .hdr-r .sound { display: none; }
+.hdr.tight-1 .nav, .hdr.tight-1 .hdr-r .lang { display: none; }
+.hdr.tight-1 .menu-btn { display: block; }   /* at any width: the menu holds the pages and the languages */
+.hdr.tight-2 .sound-t { display: none; }      /* the sound switch itself always stays, only its word goes */
 .brand-moon { width: 30px; height: 30px; }
 .brand-en { font-family: var(--f-brand); font-size: 20px; letter-spacing: .01em; }
 .brand-zh { font-size: 13px; letter-spacing: .1em; color: var(--fg-2); }

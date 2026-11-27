@@ -90,8 +90,9 @@ const go = (href) => { location.href = href; };
 /* ── header ────────────────────────────────────────────────── */
 const hdr = $('[data-hdr]');
 let lastY = 0;
-// a reader with very large text: if the header's controls run off the screen, the language links step back into the
-// menu (they are there too), then the sound switch, so the menu button stays in reach
+// a reader with very large text: if the header's controls run off the screen, the page links and the language links
+// step back into the menu (which holds both) and the menu button shows at any width; then the sound switch loses its
+// word. The sound switch itself never goes: it is the only way to stop the music
 const hdrR = $('.hdr-r', hdr);
 function fitHeader() {
   if (!hdrR) return;
